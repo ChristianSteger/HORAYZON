@@ -29,8 +29,8 @@ Optional for remote terrain simplification:
 - trimesh
 
 ## Further dependencies
-- Intel &copy; Embree with Intel Threading Building Blocks (TBB) and GLFW. Source code and compilation instructions can be found here: https://github.com/embree/embree
-
+- Intel&copy; Embree with Intel Threading Building Blocks (TBB) and GLFW. Source code and compilation instructions can be found here: https://github.com/embree/embree
+- hmm. Optional -- only required if remote terrain simplification is needed in case of elevation data with very high (<5 m) resolution. Source code and compilation instructions can be found here: https://github.com/fogleman/hmm
 
 # Installation
 
