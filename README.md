@@ -36,7 +36,7 @@ Optional for remote terrain simplification:
 - hmm. Optional &ndash; only required if remote terrain simplification is needed in case of elevation data with very high (<5 m) resolution. Source code and compilation instructions can be found here: https://github.com/fogleman/hmm
 
 # Installation
-The source code can be compiled in the following way: First, the Cython functions have to be compiled by calling `python setup_cython.py build_ext --build-lib lib/` in the main directory. Subsequently, the correct paths to the NetCDF4-C++ and the Embree library have to be set in the file *setup_cpp.py*. The C++ code can then be compiled by calling `python setup_cpp.py build_ext --build-lib lib/`. Finally, the Python code can be compiled with `python setup_python.py`. All libraries are placed in the directory *lib* in the main folder.
+The source code can be compiled in the following way: First, the Cython functions have to be compiled by calling `python setup_cython.py build_ext --build-lib lib/` in the main directory. Subsequently, the correct paths to the NetCDF4-C++ and the Embree library have to be set in the file **setup_cpp.py**. The C++ code can then be compiled by calling `python setup_cpp.py build_ext --build-lib lib/`. Finally, the Python code can be compiled with `python setup_python.py`. All libraries are placed in the directory **lib** in the main folder.
 
 # Required data
 
@@ -58,9 +58,9 @@ Auxiliary data, like geoid undulation data (EGM96 and GEOID12A) and coastline po
 
 # Usage
 The usage of the packages is best illustrated by means of three examples, which cover the most common application cases:
-- *examples/NASADEM_Alps.py*: Compute topographic parameters (slope angle and aspect, horizon and Sky View Factor) from NASADEM (~30 m) for a ~30x30 km region in the European Alps. Output from this script is shown in the below 'Example output'.
-- *examples/NASADEM_HIMI.py*: Compute topographic parameters (slope angle and aspect, horizon and Sky View Factor) from NASADEM (~30 m) for a ~100x100 km region centred at Heard Island and McDonald Islands. DEM grid cells, which are at least 20 km apart from land, are masked to speed-up the horizon computation.
-- *examples/SwissALTI3D_Alps.py*:
+- **examples/NASADEM_Alps.py**: Compute topographic parameters (slope angle and aspect, horizon and Sky View Factor) from NASADEM (~30 m) for a ~30x30 km region in the European Alps. Output from this script is shown below.
+- **examples/NASADEM_HIMI.py**: Compute topographic parameters (slope angle and aspect, horizon and Sky View Factor) from NASADEM (~30 m) for a ~100x100 km region centred at Heard Island and McDonald Islands. DEM grid cells, which are at least 20 km apart from land, are masked to speed-up the horizon computation.
+- **examples/SwissALTI3D_Alps.py***: Compute topographic parameters (slope angle and aspect, horizon and Sky View Factor) from swissALTI3D (~2 m) for an a 3x3 km region in the European Alps. The outer DEM domain is simplified and represented by a triangulated irregular network (TIN) to reduce the large memory footprint of the DEM data.
 
 # Example output
 
