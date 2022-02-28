@@ -29,7 +29,7 @@ Optional for remote terrain simplification:
 - trimesh
 
 ## Further dependencies
-- Intel &copy Embree
+- Intel &copy; Embree with Intel Threading Building Blocks (TBB) and GLFW. Source code and compilation instructions can be found here: https://github.com/embree/embree
 
 
 # Installation
