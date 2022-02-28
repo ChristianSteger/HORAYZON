@@ -22,6 +22,8 @@ Source code:
 Application:
 - xarray
 - matplotlib
+- cartopy
+- cmcrameri
 - netcdf4
 - rasterio
 
@@ -38,7 +40,7 @@ The source code can be compiled in the following way: First, the Cython function
 
 # Required data
 
-## Digital elevation model data
+## Digital elevation model (DEM) data
 
 Digital elevation model data is available from various sources, e.g.:
 - [NASADEM](https://search.earthdata.nasa.gov/)
@@ -55,6 +57,10 @@ Auxiliary data, like geoid undulation data (EGM96 and GEOID12A) and coastline po
 - [GSHHG](https://www.soest.hawaii.edu/pwessel/gshhg/)
 
 # Usage
+The usage of the packages is best illustrated by means of three examples, which cover the most common application cases:
+- *examples/NASADEM_Alps.py*: Compute topographic parameters (slope angle and aspect, horizon and Sky View Factor) from NASADEM (~30 m) for a ~30x30 km region in the European Alps. Output from this script is shown in the below 'Example output'.
+- *examples/NASADEM_HIMI.py*: Compute topographic parameters (slope angle and aspect, horizon and Sky View Factor) from NASADEM (~30 m) for a ~100x100 km region centred at Heard Island and McDonald Islands. DEM grid cells, which are at least 20 km apart from land, are masked to speed-up the horizon computation.
+- *examples/SwissALTI3D_Alps.py*:
 
 # Example output
 
