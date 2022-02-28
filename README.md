@@ -6,6 +6,7 @@ Package to compute terrain parameters horizon, sky view factor and slope angle/a
 # Dependencies
 
 ## Python packages
+
 Source code:
 - numpy
 - cython
@@ -17,16 +18,18 @@ Source code:
 - fiona
 - pygeos
 - scikit-image
+
 Application:
 - xarray
 - matplotlib
 - netcdf4
 - rasterio
+
 Optional for remote terrain simplification:
 - trimesh
 
 ## Further dependencies
-- Intel&copy Embree
+- Intel &copy Embree
 
 
 # Installation
