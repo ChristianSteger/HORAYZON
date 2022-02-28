@@ -34,13 +34,14 @@ Optional for remote terrain simplification:
 - hmm. Optional &ndash; only required if remote terrain simplification is needed in case of elevation data with very high (<5 m) resolution. Source code and compilation instructions can be found here: https://github.com/fogleman/hmm
 
 # Installation
+The source code can be compiled in the following way: First, the Cython functions have to be compiled by calling `python setup_cython.py build_ext --build-lib lib/` in the main directory. Subsequently, the correct paths to the NetCDF4-C++ and the Embree library have to be set in the file *setup_cpp.py*. The C++ code can then be compiled by calling `python setup_cpp.py build_ext --build-lib lib/`. Finally, the Python code can be compiled with `python setup_python.py`. All libraries are placed in the directory *lib* in the main folder.
 
 # Required data
 
 ## Digital elevation model data
 
 Digital elevation model data is available from various sources, e.g.:
-- [NASADEM](https://search.earthdata.nasa.gov/):
+- [NASADEM](https://search.earthdata.nasa.gov/)
 - [SRTM](https://srtm.csi.cgiar.org)
 - [MERIT](http://hydro.iis.u-tokyo.ac.jp/~yamadai/MERIT_DEM/)
 - [USGS 1/3rd arc-second DEM](https://www.sciencebase.gov/catalog/item/4f70aa9fe4b058caae3f8de5)
