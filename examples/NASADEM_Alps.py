@@ -13,6 +13,14 @@ import sys
 import numpy as np
 import xarray as xr
 from netCDF4 import Dataset
+import matplotlib as mpl
+import matplotlib.pyplot as plt
+import matplotlib.gridspec as gridspec
+from matplotlib.ticker import MaxNLocator
+import cartopy.crs as ccrs
+from cmcrameri import cm
+
+mpl.style.use("classic")
 
 # Paths to folders
 path_DEM = "/Users/csteger/Desktop/European_Alps/"
@@ -189,3 +197,68 @@ nc_data[:] = svf
 nc_data.long_name = "sky view factor"
 nc_data.units = "-"
 ncfile.close()
+
+###############################################################################
+# Plot topographic parameters
+###############################################################################
+
+# Plot settings
+data_plot = {"elevation": dem[sd_in],
+             "slope": np.rad2deg(slope),
+             "aspect": np.rad2deg(aspect),
+             "svf": svf}
+cmaps = {"elevation": cm.batlowW, "slope": cm.lajolla,
+         "aspect": cm.romaO, "svf": cm.davos}
+pos = {"elevation": [0, 0], "slope": [0, 1],
+       "aspect":    [3, 0], "svf":   [3, 1]}
+titles = {"elevation": "Elevation [m]", "slope": "Slope [degree]",
+          "aspect": "Aspect (clockwise from North) [degree]",
+          "svf": "Sky View Factor [-]"}
+
+# Plot
+geo_crs = ccrs.PlateCarree()
+fig = plt.figure(figsize=(14.0, 16.0))
+gs = gridspec.GridSpec(5, 2, left=0.1, bottom=0.1, right=0.9, top=0.9,
+                       hspace=0.05, wspace=0.05,
+                       height_ratios=[1, 0.04, 0.07, 1, 0.04])
+for i in list(data_plot.keys()):
+    # -------------------------------------------------------------------------
+    if i != "aspect":
+        levels = MaxNLocator(nbins=20, steps=[1, 2, 5, 10], symmetric=False) \
+            .tick_values(np.percentile(data_plot[i], 5.0),
+                         np.percentile(data_plot[i], 95.0))
+        cmap = cmaps[i]
+        norm = mpl.colors.BoundaryNorm(levels, ncolors=cmap.N, extend="both")
+        ticks = levels
+    else:
+        levels = np.arange(0.0, 380.0, 20.0)
+        cmap = cmaps[i]
+        norm = mpl.colors.BoundaryNorm(levels, ncolors=cmap.N)
+        ticks = np.arange(20.0, 360.0, 40.0)
+    ax = plt.subplot(gs[pos[i][0], pos[i][1]], projection=geo_crs)
+    plt.pcolormesh(lon[sd_in[1]], lat[sd_in[0]], data_plot[i], cmap=cmap,
+                   norm=norm, shading="auto")
+    ax.set_aspect("auto")
+    if i == "elevation":
+        gl = ax.gridlines(draw_labels=True)
+        gl.top_labels = True
+        gl.left_labels = True
+        gl.bottom_labels = False
+        gl.right_labels = False
+        t = plt.text(0.17, 0.95, titles[i], fontsize=13, fontweight="bold",
+                     horizontalalignment="center", verticalalignment="center",
+                     transform=ax.transAxes)
+        t.set_bbox(dict(facecolor="white", alpha=0.7, edgecolor="none"))
+    else:
+        plt.xticks([])
+        plt.yticks([])
+        plt.title(titles[i], fontsize=13, fontweight="bold")
+    plt.axis([lon[sd_in[1]].min(), lon[sd_in[1]].max(),
+              lat[sd_in[0]].min(), lat[sd_in[0]].max()])
+    # -------------------------------------------------------------------------
+    ax = plt.subplot(gs[pos[i][0] + 1, pos[i][1]])
+    cb = mpl.colorbar.ColorbarBase(ax, cmap=cmap, norm=norm,
+                                   orientation="horizontal")
+    # -------------------------------------------------------------------------
+fig.savefig(path_out + "Topo_slope_SVF.png", dpi=300, bbox_inches="tight")
+plt.close(fig)

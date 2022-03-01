@@ -60,9 +60,11 @@ Auxiliary data, like geoid undulation data (EGM96 and GEOID12A) and coastline po
 The usage of the packages is best illustrated by means of three examples, which cover the most common application cases. To successfully run the below examples, the paths to the input data and the folder **lib**, which are defined at the beginning of the files, must be adjusted. 
 - **examples/NASADEM_Alps.py**: Compute topographic parameters (slope angle and aspect, horizon and sky view factor) from NASADEM (~30 m) for a ~30x30 km region in the European Alps. Output from this script is shown below.
 - **examples/NASADEM_HIMI.py**: Compute topographic parameters (slope angle and aspect, horizon and sky view factor) from NASADEM (~30 m) for a ~100x100 km region centred at Heard Island and McDonald Islands. DEM grid cells, which are at least 20 km apart from land, are masked to speed-up the horizon computation.
-- **examples/SwissALTI3D_Alps.py***: Compute topographic parameters (slope angle and aspect, horizon and sky view factor) from swissALTI3D (~2 m) for an a 3x3 km region in the European Alps. The outer DEM domain is simplified and represented by a triangulated irregular network (TIN) to reduce the large memory footprint of the DEM data.
+- **examples/SwissALTI3D_Alps.py**: Compute topographic parameters (slope angle and aspect, horizon and sky view factor) from swissALTI3D (~2 m) for an a 3x3 km region in the European Alps. The outer DEM domain is simplified and represented by a triangulated irregular network (TIN) to reduce the large memory footprint of the DEM data.
 
 # Example output
+
+![Alt text](/../Images/Topo_slope_SVF.png?raw=true "Optional Title")
 
 # Reference
 Link to Geoscientific Model Development [manuscript](https://www.geoscientific-model-development.net)
