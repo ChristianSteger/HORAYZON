@@ -1,11 +1,15 @@
 # Description: Compute topographic parameters (slope angle and aspect, horizon
 #              and Sky View Factor) from NASADEM (~30 m) for an example region
 #              in the European Alps
+#
 # Required input data:
 #   - NASADEM: https://search.earthdata.nasa.gov/
 #     -> NASADEM Merged DEM Global 1 arc second nc V001
 #   - EGM96:
 #     https://earth-info.nga.mil/php/download.php?file=egm-96interpolation
+#
+# Copyright (c) 2022 ETH Zurich, Christian R. Steger
+# MIT License
 
 # Load modules
 import os

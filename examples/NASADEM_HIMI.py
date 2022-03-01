@@ -2,6 +2,7 @@
 #              and Sky View Factor) from NASADEM (~30 m) for the example region
 #              'Heard Island and McDonald Islands' and mask ocean grid cells
 #              that have a certain minimal distance to land
+#
 # Required input data:
 #   - NASADEM: https://search.earthdata.nasa.gov/
 #     -> NASADEM Merged DEM Global 1 arc second nc V001
@@ -9,6 +10,9 @@
 #     https://earth-info.nga.mil/php/download.php?file=egm-96interpolation
 #   - GSHHG:
 #     http://www.soest.hawaii.edu/pwessel/gshhg/gshhg-shp-2.3.7.zip
+#
+# Copyright (c) 2022 ETH Zurich, Christian R. Steger
+# MIT License
 
 # Load modules
 import os

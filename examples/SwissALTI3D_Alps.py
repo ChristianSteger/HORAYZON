@@ -1,8 +1,12 @@
 # Description: Compute topographic parameters (slope angle and aspect, horizon
 #              and Sky View Factor) from swissALTI3D (~2 m) for an example
 #              region in the European Alps and simplify the outer DEM domain
+#
 # Required input data:
 #   - swissALTI3D: https://www.swisstopo.admin.ch/en/geodata/height/alti3d.html
+#
+# Copyright (c) 2022 ETH Zurich, Christian R. Steger
+# MIT License
 
 # Load modules
 import sys

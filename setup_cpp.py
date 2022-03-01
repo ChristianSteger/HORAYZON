@@ -1,6 +1,9 @@
 # Description: Setup file for c++ horizon algorithm
 #
 # Building: python setup_cpp.py build_ext --build-lib lib/
+#
+# Copyright (c) 2022 ETH Zurich, Christian R. Steger
+# MIT License
 
 # Load modules
 import os

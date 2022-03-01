@@ -1,6 +1,9 @@
 # Description: Setup file for Cython functions
 #
 # Building: python setup_cython.py build_ext --build-lib lib/
+#
+# Copyright (c) 2022 ETH Zurich, Christian R. Steger
+# MIT License
 
 # Load modules
 from distutils.core import setup

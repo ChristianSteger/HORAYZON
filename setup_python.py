@@ -1,6 +1,9 @@
 # Description: Setup file for Python functions
 #
 # Building: python setup_python.py
+#
+# Copyright (c) 2022 ETH Zurich, Christian R. Steger
+# MIT License
 
 # Load modules
 import importlib
