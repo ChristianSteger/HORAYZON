@@ -64,7 +64,7 @@ The usage of the packages is best illustrated by means of three examples, which 
 
 # Example output
 
-![Alt text](https://github.com/ChristianSteger/Images/blob/master/Topo_slope_SVF.png?raw=true "Optional Title")
+![Alt text](https://github.com/ChristianSteger/Images/blob/master/Topo_slope_SVF.png?raw=true "Output from examples/NASADEM_Alps.py")
 
 # Reference
 Link to Geoscientific Model Development [manuscript](https://www.geoscientific-model-development.net)
