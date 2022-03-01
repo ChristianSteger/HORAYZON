@@ -1,5 +1,8 @@
 #cython: boundscheck=False, wraparound=False, cdivision=True, language_level=3
 
+# Copyright (c) 2022 ETH Zurich, Christian R. Steger
+# MIT License
+
 # Load modules
 import numpy as np
 from libc.math cimport sin, cos, sqrt, atan

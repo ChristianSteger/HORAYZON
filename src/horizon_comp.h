@@ -1,3 +1,6 @@
+// Copyright (c) 2022 ETH Zurich, Christian R. Steger
+// MIT License
+
 #ifndef TESTLIB_H
 #define TESTLIB_H
 

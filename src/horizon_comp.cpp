@@ -1,3 +1,6 @@
+// Copyright (c) 2022 ETH Zurich, Christian R. Steger
+// MIT License
+
 #include <cstdio>
 #include <embree3/rtcore.h>
 #include <stdio.h>

@@ -1,3 +1,6 @@
+# Copyright (c) 2022 ETH Zurich, Christian R. Steger
+# MIT License
+
 cimport numpy as np
 import numpy as np
 import os
