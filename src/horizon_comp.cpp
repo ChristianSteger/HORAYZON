@@ -241,7 +241,7 @@ RTCScene initializeScene(RTCDevice device, float* vert_grid,
 
 // Cast a single ray (rtcOccluded1)
 bool castRay_occluded1(RTCScene scene, float ox, float oy, float oz, float dx,
-	float dy, float dz) {
+	float dy, float dz, float dist_search) {
   
 	// Intersect context
   	struct RTCIntersectContext context;
@@ -255,8 +255,9 @@ bool castRay_occluded1(RTCScene scene, float ox, float oy, float oz, float dx,
   	ray.dir_x = dx;
   	ray.dir_y = dy;
   	ray.dir_z = dz;
-  	ray.tnear = 0.0; // avoid intersection with topography at starting point
-  	ray.tfar = std::numeric_limits<float>::infinity();
+  	ray.tnear = 0.0;
+  	//ray.tfar = std::numeric_limits<float>::infinity();
+  	ray.tfar = dist_search;
   	//ray.mask = -1;
   	//ray.flags = 0;
 
@@ -276,7 +277,7 @@ bool castRay_occluded1(RTCScene scene, float ox, float oy, float oz, float dx,
 //-----------------------------------------------------------------------------
 
 void ray_discrete_sampling(float ray_org_x, float ray_org_y, float ray_org_z,
-	size_t azim_num, float hori_acc,
+	size_t azim_num, float hori_acc, float dist_search,
 	float elev_ang_low_lim, float elev_ang_up_lim, int elev_num,
 	RTCScene scene, size_t &num_rays, size_t dim_in_0, size_t dim_in_1,
 	size_t i, size_t j, float* hori_buffer,
@@ -298,7 +299,8 @@ void ray_discrete_sampling(float ray_org_x, float ray_org_y, float ray_org_z,
 			float ray_rot[3];
 			mat_vec_mult(rot_inv, ray, ray_rot);
   			hit = castRay_occluded1(scene, ray_org_x, ray_org_y,
-  				ray_org_z, ray_rot[0], ray_rot[1], ray_rot[2]);
+  				ray_org_z, ray_rot[0], ray_rot[1], ray_rot[2],
+  				dist_search);
   			num_rays += 1;
   
   		}
@@ -315,7 +317,7 @@ void ray_discrete_sampling(float ray_org_x, float ray_org_y, float ray_org_z,
 //-----------------------------------------------------------------------------
 
 void ray_binary_search(float ray_org_x, float ray_org_y, float ray_org_z,
-	size_t azim_num, float hori_acc,
+	size_t azim_num, float hori_acc, float dist_search,
 	float elev_ang_low_lim, float elev_ang_up_lim, int elev_num,
 	RTCScene scene, size_t &num_rays, size_t dim_in_0, size_t dim_in_1,
 	size_t i, size_t j, float* hori_buffer,
@@ -339,7 +341,8 @@ void ray_binary_search(float ray_org_x, float ray_org_y, float ray_org_z,
 			float ray_rot[3];
 			mat_vec_mult(rot_inv, ray, ray_rot);
   			bool hit = castRay_occluded1(scene, ray_org_x, ray_org_y,
-  				ray_org_z, ray_rot[0], ray_rot[1], ray_rot[2]);
+  				ray_org_z, ray_rot[0], ray_rot[1], ray_rot[2],
+  				dist_search);
   			num_rays += 1;
   			
   			if (hit) {
@@ -365,7 +368,7 @@ void ray_binary_search(float ray_org_x, float ray_org_y, float ray_org_z,
 //-----------------------------------------------------------------------------
 
 void ray_guess_const(float ray_org_x, float ray_org_y, float ray_org_z,
-	size_t azim_num, float hori_acc,
+	size_t azim_num, float hori_acc, float dist_search,
 	float elev_ang_low_lim, float elev_ang_up_lim, int elev_num,
 	RTCScene scene, size_t &num_rays, size_t dim_in_0, size_t dim_in_1,
 	size_t i, size_t j, float* hori_buffer,
@@ -391,7 +394,8 @@ void ray_guess_const(float ray_org_x, float ray_org_y, float ray_org_z,
 		float ray_rot[3];
 		mat_vec_mult(rot_inv, ray, ray_rot);
   		bool hit = castRay_occluded1(scene, ray_org_x, ray_org_y,
-  			ray_org_z, ray_rot[0], ray_rot[1], ray_rot[2]);
+  			ray_org_z, ray_rot[0], ray_rot[1], ray_rot[2],
+  			dist_search);
   		num_rays += 1;
   			
   		if (hit) {
@@ -431,7 +435,8 @@ void ray_guess_const(float ray_org_x, float ray_org_y, float ray_org_z,
 			float ray_rot[3];
 			mat_vec_mult(rot_inv, ray, ray_rot);
   			hit = castRay_occluded1(scene, ray_org_x, ray_org_y,
-  				ray_org_z, ray_rot[0], ray_rot[1], ray_rot[2]);
+  				ray_org_z, ray_rot[0], ray_rot[1], ray_rot[2],
+  				dist_search);
   			num_rays += 1;
   			count += 1;
 		
@@ -462,7 +467,8 @@ void ray_guess_const(float ray_org_x, float ray_org_y, float ray_org_z,
 			float ray_rot[3];
 			mat_vec_mult(rot_inv, ray, ray_rot);
   			hit = castRay_occluded1(scene, ray_org_x, ray_org_y,
-  				ray_org_z, ray_rot[0], ray_rot[1], ray_rot[2]);
+  				ray_org_z, ray_rot[0], ray_rot[1], ray_rot[2],
+  				dist_search);
   			num_rays += 1;		
 		
 		}
@@ -483,7 +489,7 @@ void ray_guess_const(float ray_org_x, float ray_org_y, float ray_org_z,
 //-----------------------------------------------------------------------------
 
 void (*function_pointer)(float ray_org_x, float ray_org_y, float ray_org_z,
-	size_t azim_num, float hori_acc,
+	size_t azim_num, float hori_acc, float dist_search,
 	float elev_ang_low_lim, float elev_ang_up_lim, int elev_num,
 	RTCScene scene, size_t &num_rays, size_t dim_in_0, size_t dim_in_1,
 	size_t i, size_t j, float* hori_buffer,
@@ -615,7 +621,8 @@ void horizon_comp(float* vert_grid,
 	float* vec_norm, float* vec_north,
 	int offset_0, int offset_1,
 	float* hori_buffer,
-	int dim_in_0, int dim_in_1, int azim_num,
+	int dim_in_0, int dim_in_1,
+	int azim_num, float dist_search,
 	float hori_acc, char* ray_algorithm, char* geom_type,
 	float* vert_simp, int num_vert_simp,
 	int* tri_ind_simp, int num_tri_simp,
@@ -623,6 +630,7 @@ void horizon_comp(float* vert_grid,
     float* x_axis_val, float* y_axis_val,
     char* x_axis_name, char* y_axis_name, char* units,
     float hori_buffer_size_max,
+    float elev_ang_low_lim,
     uint8_t* mask, float hori_fill) {
 
 	cout << "--------------------------------------------------------" << endl;
@@ -634,7 +642,6 @@ void horizon_comp(float* vert_grid,
   	// -> value must be large enough to modify 32bit float!
   	// float azim_shift = ((2 * M_PI) / azim_num) / 2.0;  // shift from 0.0
   	float azim_shift = 0.0;
-  	float elev_ang_low_lim = -15.0;  // lower limit for elevation angle [deg]
   	float elev_ang_up_lim = 89.98;  // upper limit for elevation angle [deg]
   
   	// Initialization
@@ -653,15 +660,11 @@ void horizon_comp(float* vert_grid,
   	std::chrono::duration<double> time = end_ini - start_ini;
   	cout << "Total initialisation time: " << time.count() << " s" << endl;
 
-  	// Convert angles
-  	hori_acc = deg2rad(hori_acc);
-  	// cout << "Horizon accuracy: " << hori_acc << " rad" << endl;
-  	elev_ang_low_lim = deg2rad(elev_ang_low_lim);
-  	// cout << "Lower limit of elevation angle: " << elev_ang_low_lim
-  	//	<< " rad" << endl;
-  	elev_ang_up_lim = deg2rad(elev_ang_up_lim);
-  	// cout << "Upper limit of elevation angle: " << elev_ang_up_lim 
-  	//	<< " rad" << endl;
+  	// Unit conversions
+  	hori_acc = deg2rad(hori_acc);  // [rad]
+  	elev_ang_low_lim = deg2rad(elev_ang_low_lim);  // [rad]
+  	elev_ang_up_lim = deg2rad(elev_ang_up_lim);  // [rad]
+  	dist_search *= 1000.0;  // [m]
 
 	// Select algorithm for horizon detection
   	cout << "Horizon detection algorithm: ";
@@ -785,7 +788,7 @@ void horizon_comp(float* vert_grid,
   				
   					// Perform ray tracing
   					function_pointer(ray_org_x,  ray_org_y,  ray_org_z,
-  				 		azim_num, hori_acc,
+  				 		azim_num, hori_acc, dist_search,
   				 		elev_ang_low_lim, elev_ang_up_lim, elev_num,
   				 		scene, num_rays, dim_in_0, dim_in_1,
   				 		i, j, hori_buffer,
@@ -901,7 +904,7 @@ void horizon_comp(float* vert_grid,
   			
   						// Perform ray tracing
   						function_pointer(ray_org_x,  ray_org_y,  ray_org_z,
-  				 			azim_num, hori_acc,
+  				 			azim_num, hori_acc, dist_search,
   				 			elev_ang_low_lim, elev_ang_up_lim, elev_num,
   				 			scene, num_rays, dim_in_0, len_x,
   				 			i, j - block_ind[m], hori_buffer,

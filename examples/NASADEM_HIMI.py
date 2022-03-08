@@ -31,8 +31,8 @@ mpl.style.use("classic")
 # Paths to folders
 path_DEM = "/Users/csteger/Desktop/HIMI/"
 path_EGM96 = "/Users/csteger/Desktop/EGM96/"
-path_GSHHG = "/Users/csteger/Desktop/GSHHG/gshhg-shp-2.3.7/GSHHS_shp/f/"
-path_temp = "/Users/csteger/Desktop/Temp/"
+path_GSHHG = "/Users/csteger/Desktop/gshhg-shp-2.3.7/GSHHS_shp/f/"
+path_temp = "/Users/csteger/Desktop/temp/"
 path_out = "/Users/csteger/Desktop/output/"
 
 # Load required functions
@@ -52,7 +52,7 @@ from ocean_masking import coastline_distance, coastline_buffer
 # Settings
 loc = (-53.11, 73.55)  # centre location (latitude, longitude) [degree]
 width_in = 100.0  # width of considered domain [kilometre]
-dist_s = 20.0  # search distance for horizon [kilometre]
+dist_search = 20.0  # search distance for horizon [kilometre]
 ellps = "WGS84"  # Earth's surface approximation (sphere, GRS80 or WGS84)
 azim_num = 60  # number of azimuth sectors [-]
 hori_acc = 1.5  # accuracy of horizon computation [degree]
@@ -76,7 +76,7 @@ lat = np.linspace(-52.0, -54.0, dem.shape[0] + 1, dtype=np.float64)[:-1]
 lon = np.linspace(72.0, 75.0, dem.shape[1] + 1, dtype=np.float64)[:-1]
 
 # Crop DEM data
-dom = dem_domain_loc(loc, width_in, dist_s, ellps)
+dom = dem_domain_loc(loc, width_in, dist_search, ellps)
 sd = (slice(np.argmin(np.abs(dom["tot"]["lat_max"] - lat)),
             np.argmin(np.abs(dom["tot"]["lat_min"] - lat))),
       slice(np.argmin(np.abs(dom["tot"]["lon_min"] - lon)),
@@ -166,7 +166,8 @@ pts_ecef = np.hstack((coords[0], coords[1], coords[2]))
 block_size = 5 * 2 + 1
 mask_buffer = coastline_buffer(x_ecef[sd_in], y_ecef[sd_in], z_ecef[sd_in],
                                mask_land[sd_in], pts_ecef, lat[sd_in[0]],
-                               (dist_s * 1000.0), dem_res, ellps, block_size)
+                               (dist_search * 1000.0), dem_res, ellps,
+                               block_size)
 frac_ma = ((mask_buffer == 1).sum() / mask_buffer.size * 100.0)
 print("Fraction of masked grid cells %.2f" % frac_ma + " %")
 
@@ -195,7 +196,8 @@ horizon(vert_grid, dem_dim_0, dem_dim_1,
         y_axis_val=lat[sd_in[0]].astype(np.float32),
         x_axis_name="lon", y_axis_name="lat", units="degree",
         hori_buffer_size_max=4.5,
-        mask=mask, azim_num=azim_num, hori_acc=hori_acc)
+        mask=mask,
+        dist_search=dist_search, azim_num=azim_num, hori_acc=hori_acc)
 
 # Load horizon data
 ds = xr.open_dataset(file_hori)

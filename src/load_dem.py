@@ -11,7 +11,7 @@ from osgeo import gdal, osr
 
 ###############################################################################
 
-def dem_domain_loc(loc, width_in, dist_s=50.0, ellps="sphere"):
+def dem_domain_loc(loc, width_in, dist_search=50.0, ellps="sphere"):
     """Compute Digital Elevation model (DEM) domain.
 
     Computes required domain of Digital Elevation model (DEM) from location
@@ -24,7 +24,7 @@ def dem_domain_loc(loc, width_in, dist_s=50.0, ellps="sphere"):
     width_in : float
         Total x/y-width of inner domain for which horizon is computed
         [kilometre]
-    dist_s : float
+    dist_search : float
         Search distance for horizon [kilometre]
     ellps : str
         Earth's surface approximation (sphere, GRS80 or WGS84)
@@ -69,7 +69,7 @@ def dem_domain_loc(loc, width_in, dist_s=50.0, ellps="sphere"):
               "lat_max": geod.Direct(loc[0], loc[1], 0.0, width_h)["lat2"]}
 
     # Total domain
-    add_out = dist_s * 1000.0  # [m]
+    add_out = dist_search * 1000.0  # [m]
     lat_abs_max = max(abs(dom_in["lat_min"]), abs(dom_in["lat_max"]))
     rad_sph = a / np.sqrt(1 - e_2 * np.sin(np.deg2rad(lat_abs_max)) ** 2) \
         * np.cos(np.deg2rad(lat_abs_max))  # sphere radius [m]

@@ -22,7 +22,7 @@ from netCDF4 import Dataset
 
 # Paths to folders
 path_DEM = "/Users/csteger/Desktop/SwissALTI3D/"
-path_temp = "/Users/csteger/Desktop/Temp/"
+path_temp = "/Users/csteger/Desktop/temp/"
 path_out = "/Users/csteger/Desktop/output/"
 
 # Load required functions
@@ -45,6 +45,7 @@ hori_acc = np.array([0.15, 0.1], dtype=np.float32)
 # horizon accuracy due to algorithm and terrain simplification [degree]
 dem_res = 2.0  # resolution of DEM [degree]
 azim_num = 360  # number of azimuth sectors [-]
+dist_search = dom_len[1:].sum()  # search distance for horizon [kilometre]
 
 # Executables
 hmm_ex = "/Applications/hmm/hmm-master/hmm"  # path to 'hmm' executable
@@ -324,7 +325,7 @@ print("Triangle DEM: %.2f" % ((vert_simp.nbytes + tri_ind_simp.nbytes)
 horizon(vert_grid, dem_dim_0, dem_dim_1,
         vec_norm, vec_north,
         offset_0, offset_1,
-        azim_num=azim_num, hori_acc=hori_acc[0],
+        dist_search=dist_search, azim_num=azim_num, hori_acc=hori_acc[0],
         ray_algorithm="guess_constant", geom_type="grid",
         vert_simp=vert_simp, num_vert_simp=num_vert_simp,
         tri_ind_simp=tri_ind_simp, num_tri_simp=num_tri_simp,

@@ -57,7 +57,7 @@ def preprocess(ds):
 # Settings
 loc = (46.9, 9.0)  # centre location (latitude, longitude) [degree]
 width_in = 30.0  # width of considered domain [kilometre]
-dist_s = 50.0  # search distance for horizon [kilometre]
+dist_search = 50.0  # search distance for horizon [kilometre]
 ellps = "WGS84"  # Earth's surface approximation (sphere, GRS80 or WGS84)
 azim_num = 180  # number of azimuth sectors [-]
 files_dem = ("NASADEM_NC_n46e008.nc", "NASADEM_NC_n46e009.nc",
@@ -66,7 +66,7 @@ file_hori = path_out + "hori_NASADEM_Alps.nc"
 file_topo_par = path_out + "topo_par_NASADEM_Alps.nc"
 
 # Load DEM data
-dom = dem_domain_loc(loc, width_in, dist_s, ellps)
+dom = dem_domain_loc(loc, width_in, dist_search, ellps)
 ds = xr.open_mfdataset([path_DEM + i for i in files_dem],
                        preprocess=preprocess)
 ds = ds.sel(lon=slice(dom["tot"]["lon_min"], dom["tot"]["lon_max"]),
@@ -133,7 +133,7 @@ horizon(vert_grid, dem_dim_0, dem_dim_1,
         x_axis_val=lon[sd_in[1]].astype(np.float32),
         y_axis_val=lat[sd_in[0]].astype(np.float32),
         x_axis_name="lon", y_axis_name="lat", units="degree",
-        azim_num=azim_num)
+        dist_search=dist_search, azim_num=azim_num)
 
 # Load horizon data
 ds = xr.open_dataset(file_hori)

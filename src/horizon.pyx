@@ -11,7 +11,8 @@ cdef extern from "horizon_comp.h":
                       float* vec_norm, float* vec_north,
                       int offset_0, int offset_1,
                       float* hori_buffer,
-                      int dim_in_0, int dim_in_1, int azim_num,
+                      int dim_in_0, int dim_in_1,
+                      int azim_num, float dist_search,
                       float hori_acc, char* ray_algorithm, char* geom_type,
                       float* vert_simp, int num_vert_simp,
                       np.npy_int32* tri_ind_simp, int num_tri_simp,
@@ -19,6 +20,7 @@ cdef extern from "horizon_comp.h":
                       float* x_axis_val, float* y_axis_val,
                       char* x_axis_name, char* y_axis_name, char* units,
                       float hori_buffer_size_max,
+                      float elev_ang_low_lim,
                       np.npy_uint8* mask, float hori_fill)
 
 def horizon(np.ndarray[np.float32_t, ndim = 1] vert_grid,
@@ -30,6 +32,7 @@ def horizon(np.ndarray[np.float32_t, ndim = 1] vert_grid,
             np.ndarray[np.float32_t, ndim = 1] x_axis_val,
             np.ndarray[np.float32_t, ndim = 1] y_axis_val,
             str x_axis_name, str y_axis_name, str units,
+            float dist_search,
             int azim_num=360,
             float hori_acc=0.25,
             str ray_algorithm="guess_constant",
@@ -41,6 +44,7 @@ def horizon(np.ndarray[np.float32_t, ndim = 1] vert_grid,
             tri_ind_simp=np.array([0, 0, 0, 0], dtype=np.int32),
             int num_tri_simp=1,
             float hori_buffer_size_max=1.5,
+            float elev_ang_low_lim = -15.0,
             np.ndarray[np.uint8_t, ndim = 2] mask=None,
             float hori_fill=0.0):
     """Horizon computation.
@@ -78,6 +82,8 @@ def horizon(np.ndarray[np.float32_t, ndim = 1] vert_grid,
         Name of y-axis
     units: str
         Units of x- and y-axis
+    dist_search: float
+        Search distance for horizon [kilometre]
     azim_num : int
         Number of azimuth sectors
     hori_acc : float
@@ -97,6 +103,8 @@ def horizon(np.ndarray[np.float32_t, ndim = 1] vert_grid,
         Number of triangles
     hori_buffer_size_max : float
         Maximal size of horizon buffer [Gigabyte]
+    elev_ang_low_lim: float
+        Lower limit for elevation angle search [degree]
     mask : ndarray of uint8
         Array (two-dimensional) with locations for which horizon is computed
     hori_fill : float
@@ -191,7 +199,8 @@ def horizon(np.ndarray[np.float32_t, ndim = 1] vert_grid,
                  &vec_norm[0,0,0], &vec_north[0,0,0],
                  offset_0, offset_1,
                  &hori_buffer[0],
-                 vec_norm.shape[0], vec_norm.shape[1], azim_num,
+                 vec_norm.shape[0], vec_norm.shape[1],
+                 azim_num, dist_search,
                  hori_acc, ray_algorithm_c, geom_type_c,
                  &vert_simp[0], num_vert_simp,
                  &tri_ind_simp[0], num_tri_simp,
@@ -199,4 +208,5 @@ def horizon(np.ndarray[np.float32_t, ndim = 1] vert_grid,
                  &x_axis_val[0], &y_axis_val[0],
                  x_axis_name_c, y_axis_name_c, units_c,
                  hori_buffer_size_max,
+                 elev_ang_low_lim,
                  &mask[0,0], hori_fill)

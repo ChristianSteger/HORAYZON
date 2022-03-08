@@ -208,7 +208,7 @@ def coastline_distance(x_ecef, y_ecef, z_ecef, mask_land, pts_ecef):
 ###############################################################################
 
 def coastline_buffer(x_ecef, y_ecef, z_ecef, mask_land, pts_ecef, lat,
-                     dist_thr, res_dem, ellps, block_size=(5 * 2 + 1)):
+                     dist_thr, dem_res, ellps, block_size=(5 * 2 + 1)):
     """Compute mask according to coastline buffer.
 
     Compute mask according to coastline buffer. Grid cells, whose minimal
@@ -231,8 +231,8 @@ def coastline_buffer(x_ecef, y_ecef, z_ecef, mask_land, pts_ecef, lat,
         Array (1-dimensional) with geographic latitude [degree]
     dist_thr: double
         Threshold for minimal distance from coastline [metre]
-    res_dem: double
-        Spatial resolution of Digital Elevation Model [degree]
+    dem_res: double
+        Spatial resolution of digital elevation model [degree]
     ellps : str
         Earth's surface approximation (sphere, GRS80 or WGS84)
     block_size: int
@@ -260,10 +260,10 @@ def coastline_buffer(x_ecef, y_ecef, z_ecef, mask_land, pts_ecef, lat,
     # lat_ini = 0.0  # equator
     lat_ini = np.maximum(np.abs(lat).min() - 1.0, 0.0)
     lon_max = np.array([[0.0,
-                         0.0 + res_dem * int((block_size - 1) / 2)]],
+                         0.0 + dem_res * int((block_size - 1) / 2)]],
                        dtype=np.float64).reshape(1, 2)
     lat_max = np.array([[lat_ini,
-                         lat_ini + res_dem * int((block_size - 1) / 2)]],
+                         lat_ini + dem_res * int((block_size - 1) / 2)]],
                        dtype=np.float64).reshape(1, 2)
     h_max = np.zeros(lon_max.shape, dtype=np.float32)
     coord_ecef = functions_cy.lonlat2ecef(lon_max, lat_max, h_max, ellps=ellps)
