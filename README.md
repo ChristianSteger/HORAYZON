@@ -69,7 +69,7 @@ The usage of the packages is best illustrated by means of three examples, which 
 
 ## Sky view factor and related parameters
 
-The term sky view factor (SVF) is defined ambiguously. E.g. in Zaksek et al. (2011), the SVF referes simply to the visible sky fraction. In applications related to radiation, the SVF is however typically defined as the fraction of sky radiation received at a certain location in case of isotropic sky radiation (see e.g. Helbig et al., 2009)
+The term sky view factor (SVF) is defined ambiguously in literature. In Zaksek et al. (2011), the SVF referes to the solid angle of the (celestial) hemisphere, which corresponds to the visible sky fraction. We call this parameter *visible sky fraction* and its computation is performed with the function **functions_cy.visskyfrac()**. In applications related to radiation, the SVF is typically defined as the fraction of sky radiation received at a certain location in case of isotropic sky radiation (see e.g. Helbig et al., 2009). This parameter is called *sky view factor* in our application and its computation is performed with the function **functions_cy.skyviewfactor()**. 
 
 # Reference
 Link to Geoscientific Model Development [manuscript](https://www.geoscientific-model-development.net)
