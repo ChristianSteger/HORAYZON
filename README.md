@@ -1,7 +1,7 @@
 # HORAYZON
 
 # General Information
-Package to compute terrain parameters **horizon**, **sky view factor** and slope angle/aspect from high-resolution elevation data. Horizon computation is based on the high-performance ray-tracing library Intel&copy; Embree.
+Package to compute terrain parameters **horizon**, **sky view factor** and slope angle/aspect from high-resolution elevation data. Horizon computation is based on the high-performance ray-tracing library Intel&copy; Embree. A description of the algorithm is published in the journal of Geoscientific Model Development (Steger et al., 2022).
 
 # Dependencies
 
@@ -70,8 +70,11 @@ The usage of the packages is best illustrated by means of three examples, which 
 ## Sky view factor and related parameters
 The term sky view factor (SVF) is defined ambiguously in literature. In Zaksek et al. (2011), it referes to the solid angle of the (celestial) hemisphere. We call this parameter *visible sky fraction* and its computation is performed with the function **functions_cy.visskyfrac()**. In applications related to radiation, the SVF is typically defined as the fraction of sky radiation received at a certain location in case of isotropic sky radiation (see e.g. Helbig et al., 2009). This parameter is called *sky view factor* in our application and its computation is performed with the function **functions_cy.skyviewfactor()**. Additionally, the positive topographic openness (Yokoyama et al., 2002) can be computed with the function **functions_cy.topoopen()**. 
 
-# Reference
-Link to Geoscientific Model Development [manuscript](https://www.geoscientific-model-development.net)
+# References
+- Steger, Christian R., [manuscript](https://www.geoscientific-model-development.net)
+- Helbig, 
+- Yokoyama, 
+- Zaksek,
 
 # Support 
 In case of issues or questions, please contact Christian Steger (christian.steger@env.ethz.ch).
