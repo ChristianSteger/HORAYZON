@@ -44,9 +44,8 @@ def lonlat2ecef(double[:, :] lon, double[:, :] lat, float[:, :] h,
     z_ecef : ndarray of double
         Array (two-dimensional) with ECEF z-coordinates [metre]
 
-    Notes
-    -----
-    Sources:
+    Sources
+    -------
     - https://en.wikipedia.org/wiki/Geographic_coordinate_conversion
     - Geoid parameters r, a and f: PROJ"""
 
@@ -120,9 +119,8 @@ def lonlat2ecef_gc1d(double[:] lon, double[:] lat, float[:,:] h,
     z_ecef : ndarray of double
         Array (two-dimensional) with ECEF z-coordinates [metre]
 
-    Notes
-    -----
-    Sources:
+    Sources
+    -------
     - https://en.wikipedia.org/wiki/Geographic_coordinate_conversion
     - Geoid parameters r, a and f: PROJ"""
 
@@ -205,9 +203,8 @@ def ecef2enu(double[:, :] x_ecef, double[:, :] y_ecef, double[:, :] z_ecef,
     z_enu : ndarray of float
         Array (two-dimensional) with ENU z-coordinates [metre]
 
-    Notes
-    -----
-    Sources:
+    Sources
+    -------
     - https://en.wikipedia.org/wiki/Geographic_coordinate_conversion"""
 
     cdef int len_0 = x_ecef.shape[0]
@@ -264,9 +261,8 @@ def ecef2enu_vec(float[:, :, :] vec_ecef, double lon_or, double lat_or):
         Array (three-dimensional) with vectors in ENU coordinates
         (y, x, components) [metre]
 
-    Notes
-    -----
-    Sources:
+    Sources
+    -------
     - https://en.wikipedia.org/wiki/Geographic_coordinate_conversion"""
 
     cdef int len_0 = vec_ecef.shape[0]
@@ -322,9 +318,8 @@ def wgs2swiss(double[:, :] lon, double[:, :] lat, float[:, :] h_wgs):
     h_ch : ndarray of double
         Array (two-dimensional) with height [metre]
 
-    Notes
-    -----
-    Sources:
+    Sources
+    -------
     - Document 'Approximate formulas for the transformation between Swiss
       projection coordinates and- WGS84'"""
 
@@ -388,9 +383,8 @@ def swiss2wgs(double[:, :] e, double[:, :] n, float[:, :] h_ch):
     h_wgs : ndarray of float
         Array (two-dimensional) with elevation above ellipsoid [metre]
 
-    Notes
-    -----
-    Sources:
+    Sources
+    -------
     - Document 'Approximate formulas for the transformation between Swiss
       projection coordinates and- WGS84'"""
 
@@ -457,9 +451,9 @@ def surf_norm(double[:, :] lon, double[:, :] lat):
         Array (three-dimensional) with surface normal components in ECEF
         coordinates (y, x, components) [metre]
 
-    Notes
-    -----
-    Source: https://en.wikipedia.org/wiki/N-vector"""
+    Sources
+    -------
+    - https://en.wikipedia.org/wiki/N-vector"""
 
     cdef int len_0 = lon.shape[0]
     cdef int len_1 = lon.shape[1]
@@ -513,9 +507,9 @@ def north_dir(double[:, :] x_ecef, double[:, :] y_ecef, double[:, :] z_ecef,
         Array (three-dimensional) with north vector components in ECEF
         coordinates (y, x, components) [metre]
 
-    Notes
-    -----
-    Source: Geoid parameters r, a and f: PROJ"""
+    Sources
+    -------
+    - Geoid parameters r, a and f: PROJ"""
 
     cdef int len_0 = x_ecef.shape[0]
     cdef int len_1 = x_ecef.shape[1]
@@ -575,9 +569,13 @@ def north_dir(double[:, :] x_ecef, double[:, :] y_ecef, double[:, :] z_ecef,
 def slope_plane_meth(float[:, :] x, float[:, :] y, float[:, :] z,
                      float[:, :, :, :] rot_mat=np.empty((0, 0, 3, 3),
                                                         dtype=np.float32)):
-    """Slope computation.
+    """Plane-based slope computation.
 
     Compute surface slope of DEM from central and 8 neighbouring grid cells.
+    Plane-based method that computes the surface normal by fitting a plane
+    to the central and 8 neighbouring grid cells. The optimal fit is computed
+    by minimising the sum of the squared errors in the z-direction. The same
+    method is used in ArcGIS.
 
     Parameters
     ----------
@@ -598,13 +596,10 @@ def slope_plane_meth(float[:, :] x, float[:, :] y, float[:, :] z,
         Array (three-dimensional) with titled surface normal components
         (y, x, components) [metre]
 
-    Notes
-    -----
-    Plane-based method which computes the surface normal by fitting a plane
-    to the central and 8 neighbouring grid cells. The optimal fit is computed
-    by minimising the sum of the squared errors in the z-direction. The same
-    method is used in ArcGIS: https://pro.arcgis.com/en/pro-app/tool-reference/
-    spatial-analyst/how-slope-works.htm
+    Sources
+    -------
+    - ArcGIS: https://pro.arcgis.com/en/pro-app/tool-reference/spatial-analyst/
+              how-slope-works.htm
 
     To do
     -----
@@ -788,9 +783,11 @@ def slope_plane_meth(float[:, :] x, float[:, :] y, float[:, :] z,
 def slope_vector_meth(float[:, :] x, float[:, :] y, float[:, :] z,
                       float[:, :, :, :] rot_mat=np.empty((0, 0, 3, 3),
                                                          dtype=np.float32)):
-    """Slope computation.
+    """Vector-based slope computation.
 
     Compute surface slope of DEM from central and 4 neighbouring grid cells.
+    Vector-based method that averages the surface normals of the 4 adjacent
+    triangles. Concept based on Corripio (2003).
 
     Parameters
     ----------
@@ -811,12 +808,12 @@ def slope_vector_meth(float[:, :] x, float[:, :] y, float[:, :] z,
         Array (three-dimensional) with titled surface normal components
         (y, x, components) [metre]
 
-    Notes
-    -----
-    Vector-based method which averages the surface normals of the 4 adjacent
-    triangles. Concept based on Corripio et al. (2003): Vectorial algebra
-    algorithms for calculating terrain parameters from DEMs and solar
-    radiation modelling in mountainous terrain."""
+    References
+    ----------
+    - Javier G. Corripio (2003): Vectorial algebra algorithms for calculating
+      terrain parameters from DEMs and solar radiation modelling in mountainous
+      terrain, International Journal of Geographical Information Science,
+      17:1, 1-23."""
 
     cdef int len_0 = x.shape[0]
     cdef int len_1 = x.shape[1]
@@ -901,13 +898,15 @@ def slope_vector_meth(float[:, :] x, float[:, :] y, float[:, :] z,
 
 
 ###############################################################################
-# Sky View Factor
+# Sky view factor
 ###############################################################################
 
 def skyviewfactor(float[:] azim, float[:, :, :] hori, float[:, :, :] vec_tilt):
-    """Sky View Factor (SVF) computation.
+    """Sky view factor (SVF) computation.
 
-    Computes Sky View Factor in local horizontal coordinate system.
+    Compute sky view factor (SVF) in local horizontal coordinate system. The
+    SVF is defined as the fraction of sky radiation received at a certain
+    location in case of isotropic sky radiation.
 
     Parameters
     ----------
@@ -922,16 +921,14 @@ def skyviewfactor(float[:] azim, float[:, :, :] hori, float[:, :, :] vec_tilt):
     Returns
     -------
     svf : ndarray of float
-        Array (two-dimensional) with Sky View Factor [-]"""
+        Array (two-dimensional) with sky view factor [-]"""
 
     cdef int len_0 = hori.shape[0]
     cdef int len_1 = hori.shape[1]
     cdef int len_2 = hori.shape[2]
     cdef int i, j, k
     cdef float azim_spac
-    cdef float vec_east_enu_x, vec_east_enu_y, vec_east_enu_z
-    cdef float vec_loc_cs_x, vec_loc_cs_y, vec_loc_cs_z
-    cdef float agg, hori_plane, hori_zen, term
+    cdef float agg, hori_plane, hori_elev
     cdef float[:, :] svf = np.empty((len_1, len_2), dtype=np.float32)
     cdef float[:] azim_sin = np.empty(len_0, dtype=np.float32)
     cdef float[:] azim_cos = np.empty(len_0, dtype=np.float32)
@@ -942,12 +939,12 @@ def skyviewfactor(float[:] azim, float[:, :, :] hori, float[:, :, :] vec_tilt):
         azim_cos[i] = cos(azim[i])
     # -> these arrays can be shared between threads (read-only)
 
-    # Compute Sky View Factor
+    # Compute sky view factor
     azim_spac = (azim[1] - azim[0])
     for i in prange(len_1, nogil=True, schedule="static"):
         for j in range(len_2):
 
-            # Iterate over sky
+            # Iterate over azimuth directions
             agg = 0.0
             for k in range(len_0):
 
@@ -957,19 +954,137 @@ def skyviewfactor(float[:] azim, float[:, :, :] hori, float[:, :, :] vec_tilt):
                                   - azim_cos[k] * vec_tilt[i, j, 1]
                                   / vec_tilt[i, j, 2])
                 if hori[k, i, j] >= hori_plane:
-                    hori_zen = (M_PI / 2.0) - hori[k, i, j]
+                    hori_elev = hori[k, i, j]
                 else:
-                    hori_zen = (M_PI / 2.0) - hori_plane
+                    hori_elev =  hori_plane
 
                 # Compute inner integral
-                term = (hori_zen - sin(hori_zen) * cos(hori_zen))
-                agg = agg + (vec_tilt[i, j, 0] * azim_sin[k] * term
-                             + vec_tilt[i, j, 1] * azim_cos[k] * term
-                             + vec_tilt[i, j, 2] * sin(hori_zen) ** 2)
+                agg = agg + ((vec_tilt[i, j, 0] * azim_sin[k]
+                              + vec_tilt[i, j, 1] * azim_cos[k])
+                             * ((M_PI / 2.0) - hori_elev
+                                - (sin(2.0 * hori_elev) / 2.0))
+                             + vec_tilt[i, j, 2] * cos(hori_elev) ** 2)
 
-            svf[i, j] = (1.0 / (2.0 * M_PI)) * agg * azim_spac
+            svf[i, j] = (azim_spac / (2.0 * M_PI)) * agg
 
     return np.asarray(svf)
+
+
+###############################################################################
+# Visible sky fraction
+###############################################################################
+
+def visskyfrac(float[:] azim, float[:, :, :] hori, float[:, :, :] vec_tilt):
+    """Visible sky fraction (VSF) computation.
+
+    Compute visible sky fraction (VSF) in local horizontal coordinate system.
+    The visible sky fraction is defined as the solid angle of the visible sky.
+
+    Parameters
+    ----------
+    azim : ndarray of float
+        Array (one-dimensional) with azimuth [radian]
+    hori : ndarray of float
+        Array (three-dimensional) with horizon (azim, y, x) [radian]
+    vec_tilt : ndarray of float
+        Array (three-dimensional) with titled surface normal components
+        (y, x, components) [metre]
+
+    Returns
+    -------
+    vsf : ndarray of float
+        Array (two-dimensional) with Visible Sky Fraction [-]"""
+
+    cdef int len_0 = hori.shape[0]
+    cdef int len_1 = hori.shape[1]
+    cdef int len_2 = hori.shape[2]
+    cdef int i, j, k
+    cdef float azim_spac
+    cdef float agg, hori_plane, hori_elev
+    cdef float[:, :] vsf = np.empty((len_1, len_2), dtype=np.float32)
+    cdef float[:] azim_sin = np.empty(len_0, dtype=np.float32)
+    cdef float[:] azim_cos = np.empty(len_0, dtype=np.float32)
+
+    # Precompute values of trigonometric functions
+    for i in range(len_0):
+        azim_sin[i] = sin(azim[i])
+        azim_cos[i] = cos(azim[i])
+    # -> these arrays can be shared between threads (read-only)
+
+    # Compute visible sky fraction
+    azim_spac = (azim[1] - azim[0])
+    for i in prange(len_1, nogil=True, schedule="static"):
+        for j in range(len_2):
+
+            # Iterate over azimuth directions
+            agg = 0.0
+            for k in range(len_0):
+
+                # Compute plane-sphere intersection
+                hori_plane = atan(- azim_sin[k] * vec_tilt[i, j, 0]
+                                  / vec_tilt[i, j, 2]
+                                  - azim_cos[k] * vec_tilt[i, j, 1]
+                                  / vec_tilt[i, j, 2])
+                if hori[k, i, j] >= hori_plane:
+                    hori_elev = hori[k, i, j]
+                else:
+                    hori_elev = hori_plane
+
+                # Compute inner integral
+                agg = agg + (1.0 - cos((M_PI / 2.0) - hori_elev))
+
+            vsf[i, j] = (azim_spac / (2.0 * M_PI)) * agg
+
+    return np.asarray(vsf)
+
+
+###############################################################################
+# Topographic openness (positive)
+###############################################################################
+
+def topoopen(float[:] azim, float[:, :, :] hori):
+    """Topographic openness (positive) computation.
+
+    Compute positive topographic openness. The definition is based on
+    Yokoyama et al. (2002).
+
+    Parameters
+    ----------
+    azim : ndarray of float
+        Array (one-dimensional) with azimuth [radian]
+    hori : ndarray of float
+        Array (three-dimensional) with horizon (azim, y, x) [radian]
+
+    Returns
+    -------
+    top : ndarray of float
+        Array (two-dimensional) with positive topographic openness [radian]
+
+    References
+    ----------
+    - Yokoyama, R., Shirasawa, M., & Pike, R. J. (2002): Visualizing Topography
+      by Openness: A New Application of Image Processing to Digital Elevation
+      Models, Photogrammetric Engineering and Remote Sensing, 68, 257-265."""
+
+    cdef int len_0 = hori.shape[0]
+    cdef int len_1 = hori.shape[1]
+    cdef int len_2 = hori.shape[2]
+    cdef int i, j, k
+    cdef float agg
+    cdef float[:, :] top = np.empty((len_1, len_2), dtype=np.float32)
+
+    # Compute positive topographic openness
+    for i in prange(len_1, nogil=True, schedule="static"):
+        for j in range(len_2):
+
+            # Iterate over azimuth directions
+            agg = 0.0
+            for k in range(len_0):
+                agg = agg + (M_PI / 2.0) - hori[k, i, j]
+            top[i, j] = agg / float(len_0)
+
+    return np.asarray(top)
+
 
 ###############################################################################
 # Auxiliary functions
