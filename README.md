@@ -74,7 +74,7 @@ The term sky view factor (SVF) is defined ambiguously in literature. In Zaksek e
 - Steger, Christian R., [manuscript](https://www.geoscientific-model-development.net)
 - Helbig, 
 - Yokoyama, 
-- Zaksek,
+- Zakšek K, Oštir K, Kokalj Ž. Sky-View Factor as a Relief Visualization Technique. Remote Sensing. 2011; 3(2):398-415. https://doi.org/10.3390/rs3020398
 
 # Support 
 In case of issues or questions, please contact Christian Steger (christian.steger@env.ethz.ch).
