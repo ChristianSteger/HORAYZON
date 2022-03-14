@@ -307,7 +307,7 @@ void ray_discrete_sampling(float ray_org_x, float ray_org_y, float ray_org_z,
 
   		size_t ind_hori = lin_ind_3d(dim_in_0, dim_in_1, k, i, j);
   		hori_buffer[ind_hori] = (elev_ang[ind_elev_prev]
-  			+ elev_ang[ind_elev]) / 2.0;  // radian
+  			+ elev_ang[ind_elev]) / 2.0;  // [radian]
 
   	}
 }
@@ -357,7 +357,7 @@ void ray_binary_search(float ray_org_x, float ray_org_y, float ray_org_z,
   		}
 
   		size_t ind_hori = lin_ind_3d(dim_in_0, dim_in_1, k, i, j);
-  		hori_buffer[ind_hori] = elev_samp;  // radian
+  		hori_buffer[ind_hori] = elev_samp;  // [radian]
 
   	}
 
@@ -410,7 +410,7 @@ void ray_guess_const(float ray_org_x, float ray_org_y, float ray_org_z,
   	}
 
   	size_t ind_hori = lin_ind_3d(dim_in_0, dim_in_1, 0, i, j);
-  	hori_buffer[ind_hori] = elev_samp;  // radian
+  	hori_buffer[ind_hori] = elev_samp;  // [radian]
   	int ind_elev_prev_azim = ind_elev;
 
 	// ------------------------------------------------------------------------
@@ -448,7 +448,7 @@ void ray_guess_const(float ray_org_x, float ray_org_y, float ray_org_z,
   			elev_samp = (elev_ang[ind_elev_prev] + elev_ang[ind_elev]) / 2.0;
   			ind_elev = ((int)roundf((elev_samp - elev_ang_low_lim)
   				/ (hori_acc / 5.0)));
-  			hori_buffer[ind_hori] = elev_ang[ind_elev];  // radian
+  			hori_buffer[ind_hori] = elev_ang[ind_elev];  // [radian]
   			ind_elev_prev_azim = ind_elev;
   			continue;
 		
@@ -477,7 +477,7 @@ void ray_guess_const(float ray_org_x, float ray_org_y, float ray_org_z,
   		elev_samp = (elev_ang[ind_elev_prev] + elev_ang[ind_elev]) / 2.0;
   		ind_elev = ((int)roundf((elev_samp - elev_ang_low_lim)
   			/ (hori_acc / 5.0)));
-  		hori_buffer[ind_hori] = elev_ang[ind_elev];  // radian
+  		hori_buffer[ind_hori] = elev_ang[ind_elev];  // [radian]
   		ind_elev_prev_azim = ind_elev;
 			
 	}
@@ -504,7 +504,7 @@ void (*function_pointer)(float ray_org_x, float ray_org_y, float ray_org_z,
 // NetCDF4 interface
 //-----------------------------------------------------------------------------
 
-void output_netcdf(float* hori_buffer, float azim_shift, int azim_num,
+void output_netcdf(float* hori_buffer, int azim_num,
 	size_t in_dim_len_0, size_t in_dim_len_1, char* file_out,
 	float* x_axis_val, float* y_axis_val, char* x_axis_name, char* y_axis_name,
 	char* units) {
@@ -512,7 +512,7 @@ void output_netcdf(float* hori_buffer, float azim_shift, int azim_num,
   	// Compute azimuth angles
   	float *azim_ang = new float[azim_num];
     for (int i = 0; i < azim_num; i++) {
-    	azim_ang[i] = ((2 * M_PI) / azim_num * i) + azim_shift;
+    	azim_ang[i] = ((2 * M_PI) / azim_num * i);
     }
   	
  	int n_azim = azim_num;
@@ -531,7 +531,7 @@ void output_netcdf(float* hori_buffer, float azim_shift, int azim_num,
 		dims_azim.push_back(dim_azim);
 		NcVar data_azim = dataFile.addVar("azim", ncFloat, dims_azim);
 		data_azim.putVar(azim_ang);
-		data_azim.putAtt("units", "rad");
+		data_azim.putAtt("units", "radian");
 
 		vector<NcDim> dims_x;
 		dims_x.push_back(dim_x);
@@ -551,7 +551,7 @@ void output_netcdf(float* hori_buffer, float azim_shift, int azim_num,
 		dims_data.push_back(dim_x);
 		NcVar data = dataFile.addVar("horizon", ncFloat, dims_data);
 		data.putVar(hori_buffer);
-		data.putAtt("units", "rad");
+		data.putAtt("units", "radian");
 
     }
 	catch(NcException& e)
@@ -567,7 +567,7 @@ void output_netcdf(float* hori_buffer, float azim_shift, int azim_num,
 // NetCDF3 interface (legacy)
 //-----------------------------------------------------------------------------
 
-// void output_netcdf(float* hori_buffer, float azim_shift, int azim_num,
+// void output_netcdf(float* hori_buffer, int azim_num,
 // 	size_t in_dim_len_0, size_t in_dim_len_1, char* file_out,
 // 	float* x_axis_val, float* y_axis_val, char* x_axis_name, char* y_axis_name,
 // 	char* units) {
@@ -575,7 +575,7 @@ void output_netcdf(float* hori_buffer, float azim_shift, int azim_num,
 //   	// Compute azimuth angles
 //   	float *azim_ang = new float[azim_num];
 //     for (int i = 0; i < azim_num; i++) {
-//     	azim_ang[i] = ((2 * M_PI) / azim_num * i) + azim_shift;
+//     	azim_ang[i] = ((2 * M_PI) / azim_num * i);
 //     }
 //   	
 //  	int n_azim = azim_num;
@@ -593,7 +593,7 @@ void output_netcdf(float* hori_buffer, float azim_shift, int azim_num,
 // 
 //     	NcVar *data_azim = dataFile.add_var("azim", ncFloat, dim_azim);
 //     	data_azim->put(&azim_ang[0], n_azim);
-//     	data_azim->add_att("units", "rad");
+//     	data_azim->add_att("units", "radian");
 //     	NcVar *data_x = dataFile.add_var(x_axis_name, ncFloat, dim_x);
 //     	data_x->put(&x_axis_val[0], n_x);
 //     	data_x->add_att("units", units);
@@ -604,7 +604,7 @@ void output_netcdf(float* hori_buffer, float azim_shift, int azim_num,
 //     	NcVar *data = dataFile.add_var("horizon", ncFloat, dim_azim,
 //     		dim_y, dim_x);
 //     	data->put(&hori_buffer[0], n_azim, n_y, n_x);
-//     	data->add_att("units", "rad");
+//     	data->add_att("units", "radian");
 // 
 //     }
 //      		
@@ -631,18 +631,14 @@ void horizon_comp(float* vert_grid,
     char* x_axis_name, char* y_axis_name, char* units,
     float hori_buffer_size_max,
     float elev_ang_low_lim,
-    uint8_t* mask, float hori_fill) {
+    uint8_t* mask, float hori_fill, float ray_org_elev) {
 
 	cout << "--------------------------------------------------------" << endl;
 	cout << "Horizon computation with Intel Embree" << endl;
 	cout << "--------------------------------------------------------" << endl;
 
-	// Settings (hard-coded)
-  	float org_add = 0.01; // vertical distance added to ray origin [m]
-  	// -> value must be large enough to modify 32bit float!
-  	// float azim_shift = ((2 * M_PI) / azim_num) / 2.0;  // shift from 0.0
-  	float azim_shift = 0.0;
-  	float elev_ang_up_lim = 89.98;  // upper limit for elevation angle [deg]
+	// Hard-coded settings
+  	float elev_ang_up_lim = 89.98;  // upper limit for elevation angle [degree]
   
   	// Initialization
   	auto start_ini = std::chrono::high_resolution_clock::now();
@@ -661,10 +657,10 @@ void horizon_comp(float* vert_grid,
   	cout << "Total initialisation time: " << time.count() << " s" << endl;
 
   	// Unit conversions
-  	hori_acc = deg2rad(hori_acc);  // [rad]
-  	elev_ang_low_lim = deg2rad(elev_ang_low_lim);  // [rad]
-  	elev_ang_up_lim = deg2rad(elev_ang_up_lim);  // [rad]
-  	dist_search *= 1000.0;  // [m]
+  	hori_acc = deg2rad(hori_acc);
+  	elev_ang_low_lim = deg2rad(elev_ang_low_lim);
+  	elev_ang_up_lim = deg2rad(elev_ang_up_lim);
+  	dist_search *= 1000.0;  // [kilometre] -> [metre]
 
 	// Select algorithm for horizon detection
   	cout << "Horizon detection algorithm: ";
@@ -709,7 +705,7 @@ void horizon_comp(float* vert_grid,
     float azim_cos[azim_num];
     float ang;
     for (int i = 0; i < azim_num; i++) {
-    	ang = ((2 * M_PI) / azim_num * i) + azim_shift;
+    	ang = ((2 * M_PI) / azim_num * i);
     	azim_sin[i] = sin(ang);
     	azim_cos[i] = cos(ang);
     }
@@ -726,10 +722,6 @@ void horizon_comp(float* vert_grid,
     	elev_sin[elev_num - i - 1] = sin(ang);
     	elev_cos[elev_num - i - 1] = cos(ang);
     }
-    // cout << "Number of elements in elev_num: " << elev_num << endl;
-    // cout << "First, second and last elev_ang elements: "
-    // << rad2deg(elev_ang[0]) << ", " << rad2deg(elev_ang[1]) << ", "
-    // << rad2deg(elev_ang[elev_num - 1]) << " deg" << endl;
   	
     // ------------------------------------------------------------------------
   	// Compute and save horizon in one iteration
@@ -771,11 +763,11 @@ void horizon_comp(float* vert_grid,
   					size_t ind_2d = lin_ind_2d(dem_dim_1, i + offset_0,
   						j + offset_1);
   					float ray_org_x = vert_grid[ind_2d * 3 + 0] 
-  						+ norm_x * org_add;
+  						+ norm_x * ray_org_elev;
   					float ray_org_y = vert_grid[ind_2d * 3 + 1] 
-  						+ norm_y * org_add;
+  						+ norm_y * ray_org_elev;
   					float ray_org_z = vert_grid[ind_2d * 3 + 2] 
-  						+ norm_z * org_add;
+  						+ norm_z * ray_org_elev;
   				
   					// Compute inverse of rotation matrix
   					float east_x, east_y, east_z;
@@ -799,7 +791,7 @@ void horizon_comp(float* vert_grid,
   					for (int k = 0; k < azim_num; k++) {
   						size_t ind_hori = lin_ind_3d(dim_in_0, dim_in_1,
   							k, i, j);
-  						hori_buffer[ind_hori] = hori_fill;  // radian
+  						hori_buffer[ind_hori] = hori_fill;  // [radian]
   					}
   				 }
     	
@@ -816,7 +808,7 @@ void horizon_comp(float* vert_grid,
 
   		// Save horizon to NetCDF file
     	auto start_out = std::chrono::high_resolution_clock::now();
-    	output_netcdf(hori_buffer, azim_shift, azim_num,
+    	output_netcdf(hori_buffer, azim_num,
     		dim_in_0, dim_in_1, file_out, x_axis_val, y_axis_val,
     		x_axis_name, y_axis_name, units);
   		auto end_out = std::chrono::high_resolution_clock::now();
@@ -887,11 +879,11 @@ void horizon_comp(float* vert_grid,
   						size_t ind_2d = lin_ind_2d(dem_dim_1, i + offset_0,
   							j + offset_1);
   						float ray_org_x = (vert_grid[ind_2d * 3 + 0]
-  							+ norm_x * org_add);
+  							+ norm_x * ray_org_elev);
   						float ray_org_y = (vert_grid[ind_2d * 3 + 1]
-  							+ norm_y * org_add);
+  							+ norm_y * ray_org_elev);
   						float ray_org_z = (vert_grid[ind_2d * 3 + 2]
-  							+ norm_z * org_add);
+  							+ norm_z * ray_org_elev);
   						
   						// Compute inverse of rotation matrix
   						float east_x, east_y, east_z;
@@ -915,7 +907,7 @@ void horizon_comp(float* vert_grid,
   						for (int k = 0; k < azim_num; k++) {
   							size_t ind_hori = lin_ind_3d(dim_in_0, len_x,
   								k, i, j - block_ind[m]);
-  							hori_buffer[ind_hori] = hori_fill;  // radian
+  							hori_buffer[ind_hori] = hori_fill;  // [radian]
   						}
   				 	}
     	
@@ -943,7 +935,7 @@ void horizon_comp(float* vert_grid,
   			strcpy(file_out_iter_c, file_out_iter.c_str() );
   	  		
   	  		// Save horizon to NetCDF file
-    		output_netcdf(hori_buffer, azim_shift, azim_num, dim_in_0, len_x,
+    		output_netcdf(hori_buffer, azim_num, dim_in_0, len_x,
     			file_out_iter_c, &x_axis_val[block_ind[m]], y_axis_val,
     			x_axis_name, y_axis_name, units);
     		

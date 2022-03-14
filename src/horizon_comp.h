@@ -19,6 +19,7 @@ void horizon_comp(float* vert_grid,
     char* x_axis_name, char* y_axis_name, char* units,
     float hori_buffer_size_max,
     float elev_ang_low_lim,
-    uint8_t* mask, float hori_fill);
+    uint8_t* mask, float hori_fill,
+    float ray_org_elev);
 
 #endif

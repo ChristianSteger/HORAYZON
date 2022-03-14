@@ -21,7 +21,8 @@ cdef extern from "horizon_comp.h":
                       char* x_axis_name, char* y_axis_name, char* units,
                       float hori_buffer_size_max,
                       float elev_ang_low_lim,
-                      np.npy_uint8* mask, float hori_fill)
+                      np.npy_uint8* mask, float hori_fill,
+                      float ray_org_elev)
 
 def horizon(np.ndarray[np.float32_t, ndim = 1] vert_grid,
 			int dem_dim_0, int dem_dim_1,
@@ -46,7 +47,8 @@ def horizon(np.ndarray[np.float32_t, ndim = 1] vert_grid,
             float hori_buffer_size_max=1.5,
             float elev_ang_low_lim = -15.0,
             np.ndarray[np.uint8_t, ndim = 2] mask=None,
-            float hori_fill=0.0):
+            float hori_fill=0.0,
+            float ray_org_elev=0.01):
     """Horizon computation.
 
     Computes horizon from a Digital Elevation Model (DEM) with Intel Embree
@@ -108,7 +110,9 @@ def horizon(np.ndarray[np.float32_t, ndim = 1] vert_grid,
     mask : ndarray of uint8
         Array (two-dimensional) with locations for which horizon is computed
     hori_fill : float
-        Horizon fill values for masked locations"""
+        Horizon fill values for masked locations
+    ray_org_elev: float
+        Vertical elevation of ray origin [metre]"""
 
 	# Check consistency and validity of input arguments
     if len(vert_grid) < (dem_dim_0 * dem_dim_1 * 3):
@@ -153,6 +157,8 @@ def horizon(np.ndarray[np.float32_t, ndim = 1] vert_grid,
         raise ValueError("shape of mask is inconsistent with other input")
     if mask.dtype != "uint8":
         raise TypeError("data type of mask must be 'uint8'")
+    if ray_org_elev < 0.005:
+        raise TypeError("minimal allowed value for 'ray_org_elev' is 0.005 m")
 
     # Check size of input geometries
     if (dem_dim_0 > 32767) or (dem_dim_1 > 32767):
@@ -209,4 +215,5 @@ def horizon(np.ndarray[np.float32_t, ndim = 1] vert_grid,
                  x_axis_name_c, y_axis_name_c, units_c,
                  hori_buffer_size_max,
                  elev_ang_low_lim,
-                 &mask[0,0], hori_fill)
+                 &mask[0,0], hori_fill,
+                 ray_org_elev)
