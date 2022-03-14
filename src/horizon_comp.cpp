@@ -613,10 +613,10 @@ void output_netcdf(float* hori_buffer, int azim_num,
 // }
 
 //#############################################################################
-// Main function
+// Compute horizon for entire grid
 //#############################################################################
 
-void horizon_comp(float* vert_grid,
+void horizon_gridall_comp(float* vert_grid,
 	int dem_dim_0, int dem_dim_1,
 	float* vec_norm, float* vec_north,
 	int offset_0, int offset_1,
@@ -631,7 +631,8 @@ void horizon_comp(float* vert_grid,
     char* x_axis_name, char* y_axis_name, char* units,
     float hori_buffer_size_max,
     float elev_ang_low_lim,
-    uint8_t* mask, float hori_fill, float ray_org_elev) {
+    uint8_t* mask, float hori_fill,
+    float ray_org_elev) {
 
 	cout << "--------------------------------------------------------" << endl;
 	cout << "Horizon computation with Intel Embree" << endl;
@@ -958,6 +959,203 @@ void horizon_comp(float* vert_grid,
   	// Print number of rays needed for location and azimuth direction
   	cout << "Number of rays shot: " << num_rays << endl;	
   	float ratio = (float)num_rays / (float)(num_gc * azim_num);
+  	printf("Average number of rays per location and azimuth: %.2f \n", ratio);
+
+  	// Release resources allocated through Embree
+  	rtcReleaseScene(scene);
+  	rtcReleaseDevice(device);
+
+  	auto end_tot = std::chrono::high_resolution_clock::now();
+  	time = end_tot - start_ini;
+  	cout << "Total run time: " << time.count() << " s" << endl;
+
+	cout << "--------------------------------------------------------" << endl;
+ 
+}
+
+//#############################################################################
+// Compute horizon for individual grid cells
+//#############################################################################
+
+void horizon_gridind_comp(float* vert_grid,
+	int dem_dim_0, int dem_dim_1,
+	float* vec_norm, float* vec_north,
+	int offset_0, int offset_1,
+	float* hori_buffer,
+	int dim_in_0, int dim_in_1,
+	int azim_num, float dist_search,
+	float hori_acc, char* ray_algorithm, char* geom_type,
+	float* vert_simp, int num_vert_simp,
+	int* tri_ind_simp, int num_tri_simp,
+    char* file_out,
+    float* x_axis_val, float* y_axis_val,
+    char* x_axis_name, char* y_axis_name, char* units,
+    float elev_ang_low_lim,
+    float ray_org_elev) {
+
+	cout << "--------------------------------------------------------" << endl;
+	cout << "Horizon computation with Intel Embree" << endl;
+	cout << "--------------------------------------------------------" << endl;
+
+	// Hard-coded settings
+  	float elev_ang_up_lim = 89.98;  // upper limit for elevation angle [degree]
+  
+  	// Initialization
+  	auto start_ini = std::chrono::high_resolution_clock::now();
+
+  	RTCDevice device = initializeDevice();
+  	RTCScene scene = initializeScene(device, vert_grid, dem_dim_0, dem_dim_1,
+  		geom_type, vert_simp, num_vert_simp, tri_ind_simp, num_tri_simp);
+
+  	// Query properties of device
+  	// bool cullingEnabled = rtcGetDeviceProperty(device,
+  	//	RTC_DEVICE_PROPERTY_BACKFACE_CULLING_ENABLED);
+  	// cout << "Backface culling enabled: " << cullingEnabled << endl;
+
+  	auto end_ini = std::chrono::high_resolution_clock::now();
+  	std::chrono::duration<double> time = end_ini - start_ini;
+  	cout << "Total initialisation time: " << time.count() << " s" << endl;
+
+  	// Unit conversions
+  	hori_acc = deg2rad(hori_acc);
+  	elev_ang_low_lim = deg2rad(elev_ang_low_lim);
+  	elev_ang_up_lim = deg2rad(elev_ang_up_lim);
+  	dist_search *= 1000.0;  // [kilometre] -> [metre]
+
+	// Select algorithm for horizon detection
+  	cout << "Horizon detection algorithm: ";
+  	if (strcmp(ray_algorithm, "discrete_sampling") == 0) {
+    	cout << "discrete_sampling" << endl;		
+  		function_pointer = ray_discrete_sampling;
+  	} else if (strcmp(ray_algorithm, "binary_search") == 0) {
+    	cout << "binary search" << endl;
+    	function_pointer = ray_binary_search;
+  	} else if (strcmp(ray_algorithm, "guess_constant") == 0) {
+    	cout << "guess horizon from previous azimuth direction" << endl;
+    	function_pointer = ray_guess_const;
+	}
+
+  	int num_gc_tot = (dim_in_0 * dim_in_1);
+  	printf("Number of grid cells for which horizon is computed: %d \n",
+  		num_gc_tot);
+
+	float hori_buffer_size = (((float)dim_in_0 * (float)dim_in_1
+		* (float)azim_num * 4.0) / pow(10.0, 9.0));
+	cout << "Total memory required for horizon output: " 
+		<< hori_buffer_size << " GB" << endl;
+
+	size_t num_rays = 0;
+  	std::chrono::duration<double> time_ray = std::chrono::seconds(0);
+  	std::chrono::duration<double> time_out = std::chrono::seconds(0);
+  	
+    // ------------------------------------------------------------------------
+  	// Allocate and initialise arrays with evaluated trigonometric functions
+    // ------------------------------------------------------------------------ 
+    
+    // Azimuth angles (allocate on stack)
+    float azim_sin[azim_num];
+    float azim_cos[azim_num];
+    float ang;
+    for (int i = 0; i < azim_num; i++) {
+    	ang = ((2 * M_PI) / azim_num * i);
+    	azim_sin[i] = sin(ang);
+    	azim_cos[i] = cos(ang);
+    }
+    
+    // Elevation angles (allocate on stack)
+    int elev_num = ((int)ceil((elev_ang_up_lim - elev_ang_low_lim)
+    	/ (hori_acc / 5.0)) + 1);
+    float elev_ang[elev_num];
+    float elev_sin[elev_num];
+    float elev_cos[elev_num];	
+    for (int i = 0; i < elev_num; i++) {
+    	ang = elev_ang_up_lim - (hori_acc / 5.0) * i;
+    	elev_ang[elev_num - i - 1] = ang;
+    	elev_sin[elev_num - i - 1] = sin(ang);
+    	elev_cos[elev_num - i - 1] = cos(ang);
+    }
+  	
+    // --------------------------------------------------------------------
+  	// Perform ray tracing
+    // --------------------------------------------------------------------
+
+  	auto start_ray = std::chrono::high_resolution_clock::now();
+    
+	num_rays += tbb::parallel_reduce(
+		tbb::blocked_range<size_t>(0,dim_in_0), 0.0,
+		[&](tbb::blocked_range<size_t> r, size_t num_rays) {  // parallel
+
+	//for (size_t i = 0; i < dim_in_0; i++) {  // serial
+	for (size_t i=r.begin(); i<r.end(); ++i) {  // parallel
+  		for (size_t j = 0; j < (size_t)dim_in_1; j++) {
+
+			// Get vector components
+    		size_t ind_vec = lin_ind_2d(dim_in_1, i, j) * 3;
+  			float norm_x = vec_norm[ind_vec];
+  			float north_x = vec_north[ind_vec];
+  			ind_vec += 1;
+  			float norm_y = vec_norm[ind_vec];
+  			float north_y = vec_north[ind_vec];
+  			ind_vec += 1;
+  			float norm_z = vec_norm[ind_vec];
+  			float north_z = vec_north[ind_vec];
+  		
+  			// Ray origin
+  			size_t ind_2d = lin_ind_2d(dem_dim_1, i + offset_0,
+  				j + offset_1);
+  			float ray_org_x = vert_grid[ind_2d * 3 + 0] 
+  				+ norm_x * ray_org_elev;
+  			float ray_org_y = vert_grid[ind_2d * 3 + 1] 
+  				+ norm_y * ray_org_elev;
+  			float ray_org_z = vert_grid[ind_2d * 3 + 2] 
+  				+ norm_z * ray_org_elev;
+  				
+  			// Compute inverse of rotation matrix
+  			float east_x, east_y, east_z;
+			cross_prod(north_x, north_y, north_z,
+					   norm_x, norm_y, norm_z,
+					   east_x, east_y, east_z);		
+			float rot_inv[3][3] = {{east_x, north_x, norm_x},
+			  					   {east_y, north_y, norm_y},
+								   {east_z, north_z, norm_z}};
+  				
+  			// Perform ray tracing
+  			function_pointer(ray_org_x,  ray_org_y,  ray_org_z,
+  				 azim_num, hori_acc, dist_search,
+  				 elev_ang_low_lim, elev_ang_up_lim, elev_num,
+  				 scene, num_rays, dim_in_0, dim_in_1,
+  				 i, j, hori_buffer,
+  				 azim_sin, azim_cos, elev_ang,
+  				 elev_cos, elev_sin, rot_inv);
+
+  			}
+  		}
+  	
+  		return num_rays;  // parallel
+  		}, std::plus<size_t>());  // parallel
+    
+  		auto end_ray = std::chrono::high_resolution_clock::now();
+  		time_ray += (end_ray - start_ray);
+  		
+    	// --------------------------------------------------------------------
+
+  	// Save horizon to NetCDF file
+    auto start_out = std::chrono::high_resolution_clock::now();
+    output_netcdf(hori_buffer, azim_num,
+    	dim_in_0, dim_in_1, file_out, x_axis_val, y_axis_val,
+    	x_axis_name, y_axis_name, units);
+  	auto end_out = std::chrono::high_resolution_clock::now();
+  	time_out += (end_out - start_out);
+
+  	
+    // ------------------------------------------------------------------------
+    
+    cout << "Ray tracing time: " << time_ray.count() << " s" << endl;
+  	cout << "Writing to NetCDF file: " << time_out.count() << " s" << endl;
+    
+  	// Print number of rays needed for location and azimuth direction
+  	cout << "Number of rays shot: " << num_rays << endl;	
+  	float ratio = (float)num_rays / (float)(num_gc_tot * azim_num);
   	printf("Average number of rays per location and azimuth: %.2f \n", ratio);
 
   	// Release resources allocated through Embree
