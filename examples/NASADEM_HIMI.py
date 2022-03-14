@@ -1,7 +1,7 @@
-# Description: Compute topographic parameters (slope angle and aspect, horizon
-#              and Sky View Factor) from NASADEM (~30 m) for the example region
-#              'Heard Island and McDonald Islands' and mask ocean grid cells
-#              that have a certain minimal distance to land
+# Description: Compute gridded topographic parameters (slope angle and aspect,
+#              horizon and sky view factor) from NASADEM (~30 m) for the
+#              example region 'Heard Island and McDonald Islands' and mask
+#              ocean grid cells that have a certain minimal distance to land
 #
 # Required input data:
 #   - NASADEM: https://search.earthdata.nasa.gov/
@@ -37,7 +37,7 @@ path_out = "/Users/csteger/Desktop/output/"
 
 # Load required functions
 sys.path.append("/Users/csteger/Desktop/lib/")
-from horizon import horizon
+from horizon import horizon_gridded
 import functions_cy
 from auxiliary import pad_geometry_buffer
 from load_dem import dem_domain_loc
@@ -188,16 +188,16 @@ mask[(mask_type == -1)] = 0  # mask area outside of buffer
 # -----------------------------------------------------------------------------
 
 # Compute horizon
-horizon(vert_grid, dem_dim_0, dem_dim_1,
-        vec_norm_enu, vec_north_enu,
-        offset_0, offset_1,
-        file_out=file_hori,
-        x_axis_val=lon[sd_in[1]].astype(np.float32),
-        y_axis_val=lat[sd_in[0]].astype(np.float32),
-        x_axis_name="lon", y_axis_name="lat", units="degree",
-        hori_buffer_size_max=4.5,
-        mask=mask,
-        dist_search=dist_search, azim_num=azim_num, hori_acc=hori_acc)
+horizon_gridded(vert_grid, dem_dim_0, dem_dim_1,
+                vec_norm_enu, vec_north_enu,
+                offset_0, offset_1,
+                file_out=file_hori,
+                x_axis_val=lon[sd_in[1]].astype(np.float32),
+                y_axis_val=lat[sd_in[0]].astype(np.float32),
+                x_axis_name="lon", y_axis_name="lat", units="degree",
+                hori_buffer_size_max=4.5,
+                mask=mask,
+                dist_search=dist_search, azim_num=azim_num, hori_acc=hori_acc)
 
 # Load horizon data
 ds = xr.open_dataset(file_hori)

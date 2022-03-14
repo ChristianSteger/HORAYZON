@@ -6,11 +6,11 @@ import numpy as np
 import os
 
 ###############################################################################
-# Compute horizon for entire grid
+# Compute horizon for gridded domain
 ###############################################################################
 
 cdef extern from "horizon_comp.h":
-    void horizon_gridall_comp(
+    void horizon_gridded_comp(
             float* vert_grid,
             int dem_dim_0, int dem_dim_1,
             float* vec_norm, float* vec_north,
@@ -29,7 +29,7 @@ cdef extern from "horizon_comp.h":
             np.npy_uint8* mask, float hori_fill,
             float ray_org_elev)
 
-def horizon_gridall(
+def horizon_gridded(
         np.ndarray[np.float32_t, ndim = 1] vert_grid,
         int dem_dim_0, int dem_dim_1,
         np.ndarray[np.float32_t, ndim = 3] vec_norm,
@@ -55,7 +55,7 @@ def horizon_gridall(
         np.ndarray[np.uint8_t, ndim = 2] mask=None,
         float hori_fill=0.0,
         float ray_org_elev=0.01):
-    """Horizon computation.
+    """Horizon computation for gridded domain.
 
     Computes horizon from a Digital Elevation Model (DEM) with Intel Embree
     high performance ray tracing kernels.
@@ -206,7 +206,7 @@ def horizon_gridall(
         hori_buffer = np.empty(hori_buffer_len,  dtype=np.float32)
     hori_buffer.fill(np.nan)  # [rad]
 
-    horizon_gridall_comp(
+    horizon_gridded_comp(
         &vert_grid[0],
         dem_dim_0, dem_dim_1,
         &vec_norm[0,0,0], &vec_north[0,0,0],
@@ -230,7 +230,7 @@ def horizon_gridall(
 ###############################################################################
 
 cdef extern from "horizon_comp.h":
-    void horizon_gridind_comp(
+    void horizon_gridcells_comp(
             float* vert_grid,
             int dem_dim_0, int dem_dim_1,
             float* vec_norm, float* vec_north,
@@ -247,7 +247,7 @@ cdef extern from "horizon_comp.h":
             float elev_ang_low_lim,
             float ray_org_elev)
 
-def horizon_gridind(
+def horizon_gridcells(
         np.ndarray[np.float32_t, ndim = 1] vert_grid,
         int dem_dim_0, int dem_dim_1,
         np.ndarray[np.float32_t, ndim = 3] vec_norm,
@@ -270,7 +270,7 @@ def horizon_gridind(
         int num_tri_simp=1,
         float elev_ang_low_lim = -15.0,
         float ray_org_elev=0.01):
-    """Horizon computation.
+    """Horizon computation for individual grid cells.
 
     Computes horizon from a Digital Elevation Model (DEM) with Intel Embree
     high performance ray tracing kernels.
@@ -401,7 +401,7 @@ def horizon_gridind(
         hori_buffer = np.empty(hori_buffer_len,  dtype=np.float32)
     hori_buffer.fill(np.nan)  # [rad]
 
-    horizon_gridind_comp(
+    horizon_gridcells_comp(
         &vert_grid[0],
         dem_dim_0, dem_dim_1,
         &vec_norm[0,0,0], &vec_north[0,0,0],

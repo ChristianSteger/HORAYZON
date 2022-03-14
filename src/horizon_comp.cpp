@@ -613,10 +613,10 @@ void output_netcdf(float* hori_buffer, int azim_num,
 // }
 
 //#############################################################################
-// Compute horizon for entire grid
+// Compute horizon for gridded domain
 //#############################################################################
 
-void horizon_gridall_comp(float* vert_grid,
+void horizon_gridded_comp(float* vert_grid,
 	int dem_dim_0, int dem_dim_1,
 	float* vec_norm, float* vec_north,
 	int offset_0, int offset_1,
@@ -977,7 +977,7 @@ void horizon_gridall_comp(float* vert_grid,
 // Compute horizon for individual grid cells
 //#############################################################################
 
-void horizon_gridind_comp(float* vert_grid,
+void horizon_gridcells_comp(float* vert_grid,
 	int dem_dim_0, int dem_dim_1,
 	float* vec_norm, float* vec_north,
 	int offset_0, int offset_1,

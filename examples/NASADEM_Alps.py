@@ -1,6 +1,6 @@
-# Description: Compute topographic parameters (slope angle and aspect, horizon
-#              and Sky View Factor) from NASADEM (~30 m) for an example region
-#              in the European Alps
+# Description: Compute gridded topographic parameters (slope angle and aspect,
+#              horizon and sky view factor) from NASADEM (~30 m) for an example
+#              region in the European Alps
 #
 # Required input data:
 #   - NASADEM: https://search.earthdata.nasa.gov/
@@ -33,7 +33,7 @@ path_out = "/Users/csteger/Desktop/output/"
 
 # Load required functions
 sys.path.append("/Users/csteger/Desktop/lib/")
-from horizon import horizon
+from horizon import horizon_gridded
 import functions_cy
 from auxiliary import pad_geometry_buffer
 from load_dem import dem_domain_loc
@@ -126,14 +126,14 @@ vert_grid = np.hstack((x_enu.reshape(x_enu.size, 1),
 vert_grid = pad_geometry_buffer(vert_grid)
 
 # Compute horizon
-horizon(vert_grid, dem_dim_0, dem_dim_1,
-        vec_norm_enu, vec_north_enu,
-        offset_0, offset_1,
-        file_out=file_hori,
-        x_axis_val=lon[sd_in[1]].astype(np.float32),
-        y_axis_val=lat[sd_in[0]].astype(np.float32),
-        x_axis_name="lon", y_axis_name="lat", units="degree",
-        dist_search=dist_search, azim_num=azim_num)
+horizon_gridded(vert_grid, dem_dim_0, dem_dim_1,
+                vec_norm_enu, vec_north_enu,
+                offset_0, offset_1,
+                file_out=file_hori,
+                x_axis_val=lon[sd_in[1]].astype(np.float32),
+                y_axis_val=lat[sd_in[0]].astype(np.float32),
+                x_axis_name="lon", y_axis_name="lat", units="degree",
+                dist_search=dist_search, azim_num=azim_num)
 
 # Load horizon data
 ds = xr.open_dataset(file_hori)

@@ -1,6 +1,7 @@
-# Description: Compute topographic parameters (slope angle and aspect, horizon
-#              and Sky View Factor) from swissALTI3D (~2 m) for an example
-#              region in the European Alps and simplify the outer DEM domain
+# Description: Compute gridded topographic parameters (slope angle and aspect,
+#              horizon and Sky View Factor) from swissALTI3D (~2 m) for an
+#              example region in the European Alps and simplify the outer
+#              DEM domain
 #
 # Required input data:
 #   - swissALTI3D: https://www.swisstopo.admin.ch/en/geodata/height/alti3d.html
@@ -27,7 +28,7 @@ path_out = "/Users/csteger/Desktop/output/"
 
 # Load required functions
 sys.path.append("/Users/csteger/Desktop/lib/")
-from horizon import horizon
+from horizon import horizon_gridded
 import functions_cy
 from load_dem import load_swissalti3d
 from auxiliary import pad_geometry_buffer
@@ -322,18 +323,19 @@ print("Triangle DEM: %.2f" % ((vert_simp.nbytes + tri_ind_simp.nbytes)
 ###############################################################################
 
 # Compute horizon angles
-horizon(vert_grid, dem_dim_0, dem_dim_1,
-        vec_norm, vec_north,
-        offset_0, offset_1,
-        dist_search=dist_search, azim_num=azim_num, hori_acc=hori_acc[0],
-        ray_algorithm="guess_constant", geom_type="grid",
-        vert_simp=vert_simp, num_vert_simp=num_vert_simp,
-        tri_ind_simp=tri_ind_simp, num_tri_simp=num_tri_simp,
-        file_out=file_hori,
-        x_axis_val=east[slic_hori[1]].astype(np.float32),
-        y_axis_val=north[slic_hori[0]].astype(np.float32),
-        x_axis_name="east", y_axis_name="north", units="m",
-        hori_buffer_size_max=0.85)
+horizon_gridded(vert_grid, dem_dim_0, dem_dim_1,
+                vec_norm, vec_north,
+                offset_0, offset_1,
+                dist_search=dist_search,
+                azim_num=azim_num, hori_acc=hori_acc[0],
+                ray_algorithm="guess_constant", geom_type="grid",
+                vert_simp=vert_simp, num_vert_simp=num_vert_simp,
+                tri_ind_simp=tri_ind_simp, num_tri_simp=num_tri_simp,
+                file_out=file_hori,
+                x_axis_val=east[slic_hori[1]].astype(np.float32),
+                y_axis_val=north[slic_hori[0]].astype(np.float32),
+                x_axis_name="east", y_axis_name="north", units="m",
+                hori_buffer_size_max=0.85)
 time.sleep(1.0)
 del vert_grid, vert_simp, tri_ind_simp
 

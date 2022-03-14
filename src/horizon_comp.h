@@ -4,7 +4,7 @@
 #ifndef TESTLIB_H
 #define TESTLIB_H
 
-void horizon_gridall_comp(float* vert_grid, 
+void horizon_gridded_comp(float* vert_grid, 
 	int dem_dim_0, int dem_dim_1,
 	float* vec_norm, float* vec_north,
 	int offset_0, int offset_1,
@@ -22,7 +22,7 @@ void horizon_gridall_comp(float* vert_grid,
     uint8_t* mask, float hori_fill,
     float ray_org_elev);
 
-void horizon_gridind_comp(float* vert_grid, 
+void horizon_gridcells_comp(float* vert_grid, 
 	int dem_dim_0, int dem_dim_1,
 	float* vec_norm, float* vec_north,
 	int offset_0, int offset_1,
