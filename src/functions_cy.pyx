@@ -913,7 +913,7 @@ def skyviewfactor(float[:] azim, float[:, :, :] hori, float[:, :, :] vec_tilt):
     azim : ndarray of float
         Array (one-dimensional) with azimuth [radian]
     hori : ndarray of float
-        Array (three-dimensional) with horizon (azim, y, x) [radian]
+        Array (three-dimensional) with horizon (y, x, azim) [radian]
     vec_tilt : ndarray of float
         Array (three-dimensional) with titled surface normal components
         (y, x, components) [metre]
@@ -929,32 +929,32 @@ def skyviewfactor(float[:] azim, float[:, :, :] hori, float[:, :, :] vec_tilt):
     cdef int i, j, k
     cdef float azim_spac
     cdef float agg, hori_plane, hori_elev
-    cdef float[:, :] svf = np.empty((len_1, len_2), dtype=np.float32)
-    cdef float[:] azim_sin = np.empty(len_0, dtype=np.float32)
-    cdef float[:] azim_cos = np.empty(len_0, dtype=np.float32)
+    cdef float[:, :] svf = np.empty((len_0, len_1), dtype=np.float32)
+    cdef float[:] azim_sin = np.empty(len_2, dtype=np.float32)
+    cdef float[:] azim_cos = np.empty(len_2, dtype=np.float32)
 
     # Precompute values of trigonometric functions
-    for i in range(len_0):
+    for i in range(len_2):
         azim_sin[i] = sin(azim[i])
         azim_cos[i] = cos(azim[i])
     # -> these arrays can be shared between threads (read-only)
 
     # Compute sky view factor
     azim_spac = (azim[1] - azim[0])
-    for i in prange(len_1, nogil=True, schedule="static"):
-        for j in range(len_2):
+    for i in prange(len_0, nogil=True, schedule="static"):
+        for j in range(len_1):
 
             # Iterate over azimuth directions
             agg = 0.0
-            for k in range(len_0):
+            for k in range(len_2):
 
                 # Compute plane-sphere intersection
                 hori_plane = atan(- azim_sin[k] * vec_tilt[i, j, 0]
                                   / vec_tilt[i, j, 2]
                                   - azim_cos[k] * vec_tilt[i, j, 1]
                                   / vec_tilt[i, j, 2])
-                if hori[k, i, j] >= hori_plane:
-                    hori_elev = hori[k, i, j]
+                if hori[i, j, k] >= hori_plane:
+                    hori_elev = hori[i, j, k]
                 else:
                     hori_elev =  hori_plane
 
@@ -985,7 +985,7 @@ def visskyfrac(float[:] azim, float[:, :, :] hori, float[:, :, :] vec_tilt):
     azim : ndarray of float
         Array (one-dimensional) with azimuth [radian]
     hori : ndarray of float
-        Array (three-dimensional) with horizon (azim, y, x) [radian]
+        Array (three-dimensional) with horizon (y, x, azim) [radian]
     vec_tilt : ndarray of float
         Array (three-dimensional) with titled surface normal components
         (y, x, components) [metre]
@@ -1001,32 +1001,32 @@ def visskyfrac(float[:] azim, float[:, :, :] hori, float[:, :, :] vec_tilt):
     cdef int i, j, k
     cdef float azim_spac
     cdef float agg, hori_plane, hori_elev
-    cdef float[:, :] vsf = np.empty((len_1, len_2), dtype=np.float32)
-    cdef float[:] azim_sin = np.empty(len_0, dtype=np.float32)
-    cdef float[:] azim_cos = np.empty(len_0, dtype=np.float32)
+    cdef float[:, :] vsf = np.empty((len_0, len_1), dtype=np.float32)
+    cdef float[:] azim_sin = np.empty(len_2, dtype=np.float32)
+    cdef float[:] azim_cos = np.empty(len_2, dtype=np.float32)
 
     # Precompute values of trigonometric functions
-    for i in range(len_0):
+    for i in range(len_2):
         azim_sin[i] = sin(azim[i])
         azim_cos[i] = cos(azim[i])
     # -> these arrays can be shared between threads (read-only)
 
     # Compute visible sky fraction
     azim_spac = (azim[1] - azim[0])
-    for i in prange(len_1, nogil=True, schedule="static"):
-        for j in range(len_2):
+    for i in prange(len_0, nogil=True, schedule="static"):
+        for j in range(len_1):
 
             # Iterate over azimuth directions
             agg = 0.0
-            for k in range(len_0):
+            for k in range(len_2):
 
                 # Compute plane-sphere intersection
                 hori_plane = atan(- azim_sin[k] * vec_tilt[i, j, 0]
                                   / vec_tilt[i, j, 2]
                                   - azim_cos[k] * vec_tilt[i, j, 1]
                                   / vec_tilt[i, j, 2])
-                if hori[k, i, j] >= hori_plane:
-                    hori_elev = hori[k, i, j]
+                if hori[i, j, k] >= hori_plane:
+                    hori_elev = hori[i, j, k]
                 else:
                     hori_elev = hori_plane
 
@@ -1053,7 +1053,7 @@ def topoopen(float[:] azim, float[:, :, :] hori):
     azim : ndarray of float
         Array (one-dimensional) with azimuth [radian]
     hori : ndarray of float
-        Array (three-dimensional) with horizon (azim, y, x) [radian]
+        Array (three-dimensional) with horizon (y, x, azim) [radian]
 
     Returns
     -------
@@ -1071,17 +1071,17 @@ def topoopen(float[:] azim, float[:, :, :] hori):
     cdef int len_2 = hori.shape[2]
     cdef int i, j, k
     cdef float agg
-    cdef float[:, :] top = np.empty((len_1, len_2), dtype=np.float32)
+    cdef float[:, :] top = np.empty((len_0, len_1), dtype=np.float32)
 
     # Compute positive topographic openness
-    for i in prange(len_1, nogil=True, schedule="static"):
-        for j in range(len_2):
+    for i in prange(len_0, nogil=True, schedule="static"):
+        for j in range(len_1):
 
             # Iterate over azimuth directions
             agg = 0.0
-            for k in range(len_0):
-                agg = agg + (M_PI / 2.0) - hori[k, i, j]
-            top[i, j] = agg / float(len_0)
+            for k in range(len_2):
+                agg = agg + (M_PI / 2.0) - hori[i, j, k]
+            top[i, j] = agg / float(len_2)
 
     return np.asarray(top)
 

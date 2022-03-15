@@ -275,11 +275,39 @@ bool castRay_occluded1(RTCScene scene, float ox, float oy, float oz, float dx,
 // Cast single ray (intersect1; lower performance)
 //-----------------------------------------------------------------------------
 
+bool castRay_intersect1(RTCScene scene, float ox, float oy, float oz, float dx,
+	float dy, float dz, float dist_search, float &dist) {
+  
+	// Intersect context
+	struct RTCIntersectContext context;
+	rtcInitIntersectContext(&context);
 
+  	// Ray hit structure
+  	struct RTCRayHit rayhit;
+  	rayhit.ray.org_x = ox;
+  	rayhit.ray.org_y = oy;
+  	rayhit.ray.org_z = oz;
+  	rayhit.ray.dir_x = dx;
+  	rayhit.ray.dir_y = dy;
+  	rayhit.ray.dir_z = dz;
+  	rayhit.ray.tnear = 0.0;
+  	//rayhit.ray.tfar = std::numeric_limits<float>::infinity();
+  	rayhit.ray.tfar = dist_search;
+  	//rayhit.ray.mask = -1;
+  	//rayhit.ray.flags = 0;
+  	rayhit.hit.geomID = RTC_INVALID_GEOMETRY_ID;
+  	rayhit.hit.instID[0] = RTC_INVALID_GEOMETRY_ID;
 
+  	// Intersect ray with scene
+  	rtcIntersect1(scene, &context, &rayhit);
+  	dist = rayhit.ray.tfar;
+
+  	return (rayhit.hit.geomID != RTC_INVALID_GEOMETRY_ID);
+
+}
 
 //#############################################################################
-// Horizon detection algorithms
+// Horizon detection algorithms (horizon elevation angle)
 //#############################################################################
 
 //-----------------------------------------------------------------------------
@@ -313,10 +341,10 @@ void ray_discrete_sampling(float ray_org_x, float ray_org_y, float ray_org_z,
   			num_rays += 1;
   
   		}
-  		hori_buffer[k] = (elev_ang[ind_elev_prev] + elev_ang[ind_elev]) / 2.0; 
-  		// [radian]
+  		hori_buffer[k] = (elev_ang[ind_elev_prev] + elev_ang[ind_elev]) / 2.0;
 
   	}
+
 }
 
 //-----------------------------------------------------------------------------
@@ -361,7 +389,7 @@ void ray_binary_search(float ray_org_x, float ray_org_y, float ray_org_z,
   				/ (hori_acc / 5.0)));
   			
   		}
-  		hori_buffer[k] = elev_samp;  // [radian]
+  		hori_buffer[k] = elev_samp;
 
   	}
 
@@ -412,7 +440,7 @@ void ray_guess_const(float ray_org_x, float ray_org_y, float ray_org_z,
   			
   	}
 
-  	hori_buffer[0] = elev_samp;  // [radian]
+  	hori_buffer[0] = elev_samp;
   	int ind_elev_prev_azim = ind_elev;
 
 	// ------------------------------------------------------------------------
@@ -449,7 +477,7 @@ void ray_guess_const(float ray_org_x, float ray_org_y, float ray_org_z,
   			elev_samp = (elev_ang[ind_elev_prev] + elev_ang[ind_elev]) / 2.0;
   			ind_elev = ((int)roundf((elev_samp - elev_ang_low_lim)
   				/ (hori_acc / 5.0)));
-  			hori_buffer[k] = elev_ang[ind_elev];  // [radian]
+  			hori_buffer[k] = elev_ang[ind_elev];
   			ind_elev_prev_azim = ind_elev;
   			continue;
 		
@@ -477,7 +505,7 @@ void ray_guess_const(float ray_org_x, float ray_org_y, float ray_org_z,
   		elev_samp = (elev_ang[ind_elev_prev] + elev_ang[ind_elev]) / 2.0;
   		ind_elev = ((int)roundf((elev_samp - elev_ang_low_lim)
   			/ (hori_acc / 5.0)));
-  		hori_buffer[k] = elev_ang[ind_elev];  // [radian]
+  		hori_buffer[k] = elev_ang[ind_elev];
   		ind_elev_prev_azim = ind_elev;
 			
 	}
@@ -496,6 +524,120 @@ void (*function_pointer)(float ray_org_x, float ray_org_y, float ray_org_z,
 	float* elev_cos, float* elev_sin, float (&rot_inv)[3][3]);
 
 //#############################################################################
+// Horizon detection algorithms (horizon elevation angle and distance)
+//#############################################################################
+
+//-----------------------------------------------------------------------------
+// Discrete sampling
+//-----------------------------------------------------------------------------
+
+void ray_discrete_sampling_hori_dist(float ray_org_x, float ray_org_y,
+	float ray_org_z, size_t azim_num, float hori_acc, float dist_search,
+	float elev_ang_low_lim, float elev_ang_up_lim, int elev_num,
+	RTCScene scene, size_t &num_rays, float* hori_buffer, float* dist_buffer,
+	float* azim_sin, float* azim_cos, float* elev_ang,
+	float* elev_cos, float* elev_sin, float (&rot_inv)[3][3]) {
+
+	float dist = 0.0;
+	float dist_hit = 0.0;
+
+  	for (size_t k = 0; k < azim_num; k++) {
+		
+		int ind_elev = 0;
+		int ind_elev_prev = 0;
+  		bool hit = true;
+  		while (hit) {
+  		
+			ind_elev_prev = ind_elev;
+			ind_elev = min(ind_elev + 10, elev_num - 1);
+			float ray[3] = {elev_cos[ind_elev] * azim_sin[k],
+							elev_cos[ind_elev] * azim_cos[k],
+							elev_sin[ind_elev]};
+			float ray_rot[3];
+			mat_vec_mult(rot_inv, ray, ray_rot);
+  			hit = castRay_intersect1(scene, ray_org_x, ray_org_y,
+  				ray_org_z, ray_rot[0], ray_rot[1], ray_rot[2],
+  				dist_search, dist);
+  			if (hit) {
+  				dist_hit = dist;
+  			}
+  			num_rays += 1;
+  
+  		}
+  		hori_buffer[k] = (elev_ang[ind_elev_prev] + elev_ang[ind_elev]) / 2.0;
+  		dist_buffer[k] = dist_hit;
+
+  	}
+
+}
+
+//-----------------------------------------------------------------------------
+// Binary search
+//-----------------------------------------------------------------------------
+
+void ray_binary_search_hori_dist(float ray_org_x, float ray_org_y,
+	float ray_org_z, size_t azim_num, float hori_acc, float dist_search,
+	float elev_ang_low_lim, float elev_ang_up_lim, int elev_num,
+	RTCScene scene, size_t &num_rays, float* hori_buffer, float* dist_buffer,
+	float* azim_sin, float* azim_cos, float* elev_ang,
+	float* elev_cos, float* elev_sin, float (&rot_inv)[3][3]) {
+
+	float dist = 0.0;
+	float dist_hit = 0.0;
+
+  	for (size_t k = 0; k < azim_num; k++) {
+  	
+  		float lim_up = elev_ang_up_lim;
+  		float lim_low = elev_ang_low_lim;
+  		float elev_samp = (lim_up + lim_low) / 2.0;
+  		int ind_elev = ((int)roundf((elev_samp - elev_ang_low_lim)
+  			/ (hori_acc / 5.0)));
+  		
+  		while (max(lim_up - elev_ang[ind_elev],
+  			elev_ang[ind_elev] - lim_low) > hori_acc) {
+
+			float ray[3] = {elev_cos[ind_elev] * azim_sin[k],
+							elev_cos[ind_elev] * azim_cos[k],
+							elev_sin[ind_elev]};
+			float ray_rot[3];
+			mat_vec_mult(rot_inv, ray, ray_rot);
+  			bool hit = castRay_intersect1(scene, ray_org_x, ray_org_y,
+  				ray_org_z, ray_rot[0], ray_rot[1], ray_rot[2],
+  				dist_search, dist);
+  			if (hit) {
+  				dist_hit = dist;
+  			}
+  			num_rays += 1;
+  			
+  			if (hit) {
+  				lim_low = elev_ang[ind_elev];
+  			} else {
+  				lim_up = elev_ang[ind_elev];
+  			}
+  			elev_samp = (lim_up + lim_low) / 2.0;
+  			ind_elev = ((int)roundf((elev_samp - elev_ang_low_lim)
+  				/ (hori_acc / 5.0)));
+  			
+  		}
+  		hori_buffer[k] = elev_samp;
+  		dist_buffer[k] = dist_hit;
+
+  	}
+
+}
+
+//-----------------------------------------------------------------------------
+// Declare function pointer and assign function
+//-----------------------------------------------------------------------------
+
+void (*function_pointer_hori_dist)(float ray_org_x, float ray_org_y, float
+	ray_org_z, size_t azim_num, float hori_acc, float dist_search,
+	float elev_ang_low_lim, float elev_ang_up_lim, int elev_num,
+	RTCScene scene, size_t &num_rays, float* hori_buffer, float* dist_buffer,
+	float* azim_sin, float* azim_cos, float* elev_ang,
+	float* elev_cos, float* elev_sin, float (&rot_inv)[3][3]);
+
+//#############################################################################
 // Compute horizon for gridded domain
 //#############################################################################
 
@@ -503,7 +645,7 @@ void (*function_pointer)(float ray_org_x, float ray_org_y, float ray_org_z,
 // Output writing (NetCDF4 interface)
 //-----------------------------------------------------------------------------
 
-void output_netcdf(float* hori_buffer, int azim_num,
+void output_netcdf_gridded(float* hori_buffer, int azim_num,
 	size_t in_dim_len_0, size_t in_dim_len_1, char* file_out,
 	float* x_axis_val, float* y_axis_val, char* x_axis_name, char* y_axis_name,
 	char* units) {
@@ -563,10 +705,10 @@ void output_netcdf(float* hori_buffer, int azim_num,
 }
 
 //-----------------------------------------------------------------------------
-// Output writing (NetCDF3 interface; legacy)
+// Output writing (NetCDF3 interface; legacy; outdated)
 //-----------------------------------------------------------------------------
 
-// void output_netcdf(float* hori_buffer, int azim_num,
+// void output_netcdf_gridded(float* hori_buffer, int azim_num,
 // 	size_t in_dim_len_0, size_t in_dim_len_1, char* file_out,
 // 	float* x_axis_val, float* y_axis_val, char* x_axis_name, char* y_axis_name,
 // 	char* units) {
@@ -807,7 +949,7 @@ void horizon_gridded_comp(float* vert_grid,
 
   		// Save horizon to NetCDF file
     	auto start_out = std::chrono::high_resolution_clock::now();
-    	output_netcdf(hori_buffer, azim_num,
+    	output_netcdf_gridded(hori_buffer, azim_num,
     		dim_in_0, dim_in_1, file_out, x_axis_val, y_axis_val,
     		x_axis_name, y_axis_name, units);
   		auto end_out = std::chrono::high_resolution_clock::now();
@@ -934,7 +1076,7 @@ void horizon_gridded_comp(float* vert_grid,
   			strcpy(file_out_iter_c, file_out_iter.c_str() );
   	  		
   	  		// Save horizon to NetCDF file
-    		output_netcdf(hori_buffer, azim_num, dim_in_0, len_x,
+    		output_netcdf_gridded(hori_buffer, azim_num, dim_in_0, len_x,
     			file_out_iter_c, &x_axis_val[block_ind[m]], y_axis_val,
     			x_axis_name, y_axis_name, units);
     		
@@ -979,8 +1121,76 @@ void horizon_gridded_comp(float* vert_grid,
 // Output writing (NetCDF4 interface)
 //-----------------------------------------------------------------------------
 
+void output_netcdf_gridcell(float* hori_buffer, float* dist_buffer,
+	int azim_num, int num_gc, char* file_out, int* indices,
+	int hori_dist_out) {
 
+  	// Compute azimuth angles
+  	float *azim_ang = new float[azim_num];
+    for (int i = 0; i < azim_num; i++) {
+    	azim_ang[i] = ((2 * M_PI) / azim_num * i);
+    }
+    
+    // Reshape indices data
+    int *indices_0 = new int[num_gc];
+    int *indices_1 = new int[num_gc];
+    int count = 0;
+    for (int i = 0; i < num_gc; i++) {
+    	indices_0[i] = indices[count];
+    	count += 1;
+    	indices_1[i] = indices[count];
+    	count += 1;
+    }
+  	
+ 	int n_azim = azim_num;
+	int n_x = num_gc;
+  	
+  	try {
+  	
+  		NcFile dataFile(file_out, NcFile::replace);
+  		
+		NcDim dim_x = dataFile.addDim("grid_cells", n_x);
+		NcDim dim_azim = dataFile.addDim("azim", n_azim);
+		
+		vector<NcDim> dims_azim;
+		dims_azim.push_back(dim_azim);
+		NcVar data_azim = dataFile.addVar("azim", ncFloat, dims_azim);
+		data_azim.putVar(azim_ang);
+		data_azim.putAtt("units", "radian");
 
+		vector<NcDim> dims_ind_0;
+		dims_ind_0.push_back(dim_x);
+		NcVar data_ind_0 = dataFile.addVar("indices_0", ncInt, dims_ind_0);
+		data_ind_0.putVar(indices_0);
+		
+		vector<NcDim> dims_ind_1;
+		dims_ind_1.push_back(dim_x);
+		NcVar data_ind_1 = dataFile.addVar("indices_1", ncInt, dims_ind_1);
+		data_ind_1.putVar(indices_1);
+
+		vector<NcDim> dims_data;
+		dims_data.push_back(dim_x);
+		dims_data.push_back(dim_azim);
+		NcVar data = dataFile.addVar("horizon", ncFloat, dims_data);
+		data.putVar(hori_buffer);
+		data.putAtt("units", "radian");
+		
+		if (hori_dist_out == 1) {
+			NcVar data_dist = dataFile.addVar("horizon_distance", ncFloat,
+			dims_data);
+			data_dist.putVar(dist_buffer);
+			data_dist.putAtt("units", "metre");
+		}
+
+    }
+	catch(NcException& e)
+    	{e.what();
+      	cout << "Could not write to NetCDF file" << endl;
+    }
+     		
+  	delete[] azim_ang;
+
+}
 
 //-----------------------------------------------------------------------------
 // Main function
@@ -991,7 +1201,7 @@ void horizon_gridcells_comp(float* vert_grid,
 	int* indices,
 	float* vec_norm, float* vec_north,
 	int offset_0, int offset_1,
-	float* out_buffer,
+	float* hori_buffer,
 	int num_gc,
 	int azim_num, float dist_search,
 	float hori_acc, char* ray_algorithm, char* geom_type,
@@ -1026,26 +1236,13 @@ void horizon_gridcells_comp(float* vert_grid,
   	elev_ang_up_lim = deg2rad(elev_ang_up_lim);
   	dist_search *= 1000.0;  // [kilometre] -> [metre]
 
-	// Select algorithm for horizon detection
-  	cout << "Horizon detection algorithm: ";
-  	if (strcmp(ray_algorithm, "discrete_sampling") == 0) {
-    	cout << "discrete_sampling" << endl;		
-  		function_pointer = ray_discrete_sampling;
-  	} else if (strcmp(ray_algorithm, "binary_search") == 0) {
-    	cout << "binary search" << endl;
-    	function_pointer = ray_binary_search;
-  	} else if (strcmp(ray_algorithm, "guess_constant") == 0) {
-    	cout << "guess horizon from previous azimuth direction" << endl;
-    	function_pointer = ray_guess_const;
-	}
-
   	printf("Number of grid cells for which horizon is computed: %d \n",
   		num_gc);
 
-	float out_buffer_size = (((float)num_gc
+	float hori_buffer_size = (((float)num_gc
 		* (float)azim_num * 4.0) / pow(10.0, 9.0));
 	cout << "Total memory required for horizon output: " 
-		<< out_buffer_size << " GB" << endl;
+		<< hori_buffer_size << " GB" << endl;
 
 	size_t num_rays = 0;
   	std::chrono::duration<double> time_ray = std::chrono::seconds(0);
@@ -1078,73 +1275,167 @@ void horizon_gridcells_comp(float* vert_grid,
     	elev_cos[elev_num - i - 1] = cos(ang);
     }
   	
-    // --------------------------------------------------------------------
+    // ------------------------------------------------------------------------
   	// Perform ray tracing
-    // --------------------------------------------------------------------
-
-   	auto start_ray = std::chrono::high_resolution_clock::now();
-     
-	num_rays += tbb::parallel_reduce(
-		tbb::blocked_range<size_t>(0,num_gc), 0.0,
-		[&](tbb::blocked_range<size_t> r, size_t num_rays) {  // parallel
-
-	//for (size_t i = 0; i < num_gc; i++) {  // serial
-	for (size_t i=r.begin(); i<r.end(); ++i) {  // parallel
-
- 		// Get vector components
- 		size_t ind_vec = i * 3;
-  		float norm_x = vec_norm[ind_vec];
-  		float north_x = vec_north[ind_vec];
-  		ind_vec += 1;
-  		float norm_y = vec_norm[ind_vec];
-  		float north_y = vec_north[ind_vec];
-  		ind_vec += 1;
-  		float norm_z = vec_norm[ind_vec];
-  		float north_z = vec_north[ind_vec];
-
-  		// Ray origin
-  		size_t ind_2d = lin_ind_2d(dem_dim_1, indices[i * 2] + offset_0,
-  			indices[i * 2 + 1] + offset_1);
-  		float ray_org_x = vert_grid[ind_2d * 3 + 0] 
-  			+ norm_x * ray_org_elev;
-  		float ray_org_y = vert_grid[ind_2d * 3 + 1] 
-  			+ norm_y * ray_org_elev;
-  		float ray_org_z = vert_grid[ind_2d * 3 + 2] 
-  			+ norm_z * ray_org_elev;
-				
-  		// Compute inverse of rotation matrix
-  		float east_x, east_y, east_z;
-		cross_prod(north_x, north_y, north_z,
-				   norm_x, norm_y, norm_z,
-				   east_x, east_y, east_z);		
-		float rot_inv[3][3] = {{east_x, north_x, norm_x},
-							   {east_y, north_y, norm_y},
-							   {east_z, north_z, norm_z}};
-   				
-  		// Perform ray tracing
-  		size_t ind_out = i * azim_num;
-  		function_pointer(ray_org_x, ray_org_y, ray_org_z,
-  			azim_num, hori_acc, dist_search,
-  			elev_ang_low_lim, elev_ang_up_lim, elev_num,
-  			scene, num_rays, &out_buffer[ind_out],
-  			azim_sin, azim_cos, elev_ang,
-  			elev_cos, elev_sin, rot_inv);
-
-  	}
- 	
-  	return num_rays;  // parallel
-  	}, std::plus<size_t>());  // parallel
+    // ------------------------------------------------------------------------
     
-  	auto end_ray = std::chrono::high_resolution_clock::now();
-  	time_ray += (end_ray - start_ray);
-  		
-    // --------------------------------------------------------------------
+    // Dynamically allocate buffer for horizon distance values
+    int dist_buffer_len;
+    if (hori_dist_out == 0) {
+    	dist_buffer_len = 1;
+    } else {
+    	dist_buffer_len = num_gc * azim_num;
+    }
+  	float *dist_buffer = new float[dist_buffer_len];
+
+    if (hori_dist_out == 0) {  // (horizon elevation angle)
+
+		// Select algorithm for horizon detection
+  		cout << "Horizon detection algorithm: ";
+  		if (strcmp(ray_algorithm, "discrete_sampling") == 0) {
+    		cout << "discrete_sampling" << endl;		
+  			function_pointer = ray_discrete_sampling;
+  		} else if (strcmp(ray_algorithm, "binary_search") == 0) {
+    		cout << "binary search" << endl;
+    		function_pointer = ray_binary_search;
+  		} else if (strcmp(ray_algorithm, "guess_constant") == 0) {
+    		cout << "guess horizon from previous azimuth direction" << endl;
+    		function_pointer = ray_guess_const;
+		}
+
+   		auto start_ray = std::chrono::high_resolution_clock::now();
+     
+		num_rays += tbb::parallel_reduce(
+			tbb::blocked_range<size_t>(0,num_gc), 0.0,
+			[&](tbb::blocked_range<size_t> r, size_t num_rays) {  // parallel
+
+		//for (size_t i = 0; i < num_gc; i++) {  // serial
+		for (size_t i=r.begin(); i<r.end(); ++i) {  // parallel
+
+ 			// Get vector components
+ 			size_t ind_vec = i * 3;
+  			float norm_x = vec_norm[ind_vec];
+  			float north_x = vec_north[ind_vec];
+  			ind_vec += 1;
+  			float norm_y = vec_norm[ind_vec];
+  			float north_y = vec_north[ind_vec];
+  			ind_vec += 1;
+  			float norm_z = vec_norm[ind_vec];
+  			float north_z = vec_north[ind_vec];
+
+  			// Ray origin
+  			size_t ind_2d = lin_ind_2d(dem_dim_1, indices[i * 2] + offset_0,
+  				indices[i * 2 + 1] + offset_1);
+  			float ray_org_x = vert_grid[ind_2d * 3 + 0] 
+  				+ norm_x * ray_org_elev;
+  			float ray_org_y = vert_grid[ind_2d * 3 + 1] 
+  				+ norm_y * ray_org_elev;
+  			float ray_org_z = vert_grid[ind_2d * 3 + 2] 
+  				+ norm_z * ray_org_elev;
+				
+  			// Compute inverse of rotation matrix
+  			float east_x, east_y, east_z;
+			cross_prod(north_x, north_y, north_z,
+				   	   norm_x, norm_y, norm_z,
+				   	    east_x, east_y, east_z);		
+			float rot_inv[3][3] = {{east_x, north_x, norm_x},
+							   	   {east_y, north_y, norm_y},
+							   	   {east_z, north_z, norm_z}};
+   				
+  			// Perform ray tracing
+  			size_t ind_out = i * azim_num;
+  			function_pointer(ray_org_x, ray_org_y, ray_org_z,
+  				azim_num, hori_acc, dist_search,
+  				elev_ang_low_lim, elev_ang_up_lim, elev_num,
+  				scene, num_rays, &hori_buffer[ind_out],
+  				azim_sin, azim_cos, elev_ang,
+  				elev_cos, elev_sin, rot_inv);
+
+  		}
+
+  		return num_rays;  // parallel
+  		}, std::plus<size_t>());  // parallel
+    
+  		auto end_ray = std::chrono::high_resolution_clock::now();
+  		time_ray += (end_ray - start_ray);
+  	
+  	} else { // (horizon elevation angle and distance)
+
+		// Select algorithm for horizon detection
+  		cout << "Horizon detection algorithm: ";
+  		if (strcmp(ray_algorithm, "discrete_sampling") == 0) {
+    		cout << "discrete_sampling" << endl;		
+  			function_pointer_hori_dist = ray_discrete_sampling_hori_dist;
+  		} else if (strcmp(ray_algorithm, "binary_search") == 0) {
+    		cout << "binary search" << endl;
+    		function_pointer_hori_dist = ray_binary_search_hori_dist;
+		}
+
+   		auto start_ray = std::chrono::high_resolution_clock::now();
+     
+		num_rays += tbb::parallel_reduce(
+			tbb::blocked_range<size_t>(0,num_gc), 0.0,
+			[&](tbb::blocked_range<size_t> r, size_t num_rays) {  // parallel
+
+		//for (size_t i = 0; i < num_gc; i++) {  // serial
+		for (size_t i=r.begin(); i<r.end(); ++i) {  // parallel
+
+ 			// Get vector components
+ 			size_t ind_vec = i * 3;
+  			float norm_x = vec_norm[ind_vec];
+  			float north_x = vec_north[ind_vec];
+  			ind_vec += 1;
+  			float norm_y = vec_norm[ind_vec];
+  			float north_y = vec_north[ind_vec];
+  			ind_vec += 1;
+  			float norm_z = vec_norm[ind_vec];
+  			float north_z = vec_north[ind_vec];
+
+  			// Ray origin
+  			size_t ind_2d = lin_ind_2d(dem_dim_1, indices[i * 2] + offset_0,
+  				indices[i * 2 + 1] + offset_1);
+  			float ray_org_x = vert_grid[ind_2d * 3 + 0] 
+  				+ norm_x * ray_org_elev;
+  			float ray_org_y = vert_grid[ind_2d * 3 + 1] 
+  				+ norm_y * ray_org_elev;
+  			float ray_org_z = vert_grid[ind_2d * 3 + 2] 
+  				+ norm_z * ray_org_elev;
+				
+  			// Compute inverse of rotation matrix
+  			float east_x, east_y, east_z;
+			cross_prod(north_x, north_y, north_z,
+				   	   norm_x, norm_y, norm_z,
+				   	    east_x, east_y, east_z);		
+			float rot_inv[3][3] = {{east_x, north_x, norm_x},
+							   	   {east_y, north_y, norm_y},
+							   	   {east_z, north_z, norm_z}};
+   				
+  			// Perform ray tracing
+  			size_t ind_out = i * azim_num;
+  			function_pointer_hori_dist(ray_org_x, ray_org_y, ray_org_z,
+  				azim_num, hori_acc, dist_search,
+  				elev_ang_low_lim, elev_ang_up_lim, elev_num,
+  				scene, num_rays, &hori_buffer[ind_out], &dist_buffer[ind_out],
+  				azim_sin, azim_cos, elev_ang,
+  				elev_cos, elev_sin, rot_inv);
+
+  		}
+
+  		return num_rays;  // parallel
+  		}, std::plus<size_t>());  // parallel
+    
+  		auto end_ray = std::chrono::high_resolution_clock::now();
+  		time_ray += (end_ray - start_ray);
+  	
+  	}
+
+    // ------------------------------------------------------------------------
 
   	// Save horizon to NetCDF file
      auto start_out = std::chrono::high_resolution_clock::now();
-//     output_netcdf(hori_buffer, azim_num,
-//     	dim_in_0, dim_in_1, file_out, x_axis_val, y_axis_val,
-//     	x_axis_name, y_axis_name, units);
+     output_netcdf_gridcell(hori_buffer, dist_buffer,
+     	azim_num, num_gc, file_out, indices,
+     	hori_dist_out);
    	 auto end_out = std::chrono::high_resolution_clock::now();
    	 time_out += (end_out - start_out);
 

@@ -236,7 +236,7 @@ cdef extern from "horizon_comp.h":
             np.npy_int32* indices,
             float* vec_norm, float* vec_north,
             int offset_0, int offset_1,
-            float* out_buffer,
+            float* hori_buffer,
             int num_gc,
             int azim_num, float dist_search,
             float hori_acc, char* ray_algorithm, char* geom_type,
@@ -258,7 +258,7 @@ def horizon_gridcells(
         float dist_search,
         int azim_num=360,
         float hori_acc=0.25,
-        str ray_algorithm="guess_constant",
+        str ray_algorithm="binary_search",
         str geom_type="grid",
         np.ndarray[np.float32_t, ndim = 1]
         vert_simp=np.array([0.0, 0.0, 0.0, 0.0], dtype=np.float32),
@@ -268,7 +268,7 @@ def horizon_gridcells(
         int num_tri_simp=1,
         float elev_ang_low_lim = -15.0,
         float ray_org_elev=0.01,
-        int hori_dist_out=0):
+        bint hori_dist_out=False):
     """Horizon computation for individual grid cells.
 
     Computes horizon from a Digital Elevation Model (DEM) with Intel Embree
@@ -284,7 +284,7 @@ def horizon_gridcells(
         Dimension length of DEM in x-direction
     indices:   ndarray of int
         Array (two-dimensional) with grid cell indices (inner domain)
-        (ind_0, ind_1)
+        (x, ind_0 and ind_1)
     vec_norm : ndarray of float
         Array (two-dimensional) with surface normal components
         (x, components) [metre]
@@ -320,18 +320,19 @@ def horizon_gridcells(
         Lower limit for elevation angle search [degree]
     ray_org_elev: float
         Vertical elevation of ray origin [metre]
-    hori_dist_out: int
-        Option to output distance to horizon (0: off, 1: on)
+    hori_dist_out: bool
+        Option to output distance to horizon
     """
 
 	# Check consistency and validity of input arguments
     if len(vert_grid) < (dem_dim_0 * dem_dim_1 * 3):
         raise ValueError("inconsistency between input arguments verg_grid, "
                          "dem_dim_0 and dem_dim_1")
-    if ((indices[:, 0].min() < offset_0)
-        or (indices[:, 0].max() >= (offset_0 + vec_norm.shape[0]))
-        or (indices[:, 1].min() < offset_1)
-        or (indices[:, 1].max() >= (offset_1 + vec_norm.shape[1]))):
+    if ((indices.ndim != 2) or (indices.shape[0] != vec_norm.shape[0])
+            or (indices.shape[1] !=2)):
+        raise ValueError("'number of dimensions and/or dimension "
+                         + "length(s) of 'indices' incorrect")
+    if (indices[:, 0].min() < 0) or (indices[:, 1].min() < 0):
         raise ValueError("indices exceed valid range for inner domain")
     if ((offset_0 + vec_norm.shape[0] > dem_dim_0)
             or (offset_1 + vec_norm.shape[1] > dem_dim_1)):
@@ -362,6 +363,9 @@ def horizon_gridcells(
         raise ValueError("limit of hori_acc (10 degree) is exceeded")
     if ray_org_elev < 0.005:
         raise TypeError("minimal allowed value for 'ray_org_elev' is 0.005 m")
+    if hori_dist_out and (ray_algorithm == "guess_constant"):
+        raise TypeError("horizon detection algorithm 'guess_constant' not "
+                        + "implemented for horizon distance computation")
 
     # Check size of input geometries
     if (dem_dim_0 > 32767) or (dem_dim_1 > 32767):
@@ -387,12 +391,10 @@ def horizon_gridcells(
     file_out_c = file_out.encode("utf-8")
 
     # Allocate horizon array
-    cdef int out_buffer_len = vec_norm.shape[0] * azim_num
-    if hori_dist_out == 1:
-        out_buffer_len *= 2
+    cdef int hori_buffer_len = vec_norm.shape[0] * azim_num
     cdef np.ndarray[np.float32_t, ndim = 1, mode = "c"] \
-        out_buffer = np.empty(out_buffer_len,  dtype=np.float32)
-    out_buffer.fill(np.nan)  # [radian]
+        hori_buffer = np.empty(hori_buffer_len,  dtype=np.float32)
+    hori_buffer.fill(np.nan)  # [radian]
 
     horizon_gridcells_comp(
         &vert_grid[0],
@@ -400,7 +402,7 @@ def horizon_gridcells(
         &indices[0,0],
         &vec_norm[0,0], &vec_north[0,0],
         offset_0, offset_1,
-        &out_buffer[0],
+        &hori_buffer[0],
         vec_norm.shape[0],
         azim_num, dist_search,
         hori_acc, ray_algorithm_c, geom_type_c,
