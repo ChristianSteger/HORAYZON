@@ -91,7 +91,7 @@ RTCDevice initializeDevice() {
 }
 
 //#############################################################################
-// Create a scene from geometries
+// Create scene from geometries
 //#############################################################################
 
 // Structures for triangle and quad
@@ -236,10 +236,13 @@ RTCScene initializeScene(RTCDevice device, float* vert_grid,
 }
 
 //#############################################################################
-// Ray (occluded)
+// Ray casting
 //#############################################################################
 
-// Cast a single ray (rtcOccluded1)
+//-----------------------------------------------------------------------------
+// Cast single ray (occluded; higher performance)
+//-----------------------------------------------------------------------------
+
 bool castRay_occluded1(RTCScene scene, float ox, float oy, float oz, float dx,
 	float dy, float dz, float dist_search) {
   
@@ -268,6 +271,13 @@ bool castRay_occluded1(RTCScene scene, float ox, float oy, float oz, float dx,
 
 }
 
+//-----------------------------------------------------------------------------
+// Cast single ray (intersect1; lower performance)
+//-----------------------------------------------------------------------------
+
+
+
+
 //#############################################################################
 // Horizon detection algorithms
 //#############################################################################
@@ -279,8 +289,7 @@ bool castRay_occluded1(RTCScene scene, float ox, float oy, float oz, float dx,
 void ray_discrete_sampling(float ray_org_x, float ray_org_y, float ray_org_z,
 	size_t azim_num, float hori_acc, float dist_search,
 	float elev_ang_low_lim, float elev_ang_up_lim, int elev_num,
-	RTCScene scene, size_t &num_rays, size_t dim_in_0, size_t dim_in_1,
-	size_t i, size_t j, float* hori_buffer,
+	RTCScene scene, size_t &num_rays, float* hori_buffer,
 	float* azim_sin, float* azim_cos, float* elev_ang,
 	float* elev_cos, float* elev_sin, float (&rot_inv)[3][3]) {
 
@@ -304,10 +313,8 @@ void ray_discrete_sampling(float ray_org_x, float ray_org_y, float ray_org_z,
   			num_rays += 1;
   
   		}
-
-  		size_t ind_hori = lin_ind_3d(dim_in_0, dim_in_1, k, i, j);
-  		hori_buffer[ind_hori] = (elev_ang[ind_elev_prev]
-  			+ elev_ang[ind_elev]) / 2.0;  // [radian]
+  		hori_buffer[k] = (elev_ang[ind_elev_prev] + elev_ang[ind_elev]) / 2.0; 
+  		// [radian]
 
   	}
 }
@@ -319,8 +326,7 @@ void ray_discrete_sampling(float ray_org_x, float ray_org_y, float ray_org_z,
 void ray_binary_search(float ray_org_x, float ray_org_y, float ray_org_z,
 	size_t azim_num, float hori_acc, float dist_search,
 	float elev_ang_low_lim, float elev_ang_up_lim, int elev_num,
-	RTCScene scene, size_t &num_rays, size_t dim_in_0, size_t dim_in_1,
-	size_t i, size_t j, float* hori_buffer,
+	RTCScene scene, size_t &num_rays, float* hori_buffer,
 	float* azim_sin, float* azim_cos, float* elev_ang,
 	float* elev_cos, float* elev_sin, float (&rot_inv)[3][3]) {
 
@@ -355,9 +361,7 @@ void ray_binary_search(float ray_org_x, float ray_org_y, float ray_org_z,
   				/ (hori_acc / 5.0)));
   			
   		}
-
-  		size_t ind_hori = lin_ind_3d(dim_in_0, dim_in_1, k, i, j);
-  		hori_buffer[ind_hori] = elev_samp;  // [radian]
+  		hori_buffer[k] = elev_samp;  // [radian]
 
   	}
 
@@ -370,8 +374,7 @@ void ray_binary_search(float ray_org_x, float ray_org_y, float ray_org_z,
 void ray_guess_const(float ray_org_x, float ray_org_y, float ray_org_z,
 	size_t azim_num, float hori_acc, float dist_search,
 	float elev_ang_low_lim, float elev_ang_up_lim, int elev_num,
-	RTCScene scene, size_t &num_rays, size_t dim_in_0, size_t dim_in_1,
-	size_t i, size_t j, float* hori_buffer,
+	RTCScene scene, size_t &num_rays, float* hori_buffer,
 	float* azim_sin, float* azim_cos, float* elev_ang,
 	float* elev_cos, float* elev_sin, float (&rot_inv)[3][3]) {
 
@@ -409,8 +412,7 @@ void ray_guess_const(float ray_org_x, float ray_org_y, float ray_org_z,
   			
   	}
 
-  	size_t ind_hori = lin_ind_3d(dim_in_0, dim_in_1, 0, i, j);
-  	hori_buffer[ind_hori] = elev_samp;  // [radian]
+  	hori_buffer[0] = elev_samp;  // [radian]
   	int ind_elev_prev_azim = ind_elev;
 
 	// ------------------------------------------------------------------------
@@ -443,12 +445,11 @@ void ray_guess_const(float ray_org_x, float ray_org_y, float ray_org_z,
 		}
 		
 		if (count > 1) {
-  			
-  			size_t ind_hori = lin_ind_3d(dim_in_0, dim_in_1, k, i, j);
+
   			elev_samp = (elev_ang[ind_elev_prev] + elev_ang[ind_elev]) / 2.0;
   			ind_elev = ((int)roundf((elev_samp - elev_ang_low_lim)
   				/ (hori_acc / 5.0)));
-  			hori_buffer[ind_hori] = elev_ang[ind_elev];  // [radian]
+  			hori_buffer[k] = elev_ang[ind_elev];  // [radian]
   			ind_elev_prev_azim = ind_elev;
   			continue;
 		
@@ -473,11 +474,10 @@ void ray_guess_const(float ray_org_x, float ray_org_y, float ray_org_z,
 		
 		}
 
-  		size_t ind_hori = lin_ind_3d(dim_in_0, dim_in_1, k, i, j);
   		elev_samp = (elev_ang[ind_elev_prev] + elev_ang[ind_elev]) / 2.0;
   		ind_elev = ((int)roundf((elev_samp - elev_ang_low_lim)
   			/ (hori_acc / 5.0)));
-  		hori_buffer[ind_hori] = elev_ang[ind_elev];  // [radian]
+  		hori_buffer[k] = elev_ang[ind_elev];  // [radian]
   		ind_elev_prev_azim = ind_elev;
 			
 	}
@@ -491,17 +491,16 @@ void ray_guess_const(float ray_org_x, float ray_org_y, float ray_org_z,
 void (*function_pointer)(float ray_org_x, float ray_org_y, float ray_org_z,
 	size_t azim_num, float hori_acc, float dist_search,
 	float elev_ang_low_lim, float elev_ang_up_lim, int elev_num,
-	RTCScene scene, size_t &num_rays, size_t dim_in_0, size_t dim_in_1,
-	size_t i, size_t j, float* hori_buffer,
+	RTCScene scene, size_t &num_rays, float* hori_buffer,
 	float* azim_sin, float* azim_cos, float* elev_ang,
 	float* elev_cos, float* elev_sin, float (&rot_inv)[3][3]);
 
 //#############################################################################
-// Write output to NetCDF file
+// Compute horizon for gridded domain
 //#############################################################################
 
 //-----------------------------------------------------------------------------
-// NetCDF4 interface
+// Output writing (NetCDF4 interface)
 //-----------------------------------------------------------------------------
 
 void output_netcdf(float* hori_buffer, int azim_num,
@@ -546,9 +545,9 @@ void output_netcdf(float* hori_buffer, int azim_num,
 		data_y.putAtt("units", units);
 
 		vector<NcDim> dims_data;
-		dims_data.push_back(dim_azim);
 		dims_data.push_back(dim_y);
 		dims_data.push_back(dim_x);
+		dims_data.push_back(dim_azim);
 		NcVar data = dataFile.addVar("horizon", ncFloat, dims_data);
 		data.putVar(hori_buffer);
 		data.putAtt("units", "radian");
@@ -564,7 +563,7 @@ void output_netcdf(float* hori_buffer, int azim_num,
 }
 
 //-----------------------------------------------------------------------------
-// NetCDF3 interface (legacy)
+// Output writing (NetCDF3 interface; legacy)
 //-----------------------------------------------------------------------------
 
 // void output_netcdf(float* hori_buffer, int azim_num,
@@ -612,9 +611,9 @@ void output_netcdf(float* hori_buffer, int azim_num,
 // 
 // }
 
-//#############################################################################
-// Compute horizon for gridded domain
-//#############################################################################
+//-----------------------------------------------------------------------------
+// Main function
+//-----------------------------------------------------------------------------
 
 void horizon_gridded_comp(float* vert_grid,
 	int dem_dim_0, int dem_dim_1,
@@ -747,6 +746,7 @@ void horizon_gridded_comp(float* vert_grid,
   			for (size_t j = 0; j < (size_t)dim_in_1; j++) {
 
   				size_t ind_arr = lin_ind_2d(dim_in_1, i, j);
+  				size_t ind_hori = lin_ind_3d(dim_in_1, azim_num, i, j, 0);
   				if (mask[ind_arr] == 1) {
     	
     				// Get vector components
@@ -780,19 +780,17 @@ void horizon_gridded_comp(float* vert_grid,
 									   	   {east_z, north_z, norm_z}};
   				
   					// Perform ray tracing
-  					function_pointer(ray_org_x,  ray_org_y,  ray_org_z,
+  					function_pointer(ray_org_x, ray_org_y, ray_org_z,
   				 		azim_num, hori_acc, dist_search,
   				 		elev_ang_low_lim, elev_ang_up_lim, elev_num,
-  				 		scene, num_rays, dim_in_0, dim_in_1,
-  				 		i, j, hori_buffer,
+  				 		scene, num_rays, &hori_buffer[ind_hori],
   				 		azim_sin, azim_cos, elev_ang,
   				 		elev_cos, elev_sin, rot_inv);
   				 	
   				 } else {
   					for (int k = 0; k < azim_num; k++) {
-  						size_t ind_hori = lin_ind_3d(dim_in_0, dim_in_1,
-  							k, i, j);
   						hori_buffer[ind_hori] = hori_fill;  // [radian]
+  						ind_hori += 1;
   					}
   				 }
     	
@@ -863,6 +861,8 @@ void horizon_gridded_comp(float* vert_grid,
   					j++) {
 
   					size_t ind_arr = lin_ind_2d(dim_in_1, i, j);
+  					size_t ind_hori = lin_ind_3d(len_x, azim_num, i,
+  						j - block_ind[m], 0);
   					if (mask[ind_arr] == 1) {
     	
     					// Get vector components
@@ -896,19 +896,17 @@ void horizon_gridded_comp(float* vert_grid,
 											   {east_z, north_z, norm_z}};
   			
   						// Perform ray tracing
-  						function_pointer(ray_org_x,  ray_org_y,  ray_org_z,
+  						function_pointer(ray_org_x, ray_org_y, ray_org_z,
   				 			azim_num, hori_acc, dist_search,
   				 			elev_ang_low_lim, elev_ang_up_lim, elev_num,
-  				 			scene, num_rays, dim_in_0, len_x,
-  				 			i, j - block_ind[m], hori_buffer,
+  				 			scene, num_rays, &hori_buffer[ind_hori],
   				 			azim_sin, azim_cos, elev_ang,
   				 			elev_cos, elev_sin, rot_inv);
 
 	   				 	} else {
   						for (int k = 0; k < azim_num; k++) {
-  							size_t ind_hori = lin_ind_3d(dim_in_0, len_x,
-  								k, i, j - block_ind[m]);
   							hori_buffer[ind_hori] = hori_fill;  // [radian]
+  							ind_hori += 1;
   						}
   				 	}
     	
@@ -977,21 +975,32 @@ void horizon_gridded_comp(float* vert_grid,
 // Compute horizon for individual grid cells
 //#############################################################################
 
+//-----------------------------------------------------------------------------
+// Output writing (NetCDF4 interface)
+//-----------------------------------------------------------------------------
+
+
+
+
+//-----------------------------------------------------------------------------
+// Main function
+//-----------------------------------------------------------------------------
+
 void horizon_gridcells_comp(float* vert_grid,
 	int dem_dim_0, int dem_dim_1,
+	int* indices,
 	float* vec_norm, float* vec_north,
 	int offset_0, int offset_1,
-	float* hori_buffer,
-	int dim_in_0, int dim_in_1,
+	float* out_buffer,
+	int num_gc,
 	int azim_num, float dist_search,
 	float hori_acc, char* ray_algorithm, char* geom_type,
 	float* vert_simp, int num_vert_simp,
 	int* tri_ind_simp, int num_tri_simp,
     char* file_out,
-    float* x_axis_val, float* y_axis_val,
-    char* x_axis_name, char* y_axis_name, char* units,
     float elev_ang_low_lim,
-    float ray_org_elev) {
+    float ray_org_elev,
+    int hori_dist_out) {
 
 	cout << "--------------------------------------------------------" << endl;
 	cout << "Horizon computation with Intel Embree" << endl;
@@ -1006,11 +1015,6 @@ void horizon_gridcells_comp(float* vert_grid,
   	RTCDevice device = initializeDevice();
   	RTCScene scene = initializeScene(device, vert_grid, dem_dim_0, dem_dim_1,
   		geom_type, vert_simp, num_vert_simp, tri_ind_simp, num_tri_simp);
-
-  	// Query properties of device
-  	// bool cullingEnabled = rtcGetDeviceProperty(device,
-  	//	RTC_DEVICE_PROPERTY_BACKFACE_CULLING_ENABLED);
-  	// cout << "Backface culling enabled: " << cullingEnabled << endl;
 
   	auto end_ini = std::chrono::high_resolution_clock::now();
   	std::chrono::duration<double> time = end_ini - start_ini;
@@ -1035,14 +1039,13 @@ void horizon_gridcells_comp(float* vert_grid,
     	function_pointer = ray_guess_const;
 	}
 
-  	int num_gc_tot = (dim_in_0 * dim_in_1);
   	printf("Number of grid cells for which horizon is computed: %d \n",
-  		num_gc_tot);
+  		num_gc);
 
-	float hori_buffer_size = (((float)dim_in_0 * (float)dim_in_1
+	float out_buffer_size = (((float)num_gc
 		* (float)azim_num * 4.0) / pow(10.0, 9.0));
 	cout << "Total memory required for horizon output: " 
-		<< hori_buffer_size << " GB" << endl;
+		<< out_buffer_size << " GB" << endl;
 
 	size_t num_rays = 0;
   	std::chrono::duration<double> time_ray = std::chrono::seconds(0);
@@ -1079,75 +1082,72 @@ void horizon_gridcells_comp(float* vert_grid,
   	// Perform ray tracing
     // --------------------------------------------------------------------
 
-  	auto start_ray = std::chrono::high_resolution_clock::now();
-    
+   	auto start_ray = std::chrono::high_resolution_clock::now();
+     
 	num_rays += tbb::parallel_reduce(
-		tbb::blocked_range<size_t>(0,dim_in_0), 0.0,
+		tbb::blocked_range<size_t>(0,num_gc), 0.0,
 		[&](tbb::blocked_range<size_t> r, size_t num_rays) {  // parallel
 
-	//for (size_t i = 0; i < dim_in_0; i++) {  // serial
+	//for (size_t i = 0; i < num_gc; i++) {  // serial
 	for (size_t i=r.begin(); i<r.end(); ++i) {  // parallel
-  		for (size_t j = 0; j < (size_t)dim_in_1; j++) {
 
-			// Get vector components
-    		size_t ind_vec = lin_ind_2d(dim_in_1, i, j) * 3;
-  			float norm_x = vec_norm[ind_vec];
-  			float north_x = vec_north[ind_vec];
-  			ind_vec += 1;
-  			float norm_y = vec_norm[ind_vec];
-  			float north_y = vec_north[ind_vec];
-  			ind_vec += 1;
-  			float norm_z = vec_norm[ind_vec];
-  			float north_z = vec_north[ind_vec];
-  		
-  			// Ray origin
-  			size_t ind_2d = lin_ind_2d(dem_dim_1, i + offset_0,
-  				j + offset_1);
-  			float ray_org_x = vert_grid[ind_2d * 3 + 0] 
-  				+ norm_x * ray_org_elev;
-  			float ray_org_y = vert_grid[ind_2d * 3 + 1] 
-  				+ norm_y * ray_org_elev;
-  			float ray_org_z = vert_grid[ind_2d * 3 + 2] 
-  				+ norm_z * ray_org_elev;
-  				
-  			// Compute inverse of rotation matrix
-  			float east_x, east_y, east_z;
-			cross_prod(north_x, north_y, north_z,
-					   norm_x, norm_y, norm_z,
-					   east_x, east_y, east_z);		
-			float rot_inv[3][3] = {{east_x, north_x, norm_x},
-			  					   {east_y, north_y, norm_y},
-								   {east_z, north_z, norm_z}};
-  				
-  			// Perform ray tracing
-  			function_pointer(ray_org_x,  ray_org_y,  ray_org_z,
-  				 azim_num, hori_acc, dist_search,
-  				 elev_ang_low_lim, elev_ang_up_lim, elev_num,
-  				 scene, num_rays, dim_in_0, dim_in_1,
-  				 i, j, hori_buffer,
-  				 azim_sin, azim_cos, elev_ang,
-  				 elev_cos, elev_sin, rot_inv);
+ 		// Get vector components
+ 		size_t ind_vec = i * 3;
+  		float norm_x = vec_norm[ind_vec];
+  		float north_x = vec_north[ind_vec];
+  		ind_vec += 1;
+  		float norm_y = vec_norm[ind_vec];
+  		float north_y = vec_north[ind_vec];
+  		ind_vec += 1;
+  		float norm_z = vec_norm[ind_vec];
+  		float north_z = vec_north[ind_vec];
 
-  			}
-  		}
-  	
-  		return num_rays;  // parallel
-  		}, std::plus<size_t>());  // parallel
+  		// Ray origin
+  		size_t ind_2d = lin_ind_2d(dem_dim_1, indices[i * 2] + offset_0,
+  			indices[i * 2 + 1] + offset_1);
+  		float ray_org_x = vert_grid[ind_2d * 3 + 0] 
+  			+ norm_x * ray_org_elev;
+  		float ray_org_y = vert_grid[ind_2d * 3 + 1] 
+  			+ norm_y * ray_org_elev;
+  		float ray_org_z = vert_grid[ind_2d * 3 + 2] 
+  			+ norm_z * ray_org_elev;
+				
+  		// Compute inverse of rotation matrix
+  		float east_x, east_y, east_z;
+		cross_prod(north_x, north_y, north_z,
+				   norm_x, norm_y, norm_z,
+				   east_x, east_y, east_z);		
+		float rot_inv[3][3] = {{east_x, north_x, norm_x},
+							   {east_y, north_y, norm_y},
+							   {east_z, north_z, norm_z}};
+   				
+  		// Perform ray tracing
+  		size_t ind_out = i * azim_num;
+  		function_pointer(ray_org_x, ray_org_y, ray_org_z,
+  			azim_num, hori_acc, dist_search,
+  			elev_ang_low_lim, elev_ang_up_lim, elev_num,
+  			scene, num_rays, &out_buffer[ind_out],
+  			azim_sin, azim_cos, elev_ang,
+  			elev_cos, elev_sin, rot_inv);
+
+  	}
+ 	
+  	return num_rays;  // parallel
+  	}, std::plus<size_t>());  // parallel
     
-  		auto end_ray = std::chrono::high_resolution_clock::now();
-  		time_ray += (end_ray - start_ray);
+  	auto end_ray = std::chrono::high_resolution_clock::now();
+  	time_ray += (end_ray - start_ray);
   		
-    	// --------------------------------------------------------------------
+    // --------------------------------------------------------------------
 
   	// Save horizon to NetCDF file
-    auto start_out = std::chrono::high_resolution_clock::now();
-    output_netcdf(hori_buffer, azim_num,
-    	dim_in_0, dim_in_1, file_out, x_axis_val, y_axis_val,
-    	x_axis_name, y_axis_name, units);
-  	auto end_out = std::chrono::high_resolution_clock::now();
-  	time_out += (end_out - start_out);
+     auto start_out = std::chrono::high_resolution_clock::now();
+//     output_netcdf(hori_buffer, azim_num,
+//     	dim_in_0, dim_in_1, file_out, x_axis_val, y_axis_val,
+//     	x_axis_name, y_axis_name, units);
+   	 auto end_out = std::chrono::high_resolution_clock::now();
+   	 time_out += (end_out - start_out);
 
-  	
     // ------------------------------------------------------------------------
     
     cout << "Ray tracing time: " << time_ray.count() << " s" << endl;
@@ -1155,7 +1155,7 @@ void horizon_gridcells_comp(float* vert_grid,
     
   	// Print number of rays needed for location and azimuth direction
   	cout << "Number of rays shot: " << num_rays << endl;	
-  	float ratio = (float)num_rays / (float)(num_gc_tot * azim_num);
+  	float ratio = (float)num_rays / (float)(num_gc * azim_num);
   	printf("Average number of rays per location and azimuth: %.2f \n", ratio);
 
   	// Release resources allocated through Embree
