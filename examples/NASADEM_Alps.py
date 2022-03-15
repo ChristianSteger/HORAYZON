@@ -141,6 +141,10 @@ hori = ds["horizon"].values
 azim = ds["azim"].values
 ds.close()
 
+# Swap coordinate axes (-> make viewable with ncview)
+ds_ncview = ds.transpose("azim", "lat", "lon")
+ds_ncview.to_netcdf(file_hori[:-3] + "_ncview.nc")
+
 # Rotation matrix (global ENU -> local ENU)
 rot_mat = np.empty((vec_north_enu.shape[0] + 2, vec_north_enu.shape[1] + 2,
                     3, 3), dtype=np.float32)
