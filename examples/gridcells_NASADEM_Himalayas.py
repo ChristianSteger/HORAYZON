@@ -148,6 +148,29 @@ azim = ds["azim"].values
 hori_dist = ds["horizon_distance"].values / 1000.0  # [km]
 ds.close()
 
+# Rotation matrix (global ENU -> local ENU)
+rot_mat = np.empty((vec_north_enu.shape[0] + 2, vec_north_enu.shape[1] + 2,
+                    3, 3), dtype=np.float32)
+rot_mat.fill(np.nan)
+rot_mat[1:-1, 1:-1, 0, :] = np.cross(vec_north_enu, vec_norm_enu, axisa=2,
+                                     axisb=2)  # vector pointing towards east
+rot_mat[1:-1, 1:-1, 1, :] = vec_north_enu
+rot_mat[1:-1, 1:-1, 2, :] = vec_norm_enu
+del vec_north_enu, vec_norm_enu
+
+# Compute slope
+sd_in_a1 = (slice(sd_in[0].start - 1, sd_in[0].stop + 1),
+            slice(sd_in[1].start - 1, sd_in[1].stop + 1))
+vec_tilt = functions_cy.slope_plane_meth(x_enu[sd_in_a1], y_enu[sd_in_a1],
+                                         z_enu[sd_in_a1], rot_mat)[1:-1, 1:-1]
+del rot_mat
+del x_enu, y_enu, z_enu
+
+# Compute Sky View Factor
+hori_rs = hori[:, np.newaxis, :]
+vec_tilt_rs = vec_tilt[indices[:, 0], indices[:, 1], :][:, np.newaxis, :]
+svf = functions_cy.skyviewfactor(azim, hori_rs, vec_tilt_rs)
+
 # Plot horizon and distance to horizon for specific location
 ind = 2
 plt.figure(figsize=(12, 5))
@@ -162,4 +185,5 @@ plt.plot(np.rad2deg(azim), hori_dist[ind, :],
          color="blue", lw=1.5)
 plt.ylabel("Distance to horizon line [km]", color="blue")
 ax_r.tick_params(axis="y", colors="blue")
-plt.title(list(loc_sel.keys())[ind].replace("_", " "))
+plt.title(list(loc_sel.keys())[ind].replace("_", " ")
+          + " (SVF = %.2f" % svf[ind, 0] + ")", fontsize=12, fontweight="bold")
