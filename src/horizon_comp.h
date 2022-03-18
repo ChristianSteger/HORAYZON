@@ -51,7 +51,7 @@ void horizon_locations_comp(float* vert_grid,
     float* x_axis_val, float* y_axis_val,
     char* x_axis_name, char* y_axis_name, char* units,
     float elev_ang_low_lim,
-    float ray_org_elev,
+    float* ray_org_elev,
     int hori_dist_out);
 
 #endif

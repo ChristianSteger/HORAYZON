@@ -1542,7 +1542,7 @@ void horizon_locations_comp(float* vert_grid,
     float* x_axis_val, float* y_axis_val,
     char* x_axis_name, char* y_axis_name, char* units,
     float elev_ang_low_lim,
-    float ray_org_elev,
+    float* ray_org_elev,
     int hori_dist_out) {
 
 	cout << "--------------------------------------------------------" << endl;
@@ -1675,9 +1675,9 @@ void horizon_locations_comp(float* vert_grid,
   			if (hit) {
   			
   				// Ray origin
-  				float ray_org_x = ini_x + norm_x * (dist + ray_org_elev);
-  				float ray_org_y = ini_y + norm_y * (dist + ray_org_elev);
-  				float ray_org_z = ini_z + norm_z * (dist + ray_org_elev);
+  				float ray_org_x = ini_x + norm_x * (dist + ray_org_elev[i]);
+  				float ray_org_y = ini_y + norm_y * (dist + ray_org_elev[i]);
+  				float ray_org_z = ini_z + norm_z * (dist + ray_org_elev[i]);
 				
   				// Compute inverse of rotation matrix
   				float east_x, east_y, east_z;
@@ -1756,9 +1756,9 @@ void horizon_locations_comp(float* vert_grid,
   			if (hit) {
 
   				// Ray origin
-  				float ray_org_x = ini_x + norm_x * (dist + ray_org_elev);
-  				float ray_org_y = ini_y + norm_y * (dist + ray_org_elev);
-  				float ray_org_z = ini_z + norm_z * (dist + ray_org_elev);
+  				float ray_org_x = ini_x + norm_x * (dist + ray_org_elev[i]);
+  				float ray_org_y = ini_y + norm_y * (dist + ray_org_elev[i]);
+  				float ray_org_z = ini_z + norm_z * (dist + ray_org_elev[i]);
 				
   				// Compute inverse of rotation matrix
   				float east_x, east_y, east_z;

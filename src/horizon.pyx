@@ -393,7 +393,7 @@ cdef extern from "horizon_comp.h":
             float* x_axis_val, float* y_axis_val,
             char* x_axis_name, char* y_axis_name, char* units,
             float elev_ang_low_lim,
-            float ray_org_elev,
+            float* ray_org_elev,
             int hori_dist_out)
 
 def horizon_locations(
@@ -412,7 +412,8 @@ def horizon_locations(
         str ray_algorithm="binary_search",
         str geom_type="grid",
         float elev_ang_low_lim = -89.98,
-        float ray_org_elev=0.01,
+        np.ndarray[np.float32_t, ndim = 1] ray_org_elev \
+        = np.array([0.01], dtype=np.float32),
         bint hori_dist_out=False):
     """Horizon computation for arbitrary locations.
 
@@ -461,7 +462,7 @@ def horizon_locations(
         Embree geometry type (triangle, quad, grid)
     elev_ang_low_lim : float
         Lower limit for elevation angle search [degree]
-    ray_org_elev : float
+    ray_org_elev : ndarray of float
         Vertical elevation of ray origin [metre]
     hori_dist_out : bool
         Option to output distance to horizon
@@ -492,7 +493,10 @@ def horizon_locations(
                          " inconsistent with dimension lengths of vec_norm")
     if hori_acc > 10.0:
         raise ValueError("limit of hori_acc (10 degree) is exceeded")
-    if ray_org_elev < 0.005:
+    if (len(ray_org_elev) != 1) and (len(ray_org_elev) != coords.shape[0]):
+        raise ValueError("length of array 'ray_org_elev' must be either "
+                         + "one or correspond to the number of locations")
+    if ray_org_elev.min() < 0.005:
         raise TypeError("minimal allowed value for 'ray_org_elev' is 0.005 m")
     if hori_dist_out and (ray_algorithm == "guess_constant"):
         raise TypeError("horizon detection algorithm 'guess_constant' not "
@@ -503,11 +507,16 @@ def horizon_locations(
         raise ValueError("maximal allowed input length for dem_dim_0 and "
                          "dem_dim_1 is 32'767")
 
+    # Repeat array 'ray_org_elev' if necessary
+    if len(ray_org_elev) != coords.shape[0]:
+        ray_org_elev = np.repeat(ray_org_elev, coords.shape[0])
+
     # Ensure that passed arrays are contiguous in memory
     vert_grid = np.ascontiguousarray(vert_grid)
     coords = np.ascontiguousarray(coords)
     vec_norm = np.ascontiguousarray(vec_norm)
     vec_north = np.ascontiguousarray(vec_north)
+    ray_org_elev = np.ascontiguousarray(ray_org_elev)
 
     # Convert input strings to bytes
     ray_algorithm_c = ray_algorithm.encode("utf-8")
@@ -536,5 +545,5 @@ def horizon_locations(
         &x_axis_val[0], &y_axis_val[0],
         x_axis_name_c, y_axis_name_c, units_c,
         elev_ang_low_lim,
-        ray_org_elev,
+        &ray_org_elev[0],
         hori_dist_out)
