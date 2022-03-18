@@ -240,7 +240,7 @@ for i in list(loc_sel.keys()):
     plt.figure(figsize=(12, 6))
     ax_l = plt.axes()
     ind = list(loc_sel.keys()).index(i)
-    plt.plot(np.rad2deg(azim), np.rad2deg(hori[ind, :]), color="black", lw=2.5)
+    plt.plot(np.rad2deg(azim), np.rad2deg(hori[ind, :]), color="black", lw=1.5)
     plt.xlabel("Azimuth angle (measured clockwise from North) [deg]")
     plt.ylabel("Horizon elevation angle [deg]")
     plt.xlim([-5.0, 365.0])
