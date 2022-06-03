@@ -2,94 +2,92 @@
 # MIT License
 
 # Load modules
+import os
 import numpy as np
-from geographiclib.geodesic import Geodesic
+from tqdm import tqdm
+import requests
 from pyproj import CRS, Transformer
 import glob
-from osgeo import gdal, osr
+from osgeo import gdal
 
 
-###############################################################################
+# -----------------------------------------------------------------------------
 
-def dem_domain_loc(loc, width_in, dist_search=50.0, ellps="sphere"):
-    """Compute Digital Elevation model (DEM) domain.
+def pad_geometry_buffer(buffer):
+    """Padding of geometry buffer.
 
-    Computes required domain of Digital Elevation model (DEM) from location
-    and width of inner domain (geodetic coordinates).
+    Pads geometric buffer to make it conformal with 16-byte SSE load
+    instructions.
 
     Parameters
     ----------
-    loc : tuple
-        Tuple with geodetic latitude/longitude of centre [degree]
-    width_in : float
-        Total x/y-width of inner domain for which horizon is computed
-        [kilometre]
-    dist_search : float
-        Search distance for horizon [kilometre]
-    ellps : str
-        Earth's surface approximation (sphere, GRS80 or WGS84)
+    buffer : ndarray
+        Array (1-dimensional) with geometry buffer [arbitrary]
 
     Returns
     -------
-    dom : dict
-        Dictionary with boundaries of inner and total domain [degree]
+    buffer : ndarray
+        Array (1-dimensional) with padded geometry buffer [arbitrary]
 
     Notes
     -----
-    Source:
-    - Geoid parameters a and f: PROJ
-    - https://en.wikipedia.org/wiki/Geographic_coordinate_conversion"""
+    This function ensures that vertex buffer size is divisible by 16 and hence
+    conformal with 16-byte SSE load instructions (see Embree documentation;
+    section 7.45 rtcSetSharedGeometryBuffer)."""
 
     # Check arguments
-    if ellps not in ("sphere", "GRS80", "WGS84"):
-        raise NotImplementedError("ellipsoid " + ellps + " is not supported")
+    if not isinstance(buffer, np.ndarray):
+        raise ValueError("argument 'buffer' has invalid type")
+    if buffer.ndim != 1:
+        raise ValueError("argument 'buffer' must be one-dimensional")
 
-    # Initialise geodesic
-    if ellps == "sphere":
-        a = 6370997.0  # earth radius [m]
-        f = 0.0  # flattening [-]
-    elif ellps == "GRS80":
-        a = 6378137.0  # equatorial radius (semi-major axis) [m]
-        f = (1.0 / 298.257222101)  # flattening [-]
-    else:
-        a = 6378137.0  # equatorial radius (semi-major axis) [m]
-        f = (1.0 / 298.257223563)  # flattening [-]
-    b = a * (1.0 - f)  # polar radius (semi-minor axis) [m]
-    e_2 = 1.0 - (b ** 2 / a ** 2)  # squared num. eccentricity [-]
-    geod = Geodesic(a, f)
+    add_elem = 16
+    if not (buffer.nbytes % 16) == 0:
+        add_elem += ((16 - (buffer.nbytes % 16)) // buffer[0].nbytes)
+    buffer = np.append(buffer, np.zeros(add_elem, dtype=buffer.dtype))
 
-    # Inner domain
-    width_h = width_in / 2.0 * 1000.0  # [m]
-    rad_sph = a / np.sqrt(1 - e_2 * np.sin(np.deg2rad(loc[0])) ** 2) \
-        * np.cos(np.deg2rad(loc[0]))  # sphere radius [m]
-    lon_add = (360.0 / (np.pi * 2 * rad_sph)) * width_h  # [deg]
-    dom_in = {"lon_min": loc[1] - lon_add,
-              "lon_max": loc[1] + lon_add,
-              "lat_min": geod.Direct(loc[0], loc[1], 180.0, width_h)["lat2"],
-              "lat_max": geod.Direct(loc[0], loc[1], 0.0, width_h)["lat2"]}
-
-    # Total domain
-    add_out = dist_search * 1000.0  # [m]
-    lat_abs_max = max(abs(dom_in["lat_min"]), abs(dom_in["lat_max"]))
-    rad_sph = a / np.sqrt(1 - e_2 * np.sin(np.deg2rad(lat_abs_max)) ** 2) \
-        * np.cos(np.deg2rad(lat_abs_max))  # sphere radius [m]
-    lon_add = (360.0 / (np.pi * 2 * rad_sph)) * add_out  # [deg]
-    dom_tot = {"lon_min": dom_in["lon_min"] - lon_add,
-               "lon_max": dom_in["lon_max"] + lon_add,
-               "lat_min": geod.Direct(loc[0], loc[1], 180.0,
-                                      width_h + add_out)["lat2"],
-               "lat_max": geod.Direct(loc[0], loc[1], 0.0,
-                                      width_h + add_out)["lat2"]}
-
-    # Check if total domain is within valid range (lon: -/+180.0, lat: -/+90.0)
-    if ((dom_tot["lon_min"] < -180.0) or (dom_tot["lon_max"] > 180.0)
-            or (dom_tot["lat_min"] < -90.0) or (dom_tot["lat_max"] > 90.0)):
-        raise ValueError("total domain exceeds valid range")
-
-    return {"in": dom_in, "tot": dom_tot}
+    return buffer
 
 
-###############################################################################
+# -----------------------------------------------------------------------------
+
+def download_file(file_url, path_save):
+    """Download file from web.
+
+    Download file from web and show progress with bar.
+
+    Parameters
+    ----------
+    file_url : str
+        URL of file to download
+    path_save: str
+        Local path for downloaded file"""
+
+    # Check arguments
+    if not os.path.isdir(path_save):
+        raise ValueError("Local path does not exist")
+
+    # Try to download file
+    print("Download file " + file_url.split("/")[-1])
+    try:
+        response = requests.get(file_url, stream=True)
+        total_size_in_bytes = int(response.headers.get("content-length", 0))
+        block_size = 1024 * 10
+        # download seems to be faster with larger block size...
+        progress_bar = tqdm(total=total_size_in_bytes, unit="iB",
+                            unit_scale=True)
+        with open(path_save + file_url.split("/")[-1], "wb") as file:
+            for data in response.iter_content(block_size):
+                progress_bar.update(len(data))
+                file.write(data)
+        progress_bar.close()
+        if total_size_in_bytes != 0 and progress_bar.n != total_size_in_bytes:
+            raise ValueError("Inconsistency in file size")
+    except Exception:
+        print("URL of file does not exist")
+
+
+# -----------------------------------------------------------------------------
 
 def load_swissalti3d(loc, width, path_tiles):
     """Compute Digital Elevation model (DEM) domain.

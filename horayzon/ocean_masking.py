@@ -10,12 +10,10 @@ from scipy.spatial import cKDTree
 import pygeos
 import time
 from skimage.measure import find_contours
-
-# Load required functions
-import functions_cy
+import horayzon.transform as transform
 
 
-###############################################################################
+# -----------------------------------------------------------------------------
 
 def get_GSHHS_coastlines(dom, path_GSHHG, path_temp):
     """Get relevant GSHHS coastline data.
@@ -100,7 +98,7 @@ def get_GSHHS_coastlines(dom, path_GSHHG, path_temp):
     return poly_coastlines
 
 
-###############################################################################
+# -----------------------------------------------------------------------------
 
 def coastline_contours(lon, lat, mask_bin):
     """Compute coastline contours.
@@ -151,7 +149,7 @@ def coastline_contours(lon, lat, mask_bin):
     return contours_latlon
 
 
-###############################################################################
+# -----------------------------------------------------------------------------
 
 def coastline_distance(x_ecef, y_ecef, z_ecef, mask_land, pts_ecef):
     """Compute minimal chord distance.
@@ -205,7 +203,7 @@ def coastline_distance(x_ecef, y_ecef, z_ecef, mask_land, pts_ecef):
     return dist_chord
 
 
-###############################################################################
+# -----------------------------------------------------------------------------
 
 def coastline_buffer(x_ecef, y_ecef, z_ecef, mask_land, pts_ecef, lat,
                      dist_thr, dem_res, ellps, block_size=(5 * 2 + 1)):
@@ -266,7 +264,7 @@ def coastline_buffer(x_ecef, y_ecef, z_ecef, mask_land, pts_ecef, lat,
                          lat_ini + dem_res * int((block_size - 1) / 2)]],
                        dtype=np.float64).reshape(1, 2)
     h_max = np.zeros(lon_max.shape, dtype=np.float32)
-    coord_ecef = functions_cy.lonlat2ecef(lon_max, lat_max, h_max, ellps=ellps)
+    coord_ecef = transform.lonlat2ecef(lon_max, lat_max, h_max, ellps=ellps)
     chord_max = np.sqrt(np.diff(coord_ecef[0])[0][0] ** 2
                         + np.diff(coord_ecef[1])[0][0] ** 2
                         + np.diff(coord_ecef[2])[0][0] ** 2)
