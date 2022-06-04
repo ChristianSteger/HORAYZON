@@ -51,7 +51,7 @@ def get_path_aux_data():
 
 # -----------------------------------------------------------------------------
 
-def download_file(file_url, file_local_path):
+def download_file(file_url, file_local):
     """Download file from web.
 
     Download file from web and show progress with bar.
@@ -60,11 +60,11 @@ def download_file(file_url, file_local_path):
     ----------
     file_url : str
         URL of file to download
-    file_local_path: str
-        Local path for downloaded file"""
+    file_local: str
+        Local path and name for downloaded file"""
 
     # Check arguments
-    if not os.path.isdir(os.path.split(file_local_path)[0]):
+    if not os.path.isdir(os.path.split(file_local)[0]):
         raise ValueError("Local path does not exist")
 
     # Try to download file
@@ -75,7 +75,7 @@ def download_file(file_url, file_local_path):
         # download seems to be faster with larger block size...
         progress_bar = tqdm(total=total_size_in_bytes, unit="iB",
                             unit_scale=True)
-        with open(file_local_path, "wb") as file:
+        with open(file_local, "wb") as file:
             for data in response.iter_content(block_size):
                 progress_bar.update(len(data))
                 file.write(data)
@@ -83,7 +83,7 @@ def download_file(file_url, file_local_path):
         if total_size_in_bytes != 0 and progress_bar.n != total_size_in_bytes:
             raise ValueError("Inconsistency in file size")
     except Exception:
-        print("URL of file does not exist")
+        print("Download failed (probably because URL does not exist)")
 
 
 # -----------------------------------------------------------------------------
