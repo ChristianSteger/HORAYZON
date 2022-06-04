@@ -10,7 +10,7 @@ from libc.math cimport M_PI
 from cython.parallel import prange
 
 
-#------------------------------------------------------------------------------
+# -----------------------------------------------------------------------------
 
 def lonlat2ecef(double[:, :] lon, double[:, :] lat, float[:, :] h,
                 ellps="sphere"):
@@ -85,7 +85,7 @@ def lonlat2ecef(double[:, :] lon, double[:, :] lat, float[:, :] h,
     return np.asarray(x_ecef), np.asarray(y_ecef), np.asarray(z_ecef)
 
 
-#------------------------------------------------------------------------------
+# -----------------------------------------------------------------------------
 
 def lonlat2ecef_coord1d(double[:] lon, double[:] lat, float[:,:] h,
                         ellps="sphere"):
@@ -160,7 +160,7 @@ def lonlat2ecef_coord1d(double[:] lon, double[:] lat, float[:,:] h,
     return np.asarray(x_ecef), np.asarray(y_ecef), np.asarray(z_ecef)
 
 
-#------------------------------------------------------------------------------
+# -----------------------------------------------------------------------------
 
 def ecef2enu(double[:, :] x_ecef, double[:, :] y_ecef, double[:, :] z_ecef,
              double x_ecef_or, double y_ecef_or, double z_ecef_or,
@@ -232,7 +232,7 @@ def ecef2enu(double[:, :] x_ecef, double[:, :] y_ecef, double[:, :] z_ecef,
     return np.asarray(x_enu), np.asarray(y_enu), np.asarray(z_enu)
 
 
-#------------------------------------------------------------------------------
+# -----------------------------------------------------------------------------
 
 def ecef2enu_vec(float[:, :, :] vec_ecef, double lon_or, double lat_or):
     """Coordinate transformation from ECEF to ENU.
@@ -288,7 +288,7 @@ def ecef2enu_vec(float[:, :, :] vec_ecef, double lon_or, double lat_or):
     return np.asarray(vec_enu)
 
 
-#------------------------------------------------------------------------------
+# -----------------------------------------------------------------------------
 
 def wgs2swiss(double[:, :] lon, double[:, :] lat, float[:, :] h_wgs):
     """Coordinate transformation from lon/lat to LV95.
@@ -353,7 +353,7 @@ def wgs2swiss(double[:, :] lon, double[:, :] lat, float[:, :] h_wgs):
     return np.asarray(e), np.asarray(n), np.asarray(h_ch)
 
 
-#------------------------------------------------------------------------------
+# -----------------------------------------------------------------------------
 
 def swiss2wgs(double[:, :] e, double[:, :] n, float[:, :] h_ch):
     """Coordinate transformation from LV95 to lon/lat.
@@ -423,9 +423,9 @@ def swiss2wgs(double[:, :] e, double[:, :] n, float[:, :] h_ch):
     return np.asarray(lon), np.asarray(lat), np.asarray(h_wgs)
 
 
-#------------------------------------------------------------------------------
+# -----------------------------------------------------------------------------
 # Auxiliary function(s)
-#------------------------------------------------------------------------------
+# -----------------------------------------------------------------------------
 
 cdef inline double deg2rad(double ang_in) nogil:
     """Convert degree to radian"""

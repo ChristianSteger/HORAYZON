@@ -10,7 +10,7 @@ from libc.math cimport M_PI
 from cython.parallel import prange
 
 
-#------------------------------------------------------------------------------
+# -----------------------------------------------------------------------------
 
 def surf_norm(double[:, :] lon, double[:, :] lat):
     """Compute surface normal unit vectors.
@@ -142,9 +142,9 @@ def north_dir(double[:, :] x_ecef, double[:, :] y_ecef, double[:, :] z_ecef,
     return np.asarray(vec_north_ecef)
 
 
-#------------------------------------------------------------------------------
+# -----------------------------------------------------------------------------
 # Auxiliary function(s)
-#------------------------------------------------------------------------------
+# -----------------------------------------------------------------------------
 
 cdef inline double deg2rad(double ang_in) nogil:
     """Convert degree to radian"""

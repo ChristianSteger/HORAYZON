@@ -11,11 +11,14 @@ import pygeos
 import time
 from skimage.measure import find_contours
 import horayzon.transform as transform
+from horayzon.auxiliary import get_path_aux_data, download_file
+import zipfile
+import shutil
 
 
 # -----------------------------------------------------------------------------
 
-def get_GSHHS_coastlines(dom, path_GSHHG, path_temp):
+def get_GSHHS_coastlines(dom):
     """Get relevant GSHHS coastline data.
 
     Get relevant GSHHS coastline data for rectangular latitude/longitude
@@ -26,20 +29,11 @@ def get_GSHHS_coastlines(dom, path_GSHHG, path_temp):
     dom : dict
         Specifications of rectangular latitude/longitude domain
         ('lat_min', 'lat_max', 'lon_min', 'lon_max')
-    path_GSHHG: str
-        Path to folder of GSHHS data with shapefile 'GSHHS_f_L1.shp'
-    path_temp: str
-        Path to temporary directory in which bounding boxes for coastline
-        polygons are cached
 
     Returns
     -------
     poly_coastlines : list
-        Relevant coastline polygons as Shapely polygons
-
-    Notes
-    -----
-    Source of GSHHS data: https://www.soest.hawaii.edu/pwessel/gshhg/"""
+        Relevant coastline polygons as Shapely polygons"""
 
     # Check arguments
     keys_req = ("lon_min", "lon_max", "lat_min", "lat_max")
@@ -48,19 +42,31 @@ def get_GSHHS_coastlines(dom, path_GSHHG, path_temp):
     if (dom["lon_min"] >= dom["lon_max"])\
             or (dom["lat_min"] >= dom["lat_max"]):
         raise ValueError("invalid domain extent")
-    if not os.path.isfile(path_GSHHG + "GSHHS_f_L1.shp"):
-        raise ValueError("file 'GSHHS_f_L1.shp' not found in provided "
-                         + "path for GSHHG data")
-    if not os.path.isdir(path_temp):
-        raise ValueError("temporary directory does not exist")
+
+    # Download data
+    path_aux_data = get_path_aux_data()
+    if not os.path.isdir(path_aux_data + "GSHHG"):
+        file_url = "http://www.soest.hawaii.edu/pwessel/gshhg/" \
+                   + "gshhg-shp-2.3.7.zip"
+        print("Download GSHHG data")
+        download_file(file_url, path_aux_data + "gshhg-shp-2.3.7.zip")
+        with zipfile.ZipFile(path_aux_data + "gshhg-shp-2.3.7.zip", "r") \
+                as zip_ref:
+            zip_ref.extractall(path_aux_data + "GSHHG")
+        os.remove(path_aux_data + "gshhg-shp-2.3.7.zip")
+
+        # Remove superfluous data (larger files)
+        shutil.rmtree(path_aux_data + "GSHHG/WDBII_shp/", ignore_errors=True)
+        shutil.rmtree(path_aux_data + "GSHHG/GSHHS_shp/h/", ignore_errors=True)
+        shutil.rmtree(path_aux_data + "GSHHG/GSHHS_shp/i/", ignore_errors=True)
 
     t_beg_func = time.time()
 
     # Compute and save bounding boxes of coastlines polygons
-    file_bbc = path_temp + "Bounding_boxes_coastlines.npy"
+    file_bbc = path_aux_data + "GSHHG/Bounding_boxes_coastlines.npy"
     if not os.path.isfile(file_bbc):
         t_beg = time.time()
-        ds = fiona.open(path_GSHHG + "GSHHS_f_L1.shp")
+        ds = fiona.open(path_aux_data + "GSHHG/GSHHS_shp/f/GSHHS_f_L1.shp")
         bounds = np.empty((len(ds), 4), dtype=np.float32)
         for idx, var in enumerate(ds):
             bounds[idx, :] = shape(var["geometry"]).bounds
@@ -79,7 +85,7 @@ def get_GSHHS_coastlines(dom, path_GSHHG, path_temp):
     ind = tree.query(pygeos.box(*quer_rang))
 
     # Load relevant polygons
-    ds = fiona.open(path_GSHHG + "GSHHS_f_L1.shp")
+    ds = fiona.open(path_aux_data + "GSHHG/GSHHS_shp/f/GSHHS_f_L1.shp")
     poly_all = [shape(ds[int(i)]["geometry"]) for i in ind]
     ds.close()
     print("Number of polygons: " + str(len(poly_all)))

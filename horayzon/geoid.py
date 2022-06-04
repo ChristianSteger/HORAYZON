@@ -5,11 +5,14 @@
 import os
 import numpy as np
 from scipy import interpolate
+from horayzon.auxiliary import get_path_aux_data, download_file
+import zipfile
+import gzip
 
 
-###############################################################################
+# -----------------------------------------------------------------------------
 
-def geoid_undulation(lon_ip, lat_ip, geoid="EGM96", path=None):
+def geoid_undulation(lon_ip, lat_ip, geoid="EGM96"):
     """Compute geoid undulation.
 
     Compute the geoid undulation for the EGM96 or GEOID12A geoid by bilinear
@@ -23,22 +26,11 @@ def geoid_undulation(lon_ip, lat_ip, geoid="EGM96", path=None):
         Array (1-dimensional) with geographic longitude [degree]
     geoid: str
         Geoid model (EGM96 or GEOID12A)
-    path: str
-        Path to file 'WW15MGH.GRD' (EGM96) or file 'g2012a00.asc' (GEOID12A)
-        containing the undulation data for the geoid model
 
     Returns
     -------
     data_ip : ndarray of double
-        Array (2-dimensional) with geoid undulation [m]
-
-    Notes
-    -----
-    Source of geoid undulation data:
-    - EGM96: https://earth-info.nga.mil/php/
-             download.php?file=egm-96interpolation
-    - GEOID12A: https://www.ngs.noaa.gov/PC_PROD/GEOID12A/Format_ascii/
-                g2012aa0.asc.gz"""
+        Array (2-dimensional) with geoid undulation [m]"""
 
     # Spatial coverage of data
     spat_cov = {"EGM96":    (-180.0, 180.0, -90.0, 90.0),
@@ -47,8 +39,6 @@ def geoid_undulation(lon_ip, lat_ip, geoid="EGM96", path=None):
     # Check arguments
     if geoid not in ("EGM96", "GEOID12A"):
         raise NotImplementedError("geoid " + geoid + " is not supported")
-    if path is None:
-        raise ValueError("no path specified for geoid model data")
     if (lon_ip.min() < spat_cov[geoid][0]
             or lon_ip.max() > spat_cov[geoid][1]
             or lat_ip.min() < spat_cov[geoid][2]
@@ -61,12 +51,6 @@ def geoid_undulation(lon_ip, lat_ip, geoid="EGM96", path=None):
         raise ValueError("longitude values are not monotonically increasing or"
                          "decreasing")
 
-    # Check availability of geoid undulation data
-    file = {"EGM96": "WW15MGH.GRD", "GEOID12A": "g2012a00.asc"}
-    if not os.path.exists(path + file[geoid]):
-        raise ImportError("Geoid undulation data not found in specified "
-                          "directory")
-
     # Ensure that latitude values are monotonically increasing
     lat_dec = False
     if lat_ip[1] < lat_ip[0]:
@@ -74,12 +58,24 @@ def geoid_undulation(lon_ip, lat_ip, geoid="EGM96", path=None):
         lat_ip = lat_ip[::-1]
 
     # Compute geoid undulation
+    path_aux_data = get_path_aux_data()
     data_ip = np.empty((len(lat_ip), len(lon_ip)), dtype=np.float64)
     # -------------------------------------------------------------------------
     if geoid == "EGM96":
 
+        # Download data
+        if not os.path.isdir(path_aux_data + "EGM96"):
+            file_url = "https://earth-info.nga.mil/php/" \
+                       + "download.php?file=egm-96interpolation"
+            print("Download EGM96 data")
+            download_file(file_url, path_aux_data + "EGM96.zip")
+            with zipfile.ZipFile(path_aux_data + "EGM96.zip", "r") as zip_ref:
+                zip_ref.extractall(path_aux_data + "EGM96")
+            os.remove(path_aux_data + "EGM96.zip")
+
         # Load data
-        data = np.fromfile(path + file[geoid], sep=" ", dtype=np.float32)[6:]
+        data = np.fromfile(path_aux_data + "EGM96/WW15MGH.GRD", sep=" ",
+                           dtype=np.float32)[6:]
         data = data.reshape(int(180 / 0.25) + 1, int(360 / 0.25) + 1)
 
         # Construct grid
@@ -97,9 +93,18 @@ def geoid_undulation(lon_ip, lat_ip, geoid="EGM96", path=None):
     # -------------------------------------------------------------------------
     else:  # GEOID12A
 
+        # Download data
+        if not os.path.isdir(path_aux_data + "GEOID12A"):
+            os.mkdir(path_aux_data + "GEOID12A/")
+            file_url = "https://www.ngs.noaa.gov/PC_PROD/GEOID12A/" \
+                       + "Format_ascii/g2012aa0.asc.gz"
+            print("Download GEOID12A data")
+            download_file(file_url, path_aux_data + "GEOID12A/g2012aa0.asc.gz")
+
         # Load data
-        data = np.fromstring("".join(open(path + file[geoid], "r")
-                                     .read().splitlines()), dtype=np.float32,
+        txt = gzip.open(path_aux_data + "GEOID12A/g2012aa0.asc.gz", "r") \
+            .read().decode("utf-8")
+        data = np.fromstring("".join(txt.splitlines()), dtype=np.float32,
                              sep=" ")[7:]
         data = data.reshape(1381, 3721)
 

@@ -13,7 +13,7 @@ from cython.parallel import prange
 from scipy.linalg.cython_lapack cimport sgesv
 
 
-#------------------------------------------------------------------------------
+# -----------------------------------------------------------------------------
 
 def slope_plane_meth(float[:, :] x, float[:, :] y, float[:, :] z,
                      float[:, :, :, :] rot_mat=np.empty((0, 0, 3, 3),
@@ -346,7 +346,7 @@ def slope_vector_meth(float[:, :] x, float[:, :] y, float[:, :] z,
     return np.asarray(vec_tilt)
 
 
-#------------------------------------------------------------------------------
+# -----------------------------------------------------------------------------
 
 def skyviewfactor(float[:] azim, float[:, :, :] hori, float[:, :, :] vec_tilt):
     """Sky view factor (SVF) computation.
@@ -417,7 +417,7 @@ def skyviewfactor(float[:] azim, float[:, :, :] hori, float[:, :, :] vec_tilt):
     return np.asarray(svf)
 
 
-#------------------------------------------------------------------------------
+# -----------------------------------------------------------------------------
 
 def visskyfrac(float[:] azim, float[:, :, :] hori, float[:, :, :] vec_tilt):
     """Visible sky fraction (VSF) computation.
@@ -483,7 +483,7 @@ def visskyfrac(float[:] azim, float[:, :, :] hori, float[:, :, :] vec_tilt):
     return np.asarray(vsf)
 
 
-#------------------------------------------------------------------------------
+# -----------------------------------------------------------------------------
 
 def topoopen(float[:] azim, float[:, :, :] hori):
     """Topographic openness (positive) computation.
