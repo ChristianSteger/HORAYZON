@@ -6,9 +6,6 @@ import os
 import numpy as np
 from tqdm import tqdm
 import requests
-from pyproj import CRS, Transformer
-import glob
-from osgeo import gdal
 import horayzon
 
 
