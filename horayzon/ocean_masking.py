@@ -48,7 +48,7 @@ def get_GSHHS_coastlines(dom):
     if not os.path.isdir(path_aux_data + "GSHHG"):
         file_url = "http://www.soest.hawaii.edu/pwessel/gshhg/" \
                    + "gshhg-shp-2.3.7.zip"
-        print("Download GSHHG data")
+        print("Download GSHHG data:")
         download_file(file_url, path_aux_data + "gshhg-shp-2.3.7.zip")
         with zipfile.ZipFile(path_aux_data + "gshhg-shp-2.3.7.zip", "r") \
                 as zip_ref:

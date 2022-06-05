@@ -67,7 +67,7 @@ def geoid_undulation(lon_ip, lat_ip, geoid="EGM96"):
         if not os.path.isdir(path_aux_data + "EGM96"):
             file_url = "https://earth-info.nga.mil/php/" \
                        + "download.php?file=egm-96interpolation"
-            print("Download EGM96 data")
+            print("Download EGM96 data:")
             download_file(file_url, path_aux_data + "EGM96.zip")
             with zipfile.ZipFile(path_aux_data + "EGM96.zip", "r") as zip_ref:
                 zip_ref.extractall(path_aux_data + "EGM96")
@@ -98,7 +98,7 @@ def geoid_undulation(lon_ip, lat_ip, geoid="EGM96"):
             os.mkdir(path_aux_data + "GEOID12A/")
             file_url = "https://www.ngs.noaa.gov/PC_PROD/GEOID12A/" \
                        + "Format_ascii/g2012aa0.asc.gz"
-            print("Download GEOID12A data")
+            print("Download GEOID12A data:")
             download_file(file_url, path_aux_data + "GEOID12A/g2012aa0.asc.gz")
 
         # Load data
