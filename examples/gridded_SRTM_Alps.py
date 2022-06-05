@@ -1,12 +1,8 @@
 # Description: Compute gridded topographic parameters (slope angle and aspect,
-#              horizon and sky view factor) from NASADEM (~30 m) for an example
-#              region in the European Alps
+#              horizon and sky view factor) from SRTM data (~30 m) for an
+#              example region in the European Alps
 #
-# Required input data:
-#   - NASADEM: https://search.earthdata.nasa.gov/
-#     -> NASADEM Merged DEM Global 1 arc second nc V001
-#   - EGM96:
-#     https://earth-info.nga.mil/php/download.php?file=egm-96interpolation
+# Source of applied DEM data: https://srtm.csi.cgiar.org
 #
 # Copyright (c) 2022 ETH Zurich, Christian R. Steger
 # MIT License
@@ -23,77 +19,70 @@ import matplotlib.gridspec as gridspec
 from matplotlib.ticker import MaxNLocator
 import cartopy.crs as ccrs
 from cmcrameri import cm
+import zipfile
+from osgeo import gdal
+sys.path.append("/Users/csteger/Downloads/HORAYZON/")  # ------------ temporary
+from horayzon.horizon import horizon_gridded
+from horayzon import dem_domain, geoid, transform, direction
+from horayzon import auxiliary, topo_param
 
 mpl.style.use("classic")
 
-# Paths to folders
-path_DEM = "/Users/csteger/Desktop/European_Alps/"
-path_EGM96 = "/Users/csteger/Desktop/EGM96/"
-path_out = "/Users/csteger/Desktop/output/"
-
-# Load required functions
-sys.path.append("/Users/csteger/Desktop/lib/")
-from horizon import horizon_gridded
-import functions_cy
-from auxiliary import pad_geometry_buffer
-from load_dem import dem_domain_loc
-from geoid import geoid_undulation
-
-
-###############################################################################
-# Functions
-###############################################################################
-
-# Preprocess function for NASADEM tiles
-def preprocess(ds):
-    """Remove double grid cell row/column at margins """
-    return ds.isel(lon=slice(0, 3600), lat=slice(0, 3600))
-
-
-###############################################################################
-# Compute and save topographic parameters
-###############################################################################
-
+# -----------------------------------------------------------------------------
 # Settings
-loc = (46.9, 9.0)  # centre location (latitude, longitude) [degree]
-width_in = 30.0  # width of considered domain [kilometre]
+# -----------------------------------------------------------------------------
+
+# Domain size and computation settings
+domain = {"lon_min": 7.70, "lon_max": 8.30,
+          "lat_min": 46.3, "lat_max": 46.75}  # domain boundaries [degree]
 dist_search = 50.0  # search distance for horizon [kilometre]
 ellps = "WGS84"  # Earth's surface approximation (sphere, GRS80 or WGS84)
-azim_num = 180  # number of azimuth sectors [-]
-files_dem = ("NASADEM_NC_n46e008.nc", "NASADEM_NC_n46e009.nc",
-             "NASADEM_NC_n47e008.nc", "NASADEM_NC_n47e009.nc")
-file_hori = path_out + "hori_NASADEM_Alps.nc"
-file_topo_par = path_out + "topo_par_NASADEM_Alps.nc"
+azim_num = 360  # number of azimuth sectors [-]
 
-# Load DEM data
-dom = dem_domain_loc(loc, width_in, dist_search, ellps)
-ds = xr.open_mfdataset([path_DEM + i for i in files_dem],
-                       preprocess=preprocess)
-ds = ds.sel(lon=slice(dom["tot"]["lon_min"], dom["tot"]["lon_max"]),
-            lat=slice(dom["tot"]["lat_max"], dom["tot"]["lat_min"]))
-dem = ds["NASADEM_HGT"].values
-lon = ds["lon"].values
-lat = ds["lat"].values
-ds.close()
-print("Total domain size: " + str(dem.shape))
+# Paths and file names
+dem_file_url = "https://srtm.csi.cgiar.org/wp-content/uploads/files/" \
+               + "srtm_30x30/TIFF/N30E000.zip"
+path_out = "/Users/csteger/Desktop/Output/"
+file_hori = "hori_SRTM_Alps.nc"
+file_topo_par = "topo_par_SRTM_Alps.nc"
+
+# -----------------------------------------------------------------------------
+# Compute and save topographic parameters
+# -----------------------------------------------------------------------------
+
+# Check if output directory exists
+if not os.path.isdir(path_out):
+    raise ValueError("Output directory does not exist")
+
+# Download and unzip SRTM tile (30 x 30 degree)
+print("Download SRTM tile (30 x 30 degree):")
+auxiliary.download_file(dem_file_url, path_out + "N30E000.zip")
+with zipfile.ZipFile(path_out + "N30E000.zip", "r") as zip_ref:
+    zip_ref.extractall(path_out + "n30e000")
+os.remove(path_out + "N30E000.zip")
+
+# Load required DEM data
+domain_outer = dem_domain.domain_curved_grid(domain, dist_search, ellps)
+file_dem = path_out + "N30E000/cut_n30e000.tif"
+lon, lat, elevation = dem_domain.load_srtm(file_dem, domain_outer)
 
 # Compute ellipsoidal heights
-undul = geoid_undulation(lon, lat, geoid="EGM96", path=path_EGM96)
-dem += undul  # ellipsoidal height [m]
+undulation = geoid.geoid_undulation(lon, lat, geoid="EGM96")
+elevation += undulation  # ellipsoidal height [m]
 
 # Compute indices of inner domain
-sd_in = (slice(np.argmin(np.abs(dom["in"]["lat_max"] - lat)),
-               np.argmin(np.abs(dom["in"]["lat_min"] - lat))),
-         slice(np.argmin(np.abs(dom["in"]["lon_min"] - lon)),
-               np.argmin(np.abs(dom["in"]["lon_max"] - lon))))
-offset_0 = sd_in[0].start
-offset_1 = sd_in[1].start
-print("Inner domain size: " + str(dem[sd_in].shape))
+slice_in = (slice(np.where(lat >= domain["lat_max"])[0][-1],
+                  np.where(lat <= domain["lat_min"])[0][0] + 1),
+            slice(np.where(lon <= domain["lon_min"])[0][-1],
+                  np.where(lon >= domain["lon_max"])[0][0] + 1))
+offset_0 = slice_in[0].start
+offset_1 = slice_in[1].start
+print("Inner domain size: " + str(elevation[slice_in].shape))
 
 # Compute ECEF coordinates
-x_ecef, y_ecef, z_ecef = functions_cy.lonlat2ecef_gc1d(lon, lat, dem,
+x_ecef, y_ecef, z_ecef = transform.lonlat2ecef_coord1d(lon, lat, elevation,
                                                        ellps=ellps)
-dem_dim_0, dem_dim_1 = dem.shape
+dem_dim_0, dem_dim_1 = elevation.shape
 
 # ENU origin of coordinates
 ind_0, ind_1 = int(len(lat) / 2), int(len(lon) / 2)
@@ -103,47 +92,47 @@ y_ecef_or = y_ecef[ind_0, ind_1]
 z_ecef_or = z_ecef[ind_0, ind_1]
 
 # Compute ENU coordinates
-x_enu, y_enu, z_enu = functions_cy.ecef2enu(x_ecef, y_ecef, z_ecef,
-                                            x_ecef_or, y_ecef_or, z_ecef_or,
-                                            lon_or, lat_or)
+x_enu, y_enu, z_enu = transform.ecef2enu(x_ecef, y_ecef, z_ecef,
+                                         x_ecef_or, y_ecef_or, z_ecef_or,
+                                         lon_or, lat_or)
 
 # Compute unit vectors (in ENU coordinates)
-lon_in, lat_in = np.meshgrid(lon[sd_in[1]], lat[sd_in[0]])
-vec_norm_ecef = functions_cy.surf_norm(lon_in, lat_in)
+lon_in, lat_in = np.meshgrid(lon[slice_in[1]], lat[slice_in[0]])
+vec_norm_ecef = direction.surf_norm(lon_in, lat_in)
 del lon_in, lat_in
-vec_north_ecef = functions_cy.north_dir(x_ecef[sd_in], y_ecef[sd_in],
-                                        z_ecef[sd_in], vec_norm_ecef,
-                                        ellps=ellps)
+vec_north_ecef = direction.north_dir(x_ecef[slice_in], y_ecef[slice_in],
+                                     z_ecef[slice_in], vec_norm_ecef,
+                                     ellps=ellps)
 del x_ecef, y_ecef, z_ecef
-vec_norm_enu = functions_cy.ecef2enu_vec(vec_norm_ecef, lon_or, lat_or)
-vec_north_enu = functions_cy.ecef2enu_vec(vec_north_ecef, lon_or, lat_or)
+vec_norm_enu = transform.ecef2enu_vector(vec_norm_ecef, lon_or, lat_or)
+vec_north_enu = transform.ecef2enu_vector(vec_north_ecef, lon_or, lat_or)
 del vec_norm_ecef, vec_north_ecef
 
 # Merge vertex coordinates and pad geometry buffer
 vert_grid = np.hstack((x_enu.reshape(x_enu.size, 1),
                        y_enu.reshape(x_enu.size, 1),
                        z_enu.reshape(x_enu.size, 1))).ravel()
-vert_grid = pad_geometry_buffer(vert_grid)
+vert_grid = auxiliary.pad_geometry_buffer(vert_grid)
 
 # Compute horizon
 horizon_gridded(vert_grid, dem_dim_0, dem_dim_1,
                 vec_norm_enu, vec_north_enu,
                 offset_0, offset_1,
-                file_out=file_hori,
-                x_axis_val=lon[sd_in[1]].astype(np.float32),
-                y_axis_val=lat[sd_in[0]].astype(np.float32),
+                file_out=path_out + file_hori,
+                x_axis_val=lon[slice_in[1]].astype(np.float32),
+                y_axis_val=lat[slice_in[0]].astype(np.float32),
                 x_axis_name="lon", y_axis_name="lat", units="degree",
                 dist_search=dist_search, azim_num=azim_num)
 
 # Load horizon data
-ds = xr.open_dataset(file_hori)
+ds = xr.open_dataset(path_out + file_hori)
 hori = ds["horizon"].values
 azim = ds["azim"].values
 ds.close()
 
 # Swap coordinate axes (-> make viewable with ncview)
 ds_ncview = ds.transpose("azim", "lat", "lon")
-ds_ncview.to_netcdf(file_hori[:-3] + "_ncview.nc")
+ds_ncview.to_netcdf(path_out + file_hori[:-3] + "_ncview.nc")
 
 # Rotation matrix (global ENU -> local ENU)
 rot_mat = np.empty((vec_north_enu.shape[0] + 2, vec_north_enu.shape[1] + 2,
@@ -156,15 +145,15 @@ rot_mat[1:-1, 1:-1, 2, :] = vec_norm_enu
 del vec_north_enu, vec_norm_enu
 
 # Compute slope
-sd_in_a1 = (slice(sd_in[0].start - 1, sd_in[0].stop + 1),
-            slice(sd_in[1].start - 1, sd_in[1].stop + 1))
-vec_tilt = functions_cy.slope_plane_meth(x_enu[sd_in_a1], y_enu[sd_in_a1],
-                                         z_enu[sd_in_a1], rot_mat)[1:-1, 1:-1]
+slice_in_a1 = (slice(slice_in[0].start - 1, slice_in[0].stop + 1),
+               slice(slice_in[1].start - 1, slice_in[1].stop + 1))
+vec_tilt = topo_param.slope_plane_meth(x_enu[slice_in_a1], y_enu[slice_in_a1],
+                                       z_enu[slice_in_a1], rot_mat)[1:-1, 1:-1]
 del rot_mat
 del x_enu, y_enu, z_enu
 
 # Compute Sky View Factor
-svf = functions_cy.skyviewfactor(azim, hori, vec_tilt)
+svf = topo_param.sky_view_factor(azim, hori, vec_tilt)
 
 # Compute slope angle and aspect
 slope = np.arccos(vec_tilt[:, :, 2])
@@ -173,20 +162,20 @@ aspect = np.pi / 2.0 - np.arctan2(vec_tilt[:, :, 1],
 aspect[aspect < 0.0] += np.pi * 2.0  # [0.0, 2.0 * np.pi]
 
 # Save topographic parameters to NetCDF file
-ncfile = Dataset(filename=file_topo_par, mode="w")
+ncfile = Dataset(filename=path_out + file_topo_par, mode="w")
 ncfile.createDimension(dimname="lat", size=svf.shape[0])
 ncfile.createDimension(dimname="lon", size=svf.shape[1])
 nc_lat = ncfile.createVariable(varname="lat", datatype="f",
                                dimensions="lat")
-nc_lat[:] = lat[sd_in[0]]
+nc_lat[:] = lat[slice_in[0]]
 nc_lat.units = "degree"
 nc_lon = ncfile.createVariable(varname="lon", datatype="f",
                                dimensions="lon")
-nc_lon[:] = lon[sd_in[1]]
+nc_lon[:] = lon[slice_in[1]]
 nc_lon.units = "degree"
 nc_data = ncfile.createVariable(varname="elevation", datatype="f",
                                 dimensions=("lat", "lon"))
-nc_data[:] = dem[sd_in]
+nc_data[:] = elevation[slice_in]
 nc_data.long_name = "ellipsoidal height"
 nc_data.units = "m"
 nc_data = ncfile.createVariable(varname="slope", datatype="f",
@@ -206,12 +195,12 @@ nc_data.long_name = "sky view factor"
 nc_data.units = "-"
 ncfile.close()
 
-###############################################################################
+# -----------------------------------------------------------------------------
 # Plot topographic parameters
-###############################################################################
+# -----------------------------------------------------------------------------
 
 # Plot settings
-data_plot = {"elevation": dem[sd_in],
+data_plot = {"elevation": elevation[slice_in],
              "slope": np.rad2deg(slope),
              "aspect": np.rad2deg(aspect),
              "svf": svf}
@@ -244,7 +233,7 @@ for i in list(data_plot.keys()):
         norm = mpl.colors.BoundaryNorm(levels, ncolors=cmap.N)
         ticks = np.arange(20.0, 360.0, 40.0)
     ax = plt.subplot(gs[pos[i][0], pos[i][1]], projection=geo_crs)
-    plt.pcolormesh(lon[sd_in[1]], lat[sd_in[0]], data_plot[i], cmap=cmap,
+    plt.pcolormesh(lon[slice_in[1]], lat[slice_in[0]], data_plot[i], cmap=cmap,
                    norm=norm, shading="auto")
     ax.set_aspect("auto")
     if i == "elevation":
@@ -253,16 +242,16 @@ for i in list(data_plot.keys()):
         gl.left_labels = True
         gl.bottom_labels = False
         gl.right_labels = False
-        t = plt.text(0.17, 0.95, titles[i], fontsize=13, fontweight="bold",
+        t = plt.text(0.17, 0.95, titles[i], fontsize=12, fontweight="bold",
                      horizontalalignment="center", verticalalignment="center",
                      transform=ax.transAxes)
-        t.set_bbox(dict(facecolor="white", alpha=0.7, edgecolor="none"))
+        t.set_bbox(dict(facecolor="white", alpha=0.8, edgecolor="none"))
     else:
         plt.xticks([])
         plt.yticks([])
-        plt.title(titles[i], fontsize=13, fontweight="bold")
-    plt.axis([lon[sd_in[1]].min(), lon[sd_in[1]].max(),
-              lat[sd_in[0]].min(), lat[sd_in[0]].max()])
+        plt.title(titles[i], fontsize=12, fontweight="bold")
+    plt.axis([lon[slice_in[1]].min(), lon[slice_in[1]].max(),
+              lat[slice_in[0]].min(), lat[slice_in[0]].max()])
     # -------------------------------------------------------------------------
     ax = plt.subplot(gs[pos[i][0] + 1, pos[i][1]])
     cb = mpl.colorbar.ColorbarBase(ax, cmap=cmap, norm=norm,
