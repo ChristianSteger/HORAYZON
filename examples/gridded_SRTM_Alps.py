@@ -37,7 +37,7 @@ domain = {"lon_min": 7.70, "lon_max": 8.30,
           "lat_min": 46.3, "lat_max": 46.75}  # domain boundaries [degree]
 dist_search = 50.0  # search distance for horizon [kilometre]
 ellps = "WGS84"  # Earth's surface approximation (sphere, GRS80 or WGS84)
-azim_num = 360  # number of azimuth sectors [-]
+azim_num = 360  # number of azimuth sampling directions [-]
 
 # Paths and file names
 dem_file_url = "https://srtm.csi.cgiar.org/wp-content/uploads/files/" \
