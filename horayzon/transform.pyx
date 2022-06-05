@@ -234,7 +234,7 @@ def ecef2enu(double[:, :] x_ecef, double[:, :] y_ecef, double[:, :] z_ecef,
 
 # -----------------------------------------------------------------------------
 
-def ecef2enu_vec(float[:, :, :] vec_ecef, double lon_or, double lat_or):
+def ecef2enu_vector(float[:, :, :] vec_ecef, double lon_or, double lat_or):
     """Coordinate transformation from ECEF to ENU.
 
     Transformation of earth-centered, earth-fixed (ECEF) to local tangent

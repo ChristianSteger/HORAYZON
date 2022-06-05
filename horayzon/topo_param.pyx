@@ -348,7 +348,8 @@ def slope_vector_meth(float[:, :] x, float[:, :] y, float[:, :] z,
 
 # -----------------------------------------------------------------------------
 
-def skyviewfactor(float[:] azim, float[:, :, :] hori, float[:, :, :] vec_tilt):
+def sky_view_factor(float[:] azim, float[:, :, :] hori,
+    float[:, :, :] vec_tilt):
     """Sky view factor (SVF) computation.
 
     Compute sky view factor (SVF) in local horizontal coordinate system. The
@@ -419,7 +420,8 @@ def skyviewfactor(float[:] azim, float[:, :, :] hori, float[:, :, :] vec_tilt):
 
 # -----------------------------------------------------------------------------
 
-def visskyfrac(float[:] azim, float[:, :, :] hori, float[:, :, :] vec_tilt):
+def visible_sky_fraction(float[:] azim, float[:, :, :] hori,
+    float[:, :, :] vec_tilt):
     """Visible sky fraction (VSF) computation.
 
     Compute visible sky fraction (VSF) in local horizontal coordinate system.
@@ -485,7 +487,7 @@ def visskyfrac(float[:] azim, float[:, :, :] hori, float[:, :, :] vec_tilt):
 
 # -----------------------------------------------------------------------------
 
-def topoopen(float[:] azim, float[:, :, :] hori):
+def topographic_openness(float[:] azim, float[:, :, :] hori):
     """Topographic openness (positive) computation.
 
     Compute positive topographic openness. The definition is based on

@@ -18,7 +18,7 @@ import shutil
 
 # -----------------------------------------------------------------------------
 
-def get_GSHHS_coastlines(dom):
+def get_gshhs_coastlines(dom):
     """Get relevant GSHHS coastline data.
 
     Get relevant GSHHS coastline data for rectangular latitude/longitude
