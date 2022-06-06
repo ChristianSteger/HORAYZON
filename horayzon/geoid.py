@@ -12,7 +12,7 @@ import gzip
 
 # -----------------------------------------------------------------------------
 
-def geoid_undulation(lon_ip, lat_ip, geoid="EGM96"):
+def undulation(lon_ip, lat_ip, geoid="EGM96"):
     """Compute geoid undulation.
 
     Compute the geoid undulation for the EGM96 or GEOID12A geoid by bilinear
