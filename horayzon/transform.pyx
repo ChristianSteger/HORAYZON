@@ -86,7 +86,7 @@ def lonlat2ecef(double[:, :] lon, double[:, :] lat, float[:, :] h, ellps):
 
 # -----------------------------------------------------------------------------
 
-def lonlat2ecef_coord1d(double[:] lon, double[:] lat, float[:,:] h, ellps):
+def lonlat2ecef_1d(double[:] lon, double[:] lat, float[:,:] h, ellps):
     """Coordinate transformation from lon/lat to ECEF.
 
     Transformation of geodetic longitude/latitude to earth-centered,
@@ -161,8 +161,7 @@ def lonlat2ecef_coord1d(double[:] lon, double[:] lat, float[:,:] h, ellps):
 # -----------------------------------------------------------------------------
 
 def ecef2enu(double[:, :] x_ecef, double[:, :] y_ecef, double[:, :] z_ecef,
-             double x_ecef_or, double y_ecef_or, double z_ecef_or,
-             double lon_or, double lat_or):
+             trans):
     """Coordinate transformation from ECEF to ENU.
 
     Transformation of earth-centered, earth-fixed (ECEF) to local tangent
@@ -176,16 +175,9 @@ def ecef2enu(double[:, :] x_ecef, double[:, :] y_ecef, double[:, :] z_ecef,
         Array (two-dimensional) with ECEF y-coordinates [metre]
     z_ecef : ndarray of double
         Array (two-dimensional) with ECEF z-coordinates [metre]
-    x_ecef_or : double
-        ECEF x-coordinate of ENU origin [metre]
-    y_ecef_or : double
-        ECEF y-coordinate of ENU origin [metre]
-    z_ecef_or : double
-        ECEF z-coordinate of ENU origin [metre]
-    lon_or : double
-        Longitude of ENU origin [degree]
-    lat_or : double
-        Latitude of ENU origin [degree]
+    trans : class
+        Instance of class `TransformerEcef2enu`
+
 
     Returns
     -------
@@ -207,6 +199,11 @@ def ecef2enu(double[:, :] x_ecef, double[:, :] y_ecef, double[:, :] z_ecef,
     cdef float[:, :] x_enu = np.empty((len_0, len_1), dtype=np.float32)
     cdef float[:, :] y_enu = np.empty((len_0, len_1), dtype=np.float32)
     cdef float[:, :] z_enu = np.empty((len_0, len_1), dtype=np.float32)
+    cdef double x_ecef_or = trans.x_ecef_or
+    cdef double y_ecef_or = trans.y_ecef_or
+    cdef double z_ecef_or = trans.z_ecef_or
+    cdef double lon_or = trans.lon_or
+    cdef double lat_or = trans.lat_or
 
     # Trigonometric functions
     sin_lon = sin(deg2rad(lon_or))
@@ -232,7 +229,7 @@ def ecef2enu(double[:, :] x_ecef, double[:, :] y_ecef, double[:, :] z_ecef,
 
 # -----------------------------------------------------------------------------
 
-def ecef2enu_vector(float[:, :, :] vec_ecef, double lon_or, double lat_or):
+def ecef2enu_vector(float[:, :, :] vec_ecef, trans):
     """Coordinate transformation from ECEF to ENU.
 
     Transformation of earth-centered, earth-fixed (ECEF) to local tangent
@@ -243,10 +240,8 @@ def ecef2enu_vector(float[:, :, :] vec_ecef, double lon_or, double lat_or):
     vec_ecef : ndarray of float
         Array (three-dimensional) with vectors in ECEF coordinates
         (y, x, components) [metre]
-    lon_or : double
-        Longitude of ENU origin [degree]
-    lat_or : double
-        Latitude of ENU origin [degree]
+    trans : class
+        Instance of class `TransformerEcef2enu`
 
     Returns
     -------
@@ -263,6 +258,8 @@ def ecef2enu_vector(float[:, :, :] vec_ecef, double lon_or, double lat_or):
     cdef int i, j
     cdef double sin_lon, cos_lon, sin_lat, cos_lat
     cdef float[:, :, :] vec_enu = np.empty((len_0, len_1, 3), dtype=np.float32)
+    cdef double lon_or = trans.lon_or
+    cdef double lat_or = trans.lat_or
 
     # Trigonometric functions
     sin_lon = sin(deg2rad(lon_or))
@@ -419,6 +416,19 @@ def swiss2wgs(double[:, :] e, double[:, :] n, float[:, :] h_ch):
             lat[i, j] *= (100.0 / 36.)
 
     return np.asarray(lon), np.asarray(lat), np.asarray(h_wgs)
+
+
+# -----------------------------------------------------------------------------
+
+class TransformerEcef2enu:
+    def __init__(self, lon, lat, x_ecef, y_ecef, z_ecef):
+        self.__ind_0 = int(len(lat) / 2)
+        self.__ind_1 = int(len(lon) / 2)
+        self.lon_or = lon[self.__ind_1]
+        self.lat_or = lat[self.__ind_0]
+        self.x_ecef_or = x_ecef[self.__ind_0, self.__ind_1]
+        self.y_ecef_or = y_ecef[self.__ind_0, self.__ind_1]
+        self.z_ecef_or = z_ecef[self.__ind_0, self.__ind_1]
 
 
 # -----------------------------------------------------------------------------
