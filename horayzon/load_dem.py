@@ -144,28 +144,17 @@ def dhm25(file_dem, domain):
     -----
     Data source: https://www.swisstopo.admin.ch/en/geodata/height/dhm25.html"""
 
-    # Load file header information
-    header_rows = 6
-    header = {}
-    file_h = open(file_dem, "r")
-    for i in range(header_rows):
-        name, value = file_h.readline().split()
-        if name in ["ncols", "nrows"]:
-            header[name] = int(value)
-        else:
-            header[name] = float(value)
-    file_h.close()
-
-    # Generate LV03 coordinates
-    dx = dy = header["cellsize"]
-    x = np.linspace(header["xllcorner"] + (dx / 2.0),
-                    header["xllcorner"] + (dx / 2.0)
-                    + (header["ncols"] - 1) * dx,
-                    header["ncols"], dtype=np.float32)
-    y = np.linspace(header["yllcorner"] + (dy / 2.0),
-                    header["yllcorner"] + (dy / 2.0)
-                    + (header["nrows"] - 1) * dy,
-                    header["nrows"], dtype=np.float32)[::-1]
+    # Load digital elevation model data
+    ds = gdal.Open(file_dem)
+    elevation = ds.GetRasterBand(1).ReadAsArray()  # 32-bit float
+    d_x = ds.GetGeoTransform()[1]
+    x = np.linspace(ds.GetGeoTransform()[0] + (d_x / 2.0),
+                    ds.GetGeoTransform()[0] + d_x * ds.RasterXSize
+                    - (d_x / 2.0), ds.RasterXSize)
+    d_y = ds.GetGeoTransform()[5]
+    y = np.linspace(ds.GetGeoTransform()[3] + (d_y / 2.0),
+                    ds.GetGeoTransform()[3] + d_y * ds.RasterYSize
+                    - (d_y / 2.0), ds.RasterYSize)
 
     # Crop relevant domain
     if sum([domain["x_min"] > x.min(), domain["x_max"] < x.max(),
@@ -176,15 +165,11 @@ def dhm25(file_dem, domain):
                     np.where(x >= domain["x_max"])[0][0] + 1)
     slice_y = slice(np.where(y >= domain["y_max"])[0][-1],
                     np.where(y <= domain["y_min"])[0][0] + 1)
+    elevation = elevation[slice_y, slice_x]
     x, y = x[slice_x], y[slice_y]
 
-    # Load DEM data (-> reading is slow...)
-    print("Note: reading ESRI ASCII GRID file is slow")
-    elevation = np.loadtxt(file_dem, skiprows=header_rows, dtype=np.float32)
-    elevation = elevation[slice_y, slice_x].astype(np.float32)
-
     # Set "no data values" to NaN
-    elevation[elevation == header["NODATA_value"]] = np.nan
+    elevation[elevation == -9999.0] = np.nan
 
     print_dem_info(elevation)
 

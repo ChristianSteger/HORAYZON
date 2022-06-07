@@ -1,9 +1,10 @@
 # Description: Compute gridded topographic parameters (slope angle and aspect,
-#              horizon and sky view factor) from SRTM data (~90 m) for an
-#              example region in the European Alps. Consider Earth's surface
+#              horizon and sky view factor) from swisstopo DHM25 data (25 m)
+#              for an example region in Switzerland. Ignore Earth's surface
 #              curvature.
 #
-# Source of applied DEM data: https://srtm.csi.cgiar.org
+# Source of applied DEM data:
+#   https://www.swisstopo.admin.ch/en/geodata/height/dhm25.html
 #
 # Copyright (c) 2022 ETH Zurich, Christian R. Steger
 # MIT License
@@ -23,7 +24,7 @@ from cmcrameri import cm
 import zipfile
 from osgeo import gdal
 sys.path.append("/Users/csteger/Downloads/HORAYZON/")  # ------------ temporary
-from horayzon import auxiliary, direction, domain, geoid, horizon, load_dem, topo_param, transform  # temporary
+from horayzon import auxiliary, domain, geoid, horizon, load_dem, topo_param  # temporary
 import horayzon as hray
 
 mpl.style.use("classic")
@@ -33,18 +34,17 @@ mpl.style.use("classic")
 # -----------------------------------------------------------------------------
 
 # Domain size and computation settings
-domain = {"lon_min": 7.70, "lon_max": 8.30,
-          "lat_min": 46.3, "lat_max": 46.75}  # domain boundaries [degree]
-dist_search = 50.0  # search distance for horizon [kilometre]
-ellps = "WGS84"  # Earth's surface approximation (sphere, GRS80 or WGS84)
+domain = {"x_min": 668000, "x_max": 707000,
+          "y_min": 172000, "y_max": 200000}  # domain boundaries [metre]
+dist_search = 20.0  # search distance for horizon [kilometre]
 azim_num = 360  # number of azimuth sampling directions [-]
 
 # Paths and file names
-dem_file_url = "https://srtm.csi.cgiar.org/wp-content/uploads/files/" \
-               + "srtm_30x30/TIFF/N30E000.zip"
+dem_file_url = "https://cms.geo.admin.ch/ogd/topography/" \
+               + "DHM25_MM_ASCII_GRID.zip"
 path_out = "/Users/csteger/Desktop/Output/"
-file_hori = "hori_SRTM_Alps.nc"
-file_topo_par = "topo_par_SRTM_Alps.nc"
+file_hori = "hori_DHM25_Switzerland.nc"
+file_topo_par = "topo_par_DHM25_Switzerland.nc"
 
 # -----------------------------------------------------------------------------
 # Compute and save topographic parameters
@@ -53,21 +53,22 @@ file_topo_par = "topo_par_SRTM_Alps.nc"
 # Check if output directory exists
 if not os.path.isdir(path_out):
     raise ValueError("Output directory does not exist")
-path_out += "gridded_SRTM_Alps/"
+path_out += "gridded_DHM25_Switzerland/"
 if not os.path.isdir(path_out):
     os.mkdir(path_out)
 
 # Download and unzip SRTM tile (30 x 30 degree)
-print("Download SRTM tile (30 x 30 degree):")
-hray.auxiliary.download_file(dem_file_url, path_out + "N30E000.zip")
-with zipfile.ZipFile(path_out + "N30E000.zip", "r") as zip_ref:
-    zip_ref.extractall(path_out + "n30e000")
-os.remove(path_out + "N30E000.zip")
+print("Download DHM25 data:")
+hray.auxiliary.download_file(dem_file_url, path_out
+                             + "DHM25_MM_ASCII_GRID.zip")
+with zipfile.ZipFile(path_out + "DHM25_MM_ASCII_GRID.zip", "r") as zip_ref:
+    zip_ref.extractall(path_out)
+os.remove(path_out + "DHM25_MM_ASCII_GRID.zip")
 
 # Load required DEM data (including outer boundary zone)
-domain_outer = hray.domain.curved_grid(domain, dist_search, ellps)
-file_dem = path_out + "N30E000/cut_n30e000.tif"
-lon, lat, elevation = hray.load_dem.srtm(file_dem, domain_outer)
+domain_outer = hray.domain.planar_grid(domain, dist_search)
+file_dem = path_out + "ASCII_GRID_1part/dhm25_grid_raster.asc"
+x, y, elevation = hray.load_dem.dhm25(file_dem, domain_outer)
 
 # Compute ellipsoidal heights
 undulation = hray.geoid.undulation(lon, lat, geoid="EGM96")
