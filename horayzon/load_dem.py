@@ -3,8 +3,9 @@
 
 # Load modules
 import numpy as np
-from geographiclib.geodesic import Geodesic
 from osgeo import gdal
+import xarray as xr
+import glob
 
 
 # -----------------------------------------------------------------------------
@@ -17,9 +18,9 @@ def srtm(file_dem, domain):
     Parameters
     ----------
     file_dem : str
-        Path and file name of SRTM tile
+        Name of SRTM tile
     domain : dict
-        List with domain boundaries [lon_min, lon_max, lat_min, lat_max]
+        Dictionary with domain boundaries (lon_min, lon_max, lat_min, lat_max)
         [degree]
 
     Returns
@@ -29,7 +30,11 @@ def srtm(file_dem, domain):
     lat : ndarray
         Array (one-dimensional) with latitude [degree]
     elevation : ndarray
-        Array (two-dimensional) with elevation [metre]"""
+        Array (two-dimensional) with elevation [metre]
+
+    Notes
+    -----
+    Data source: https://srtm.csi.cgiar.org"""
 
     # Load digital elevation model data
     ds = gdal.Open(file_dem)
@@ -47,13 +52,13 @@ def srtm(file_dem, domain):
     if sum([domain["lon_min"] > lon.min(), domain["lon_max"] < lon.max(),
             domain["lat_min"] > lat.min(), domain["lat_max"] < lat.max()]) \
             != 4:
-        raise ValueError("SRTM tile does not entirely cover domain")
-    slic_lon = slice(np.where(lon <= domain["lon_min"])[0][-1],
-                     np.where(lon >= domain["lon_max"])[0][0] + 1)
-    slic_lat = slice(np.where(lat >= domain["lat_max"])[0][-1],
-                     np.where(lat <= domain["lat_min"])[0][0] + 1)
-    elevation = elevation[slic_lat, slic_lon].astype(np.float32)
-    lon, lat = lon[slic_lon], lat[slic_lat]
+        raise ValueError("Provided tile does not cover domain")
+    slice_lon = slice(np.where(lon <= domain["lon_min"])[0][-1],
+                      np.where(lon >= domain["lon_max"])[0][0] + 1)
+    slice_lat = slice(np.where(lat >= domain["lat_max"])[0][-1],
+                      np.where(lat <= domain["lat_min"])[0][0] + 1)
+    elevation = elevation[slice_lat, slice_lon].astype(np.float32)
+    lon, lat = lon[slice_lon], lat[slice_lat]
 
     print_dem_info(elevation)
 
@@ -69,10 +74,10 @@ def nasadem(files_dem, domain):
 
     Parameters
     ----------
-    files_dem : list
-        List with path and file names of NASADEM tile(s)
+    files_dem : str or list
+        String with search pattern for NASADEM tiles or list with files
     domain : dict
-        List with domain boundaries [lon_min, lon_max, lat_min, lat_max]
+        Dictionary with domain boundaries (lon_min, lon_max, lat_min, lat_max)
         [degree]
 
     Returns
@@ -82,10 +87,19 @@ def nasadem(files_dem, domain):
     lat : ndarray
         Array (one-dimensional) with latitude [degree]
     elevation : ndarray
-        Array (two-dimensional) with elevation [metre]"""
+        Array (two-dimensional) with elevation [metre]
+
+    Notes
+    -----
+    Data source: https://lpdaac.usgs.gov/tools/earthdata-search/"""
 
     # Load digital elevation model data for relevant domain
     ds = xr.open_mfdataset(files_dem, preprocess=preprocess)
+    if sum([domain["lon_min"] > ds["lon"].values.min(),
+            domain["lon_max"] < ds["lon"].values.max(),
+            domain["lat_min"] > ds["lat"].values.min(),
+            domain["lat_max"] < ds["lat"].values.max()]) != 4:
+        raise ValueError("Provided tile(s) does/do not cover domain")
     ds = ds.sel(lon=slice(domain["lon_min"], domain["lon_max"]),
                 lat=slice(domain["lat_max"], domain["lat_min"]))
     elevation = ds["NASADEM_HGT"].values
@@ -105,130 +119,168 @@ def preprocess(ds):
 
 # -----------------------------------------------------------------------------
 
-def dhm25(files_dem, domain):
+def dhm25(file_dem, domain):
     """Load DHM25 digital elevation model data.
 
-    Load SRTM digital elevation model data from (multiple) NetCDF file(s).
+    Load SRTM digital elevation model data from single ESRI ASCII GRID file.
 
     Parameters
     ----------
-    files_dem : list
-        List with path and file name(s) of NASADEM tile(s)
-    domain : list
-        List with domain boundaries [lon_min, lon_max, lat_min, lat_max]
-        [degree]
+    file_dem : str
+        Name of DHM25 tile
+    domain : dict
+        Dictionary with domain boundaries (x_min, x_max, y_min, y_max) [metre]
 
     Returns
     -------
-    lon : ndarray
-        Array (one-dimensional) with longitude [degree]
-    lat : ndarray
-        Array (one-dimensional) with latitude [degree]
+    x : ndarray
+        Array (one-dimensional) with x-coordinate [metre]
+    y : ndarray
+        Array (one-dimensional) with y-coordinate [metre]
     elevation : ndarray
-        Array (two-dimensional) with elevation [metre]"""
+        Array (two-dimensional) with elevation [metre]
+
+    Notes
+    -----
+    Data source: https://www.swisstopo.admin.ch/en/geodata/height/dhm25.html"""
+
+    # Load file header information
+    header_rows = 6
+    header = {}
+    file_h = open(file_dem, "r")
+    for i in range(header_rows):
+        name, value = file_h.readline().split()
+        if name in ["ncols", "nrows"]:
+            header[name] = int(value)
+        else:
+            header[name] = float(value)
+    file_h.close()
+
+    # Generate LV03 coordinates
+    dx = dy = header["cellsize"]
+    x = np.linspace(header["xllcorner"] + (dx / 2.0),
+                    header["xllcorner"] + (dx / 2.0)
+                    + (header["ncols"] - 1) * dx,
+                    header["ncols"], dtype=np.float32)
+    y = np.linspace(header["yllcorner"] + (dy / 2.0),
+                    header["yllcorner"] + (dy / 2.0)
+                    + (header["nrows"] - 1) * dy,
+                    header["nrows"], dtype=np.float32)[::-1]
+
+    # Crop relevant domain
+    if sum([domain["x_min"] > x.min(), domain["x_max"] < x.max(),
+            domain["y_min"] > y.min(), domain["y_max"] < y.max()]) \
+            != 4:
+        raise ValueError("Provided tile does not cover domain")
+    slice_x = slice(np.where(x <= domain["x_min"])[0][-1],
+                    np.where(x >= domain["x_max"])[0][0] + 1)
+    slice_y = slice(np.where(y >= domain["y_max"])[0][-1],
+                    np.where(y <= domain["y_min"])[0][0] + 1)
+    x, y = x[slice_x], y[slice_y]
+
+    # Load DEM data (-> reading is slow...)
+    print("Note: reading ESRI ASCII GRID file is slow")
+    elevation = np.loadtxt(file_dem, skiprows=header_rows, dtype=np.float32)
+    elevation = elevation[slice_y, slice_x].astype(np.float32)
+
+    # Set "no data values" to NaN
+    elevation[elevation == header["NODATA_value"]] = np.nan
+
+    print_dem_info(elevation)
+
+    return x, y, elevation
 
 
 # -----------------------------------------------------------------------------
 
-def swissalti3d(loc, width, path_tiles):
-    """Compute Digital Elevation model (DEM) domain.
+def swissalti3d(path_dem, domain):
+    """Load swissALTI3D digital elevation model data.
 
-    Computes required domain of Digital Elevation model (DEM) from location
-    and width of inner domain (swissALTI3D DEM).
+    Load swissALTI3D digital elevation model data from multiple GeoTIFF files.
 
     Parameters
     ----------
-    loc : tuple
-        Tuple with geodetic latitude/longitude of centre [degree]
-    width : float
-        Total x/y-width of domain [kilometre]
-    path_tiles : str
-        Path to swissALTI3D GeoTIFF tiles
+    path_dem : str
+        Path of swissALTI3D tiles
+    domain : dict
+        Dictionary with domain boundaries (x_min, x_max, y_min, y_max) [metre]
 
     Returns
     -------
-    east: ndarray
-        Array (one-dimensional) with east-coordinate [metre]
-    north: ndarray
-        Array (one-dimensional) with north-coordinate [metre]
-    dem: ndarray
-        Array (two-dimensional) with DEM [metre]"""
+    x : ndarray
+        Array (one-dimensional) with x-coordinate [metre]
+    y : ndarray
+        Array (one-dimensional) with y-coordinate [metre]
+    elevation : ndarray
+        Array (two-dimensional) with elevation [metre]
+
+    Notes
+    -----
+    Data source:
+        https://www.swisstopo.admin.ch/en/geodata/height/alti3d.html"""
 
     # Constant settings
     tiles_gc = 500  # number of grid cells per tile
-    res_dem = 2.0  # horizontal resolution of DEM
     file_format = "swissalti3d_????_eeee-nnnn_2_2056_5728.tif"
 
-    # Compute coordinates in swiss system (LV95)
-    crs_4326 = CRS.from_epsg(4326)
-    crs_2056 = CRS.from_epsg(2056)
-    transformer = Transformer.from_crs(crs_4326, crs_2056, always_xy=True)
-    east_cen, north_cen = transformer.transform(loc[1], loc[0])
-
     # Determine relevant tiles
-    tiles_east = (np.array([int(east_cen - (width / 2.0) * 1000.0),
-                            int(east_cen + (width / 2.0) * 1000.0)],
-                           dtype=np.float32) / 1000.0).astype(np.int32)
-    tiles_north = (np.array([int(north_cen - (width / 2.0) * 1000.0),
-                             int(north_cen + (width / 2.0) * 1000.0)],
-                            dtype=np.float32) / 1000.0).astype(np.int32)
-    tiles_east = list(range(tiles_east[0], tiles_east[-1] + 1))
-    tiles_north = list(range(tiles_north[0], tiles_north[-1] + 1))
+    tiles_east = list(range(int(np.floor(domain["x_min"] / 1000)),
+                            int(np.floor(domain["x_max"] / 1000)) + 1))
+    tiles_north = list(range(int(np.floor(domain["y_max"] / 1000)),
+                             int(np.floor(domain["y_min"] / 1000)) - 1, -1))
 
     # Load DEM data
-    file_dem = path_tiles + file_format
-    dem_load = np.empty((len(tiles_north) * tiles_gc,
-                         len(tiles_east) * tiles_gc),
-                        dtype=np.float32)
-    dem_load.fill(-9999.0)
+    elevation = np.empty((len(tiles_north) * tiles_gc,
+                          len(tiles_east) * tiles_gc), dtype=np.float32)
+    elevation.fill(np.nan)
     count = 0
-    for i in range(len(tiles_north)):
-        for j in range(len(tiles_east)):
-            file = file_dem.replace("eeee", str(tiles_east[j])) \
-                .replace("nnnn", str(tiles_north[i]))
+    num_tiles = len(tiles_north) * len(tiles_east)
+    for i in tiles_north:
+        for j in tiles_east:
+            file = (path_dem + file_format).replace("eeee", str(j)) \
+                .replace("nnnn", str(i))
             file = glob.glob(file)
             if len(file) == 0:
-                print("Warning: no tile found for e" + str(tiles_east[j])
-                      + "n" + str(tiles_north[i]))
+                print("Warning: no tile found for e" + str(j) + "n" + str(i))
             else:
                 ds = gdal.Open(file[0])
-                slic = (slice(i * tiles_gc, (i + 1) * tiles_gc),
-                        slice(j * tiles_gc, (j + 1) * tiles_gc))
-                dem_load[slic] = np.flipud(ds.GetRasterBand(1).ReadAsArray())
+                slic = (slice((tiles_north[0] - i) * tiles_gc,
+                              (tiles_north[0] - i + 1) * tiles_gc),
+                        slice((j - tiles_east[0]) * tiles_gc,
+                              (j - tiles_east[0] + 1) * tiles_gc))
+                elevation[slic] = ds.GetRasterBand(1).ReadAsArray()
             count += 1
-            if (count == 1) or (count % 100 == 0) \
-                    or (count == (len(tiles_north) * len(tiles_east))):
+            if (count == 1) or (count % 100 == 0) or (count == num_tiles):
                 print("Tiles imported: " + str(count) + " of "
-                      + str(len(tiles_north) * len(tiles_east)))
+                      + str(num_tiles))
 
-    # CH1903+ / LV95 coordinates
-    east_load = np.linspace(tiles_east[0] * 1000.0 + res_dem / 2.0,
-                            tiles_east[-1] * 1000.0
-                            + tiles_gc * res_dem - res_dem / 2.0,
-                            dem_load.shape[1], dtype=np.float32)
-    north_load = np.linspace(tiles_north[0] * 1000.0 + res_dem / 2.0,
-                             tiles_north[-1] * 1000.0
-                             + tiles_gc * res_dem - res_dem / 2.0,
-                             dem_load.shape[0], dtype=np.float32)
+    # Generate LV95 coordinates
+    dx = ds.GetGeoTransform()[1]  # resolution of DEM in x-direction [m]
+    dy = ds.GetGeoTransform()[5]  # resolution of DEM in y-direction [m]
+    x = np.linspace(tiles_east[0] * 1000.0 + (dx / 2.0),
+                    tiles_east[0] * 1000.0 + (dx / 2.0)
+                    + (elevation.shape[1] - 1) * dx,
+                    elevation.shape[1], dtype=np.float32)
+    y = np.linspace((tiles_north[0] + 1) * 1000.0 + (dy / 2.0),
+                    (tiles_north[0] + 1) * 1000.0 + (dy / 2.0)
+                    + (elevation.shape[0] - 1) * dy,
+                    elevation.shape[0], dtype=np.float32)
 
-    # Crop DEM to relevant domain
-    ind_east = np.argmin(np.abs(east_cen - east_load))
-    ind_north = np.argmin(np.abs(north_cen - north_load))
+    # Crop relevant domain
+    if sum([domain["x_min"] > x.min(), domain["x_max"] < x.max(),
+            domain["y_min"] > y.min(), domain["y_max"] < y.max()]) \
+            != 4:
+        raise ValueError("Provided tile does not cover domain")
+    slice_x = slice(np.where(x <= domain["x_min"])[0][-1],
+                    np.where(x >= domain["x_max"])[0][0] + 1)
+    slice_y = slice(np.where(y >= domain["y_max"])[0][-1],
+                    np.where(y <= domain["y_min"])[0][0] + 1)
+    x, y = x[slice_x], y[slice_y]
+    elevation = elevation[slice_y, slice_x]
 
-    add = int(((width / 2.0) * 1000.0) / res_dem)
-    slic = (slice(ind_north - add, ind_north + add + 1),
-            slice(ind_east - add, ind_east + add + 1))
-    dem, north, east = dem_load[slic], north_load[slic[0]], east_load[slic[1]]
-    del dem_load, north_load, east_load
-    if (dem.shape[0] != int((width / 2.0) * 1000) + 1
-            or dem.shape[1] != int((width / 2.0) * 1000) + 1):
-        raise ValueError("incorrect shape size of DEM")
+    print_dem_info(elevation)
 
-    # Check for NaN-values
-    if np.any(dem == -9999.0):
-        print("Warning: Nan-values (-9999.0) detected")
-
-    return east, north, dem
+    return x, y, elevation
 
 
 # -----------------------------------------------------------------------------
@@ -242,5 +294,8 @@ def print_dem_info(elevation):
         Array (two-dimensional) with elevation [metre]"""
 
     print("Size of loaded DEM domain: " + str(elevation.shape))
-    print("Elevation range of DEM: %.1f" % elevation.min()
-          + " - %.1f" % elevation.max() + " m")
+    txt = "Elevation range of DEM: %.1f" % np.nanmin(elevation) \
+          + " - %.1f" % np.nanmax(elevation) + " m"
+    if np.any(np.isnan(elevation)):
+        txt = txt + " (Warning: NaN values are present)"
+    print(txt)
