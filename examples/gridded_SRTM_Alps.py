@@ -1,5 +1,5 @@
 # Description: Compute gridded topographic parameters (slope angle and aspect,
-#              horizon and sky view factor) from SRTM data (~30 m) for an
+#              horizon and sky view factor) from SRTM data (~90 m) for an
 #              example region in the European Alps
 #
 # Source of applied DEM data: https://srtm.csi.cgiar.org
@@ -22,9 +22,8 @@ from cmcrameri import cm
 import zipfile
 from osgeo import gdal
 sys.path.append("/Users/csteger/Downloads/HORAYZON/")  # ------------ temporary
-from horayzon.horizon import horizon_gridded
-from horayzon import dem_domain, geoid, transform, direction
-from horayzon import auxiliary, topo_param
+from horayzon import auxiliary, direction, domain, geoid, horizon, load_dem, topo_param, transform  # temporary
+import horayzon as hray
 
 mpl.style.use("classic")
 
@@ -56,18 +55,18 @@ if not os.path.isdir(path_out):
 
 # Download and unzip SRTM tile (30 x 30 degree)
 print("Download SRTM tile (30 x 30 degree):")
-auxiliary.download_file(dem_file_url, path_out + "N30E000.zip")
+hray.auxiliary.download_file(dem_file_url, path_out + "N30E000.zip")
 with zipfile.ZipFile(path_out + "N30E000.zip", "r") as zip_ref:
     zip_ref.extractall(path_out + "n30e000")
 os.remove(path_out + "N30E000.zip")
 
-# Load required DEM data
-domain_outer = dem_domain.domain_curved_grid(domain, dist_search, ellps)
+# Load required DEM data (including outer boundary zone)
+domain_outer = hray.domain.curved_grid(domain, dist_search, ellps)
 file_dem = path_out + "N30E000/cut_n30e000.tif"
-lon, lat, elevation = dem_domain.load_srtm(file_dem, domain_outer)
+lon, lat, elevation = hray.load_dem.srtm(file_dem, domain_outer)
 
 # Compute ellipsoidal heights
-undulation = geoid.geoid_undulation(lon, lat, geoid="EGM96")
+undulation = hray.geoid.undulation(lon, lat, geoid="EGM96")
 elevation += undulation  # ellipsoidal height [m]
 
 # Compute indices of inner domain
@@ -80,49 +79,42 @@ offset_1 = slice_in[1].start
 print("Inner domain size: " + str(elevation[slice_in].shape))
 
 # Compute ECEF coordinates
-x_ecef, y_ecef, z_ecef = transform.lonlat2ecef_coord1d(lon, lat, elevation,
+x_ecef, y_ecef, z_ecef = hray.transform.lonlat2ecef_1d(lon, lat, elevation,
                                                        ellps=ellps)
 dem_dim_0, dem_dim_1 = elevation.shape
 
-# ENU origin of coordinates
-ind_0, ind_1 = int(len(lat) / 2), int(len(lon) / 2)
-lon_or, lat_or = lon[ind_1], lat[ind_0]
-x_ecef_or = x_ecef[ind_0, ind_1]
-y_ecef_or = y_ecef[ind_0, ind_1]
-z_ecef_or = z_ecef[ind_0, ind_1]
-
 # Compute ENU coordinates
-x_enu, y_enu, z_enu = transform.ecef2enu(x_ecef, y_ecef, z_ecef,
-                                         x_ecef_or, y_ecef_or, z_ecef_or,
-                                         lon_or, lat_or)
+trans = hray.transform.TransformerEcef2enu(lon, lat, x_ecef, y_ecef, z_ecef)
+x_enu, y_enu, z_enu = hray.transform.ecef2enu(x_ecef, y_ecef, z_ecef, trans)
 
-# Compute unit vectors (in ENU coordinates)
+# Compute directional unit vectors in ENU coordinates for inner domain
 lon_in, lat_in = np.meshgrid(lon[slice_in[1]], lat[slice_in[0]])
-vec_norm_ecef = direction.surf_norm(lon_in, lat_in)
+vec_norm_ecef = hray.direction.surf_norm(lon_in, lat_in)
 del lon_in, lat_in
-vec_north_ecef = direction.north_dir(x_ecef[slice_in], y_ecef[slice_in],
-                                     z_ecef[slice_in], vec_norm_ecef,
-                                     ellps=ellps)
+vec_north_ecef = hray.direction.north_dir(x_ecef[slice_in], y_ecef[slice_in],
+                                          z_ecef[slice_in], vec_norm_ecef,
+                                          ellps=ellps)
 del x_ecef, y_ecef, z_ecef
-vec_norm_enu = transform.ecef2enu_vector(vec_norm_ecef, lon_or, lat_or)
-vec_north_enu = transform.ecef2enu_vector(vec_north_ecef, lon_or, lat_or)
+vec_norm_enu = hray.transform.ecef2enu_vector(vec_norm_ecef, trans)
+vec_north_enu = hray.transform.ecef2enu_vector(vec_north_ecef, trans)
 del vec_norm_ecef, vec_north_ecef
 
 # Merge vertex coordinates and pad geometry buffer
 vert_grid = np.hstack((x_enu.reshape(x_enu.size, 1),
                        y_enu.reshape(x_enu.size, 1),
                        z_enu.reshape(x_enu.size, 1))).ravel()
-vert_grid = auxiliary.pad_geometry_buffer(vert_grid)
+vert_grid = hray.auxiliary.pad_geometry_buffer(vert_grid)
 
 # Compute horizon
-horizon_gridded(vert_grid, dem_dim_0, dem_dim_1,
-                vec_norm_enu, vec_north_enu,
-                offset_0, offset_1,
-                file_out=path_out + file_hori,
-                x_axis_val=lon[slice_in[1]].astype(np.float32),
-                y_axis_val=lat[slice_in[0]].astype(np.float32),
-                x_axis_name="lon", y_axis_name="lat", units="degree",
-                dist_search=dist_search, azim_num=azim_num)
+hray.horizon.horizon_gridded(vert_grid, dem_dim_0, dem_dim_1,
+                             vec_norm_enu, vec_north_enu,
+                             offset_0, offset_1,
+                             file_out=path_out + file_hori,
+                             x_axis_val=lon[slice_in[1]].astype(np.float32),
+                             y_axis_val=lat[slice_in[0]].astype(np.float32),
+                             x_axis_name="lon", y_axis_name="lat",
+                             units="degree", dist_search=dist_search,
+                             azim_num=azim_num)
 
 # Load horizon data
 ds = xr.open_dataset(path_out + file_hori)
@@ -147,13 +139,15 @@ del vec_north_enu, vec_norm_enu
 # Compute slope
 slice_in_a1 = (slice(slice_in[0].start - 1, slice_in[0].stop + 1),
                slice(slice_in[1].start - 1, slice_in[1].stop + 1))
-vec_tilt = topo_param.slope_plane_meth(x_enu[slice_in_a1], y_enu[slice_in_a1],
-                                       z_enu[slice_in_a1], rot_mat)[1:-1, 1:-1]
+vec_tilt = hray.topo_param.slope_plane_meth(x_enu[slice_in_a1],
+                                            y_enu[slice_in_a1],
+                                            z_enu[slice_in_a1],
+                                            rot_mat)[1:-1, 1:-1]
 del rot_mat
 del x_enu, y_enu, z_enu
 
 # Compute Sky View Factor
-svf = topo_param.sky_view_factor(azim, hori, vec_tilt)
+svf = hray.topo_param.sky_view_factor(azim, hori, vec_tilt)
 
 # Compute slope angle and aspect
 slope = np.arccos(vec_tilt[:, :, 2])
