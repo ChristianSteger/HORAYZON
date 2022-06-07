@@ -12,8 +12,7 @@ from cython.parallel import prange
 
 # -----------------------------------------------------------------------------
 
-def lonlat2ecef(double[:, :] lon, double[:, :] lat, float[:, :] h,
-                ellps="sphere"):
+def lonlat2ecef(double[:, :] lon, double[:, :] lat, float[:, :] h, ellps):
     """Coordinate transformation from lon/lat to ECEF.
 
     Transformation of geodetic longitude/latitude to earth-centered,
@@ -87,8 +86,7 @@ def lonlat2ecef(double[:, :] lon, double[:, :] lat, float[:, :] h,
 
 # -----------------------------------------------------------------------------
 
-def lonlat2ecef_coord1d(double[:] lon, double[:] lat, float[:,:] h,
-                        ellps="sphere"):
+def lonlat2ecef_coord1d(double[:] lon, double[:] lat, float[:,:] h, ellps):
     """Coordinate transformation from lon/lat to ECEF.
 
     Transformation of geodetic longitude/latitude to earth-centered,
