@@ -115,7 +115,15 @@ vec_tilt = hray.topo_param.slope_vector_meth(
     x_2d[slice_in_a1], y_2d[slice_in_a1], elevation[slice_in_a1])[1:-1, 1:-1]
 # -> Do not use hray.topo_param.slope_plane_meth() here -> the function
 #    produces artefacts -> issue is currently investigated...
-del x_2d, y_2d
+# del x_2d, y_2d
+
+
+x_2d_noise = x_2d + np.random.random(x_2d.size).reshape(x_2d.shape).astype(np.float32) - 0.5
+y_2d_noise = y_2d + np.random.random(y_2d.size).reshape(y_2d.shape).astype(np.float32) - 0.5
+elevation_new = np.ones_like(elevation) * 500.0
+
+vec_tilt = hray.topo_param.slope_plane_meth(
+    x_2d[slice_in_a1], y_2d[slice_in_a1], elevation_new[slice_in_a1])[1:-1, 1:-1]
 
 # Compute Sky View Factor
 svf = hray.topo_param.sky_view_factor(azim, hori, vec_tilt)
