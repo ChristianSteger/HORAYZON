@@ -143,7 +143,7 @@ del x_enu, y_enu, z_enu
 svf = hray.topo_param.sky_view_factor(azim, hori, vec_tilt)
 
 # Compute slope angle and aspect
-slope = np.arccos(vec_tilt[:, :, 2])
+slope = np.arccos(vec_tilt[:, :, 2].clip(max=1.0))
 aspect = np.pi / 2.0 - np.arctan2(vec_tilt[:, :, 1],
                                   vec_tilt[:, :, 0])
 aspect[aspect < 0.0] += np.pi * 2.0  # [0.0, 2.0 * np.pi]
