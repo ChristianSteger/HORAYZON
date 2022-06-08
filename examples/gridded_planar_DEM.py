@@ -49,7 +49,7 @@ path_out += "gridded_DHM25_Switzerland/"
 if not os.path.isdir(path_out):
     os.mkdir(path_out)
 
-# Download and unzip SRTM tile (30 x 30 degree)
+# Download and unzip DHM25 data
 print("Download DHM25 data:")
 hray.auxiliary.download_file(dem_file_url, path_out
                              + "DHM25_MM_ASCII_GRID.zip")
@@ -81,11 +81,7 @@ vec_north = np.zeros((dem_dim_0 - (2 * offset_0),
 vec_north[:, :, 1] = 1.0
 
 # Merge vertex coordinates and pad geometry buffer
-x_2d, y_2d = np.meshgrid(x, y)
-vert_grid = np.hstack((x_2d.reshape(x_2d.size, 1),
-                       y_2d.reshape(x_2d.size, 1),
-                       elevation.reshape(x_2d.size, 1))).ravel()
-vert_grid = hray.auxiliary.pad_geometry_buffer(vert_grid)
+vert_grid = hray.auxiliary.rearrange_pad_buffer(*np.meshgrid(x, y), elevation)
 
 # Compute horizon
 hray.horizon.horizon_gridded(vert_grid, dem_dim_0, dem_dim_1,
@@ -102,34 +98,26 @@ ds = xr.open_dataset(path_out + file_hori)
 hori = ds["horizon"].values
 azim = ds["azim"].values
 ds.close()
-del vec_north, vec_norm
+# del vec_north, vec_norm
 
 # Swap coordinate axes (-> make viewable with ncview)
 ds_ncview = ds.transpose("azim", "y", "x")
 ds_ncview.to_netcdf(path_out + file_hori[:-3] + "_ncview.nc")
 
 # Compute slope
+x_2d, y_2d = np.meshgrid(x, y)
 slice_in_a1 = (slice(slice_in[0].start - 1, slice_in[0].stop + 1),
                slice(slice_in[1].start - 1, slice_in[1].stop + 1))
-vec_tilt = hray.topo_param.slope_vector_meth(
-    x_2d[slice_in_a1], y_2d[slice_in_a1], elevation[slice_in_a1])[1:-1, 1:-1]
-# -> Do not use hray.topo_param.slope_plane_meth() here -> the function
-#    produces artefacts -> issue is currently investigated...
-# del x_2d, y_2d
-
-
-x_2d_noise = x_2d + np.random.random(x_2d.size).reshape(x_2d.shape).astype(np.float32) - 0.5
-y_2d_noise = y_2d + np.random.random(y_2d.size).reshape(y_2d.shape).astype(np.float32) - 0.5
-elevation_new = np.ones_like(elevation) * 500.0
-
-vec_tilt = hray.topo_param.slope_plane_meth(
-    x_2d[slice_in_a1], y_2d[slice_in_a1], elevation_new[slice_in_a1])[1:-1, 1:-1]
+vec_tilt = hray.topo_param.slope_plane_meth(x_2d[slice_in_a1],
+                                            y_2d[slice_in_a1],
+                                            elevation[slice_in_a1])[1:-1, 1:-1]
+del x_2d, y_2d
 
 # Compute Sky View Factor
 svf = hray.topo_param.sky_view_factor(azim, hori, vec_tilt)
 
 # Compute slope angle and aspect
-slope = np.arccos(vec_tilt[:, :, 2])
+slope = np.arccos(vec_tilt[:, :, 2].clip(max=1.0))
 aspect = np.pi / 2.0 - np.arctan2(vec_tilt[:, :, 1],
                                   vec_tilt[:, :, 0])
 aspect[aspect < 0.0] += np.pi * 2.0  # [0.0, 2.0 * np.pi]
