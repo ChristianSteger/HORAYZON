@@ -18,7 +18,7 @@ import shutil
 
 # -----------------------------------------------------------------------------
 
-def get_gshhs_coastlines(dom):
+def get_gshhs_coastlines(domain):
     """Get relevant GSHHS coastline data.
 
     Get relevant GSHHS coastline data for rectangular latitude/longitude
@@ -26,9 +26,9 @@ def get_gshhs_coastlines(dom):
 
     Parameters
     ----------
-    dom : dict
-        Specifications of rectangular latitude/longitude domain
-        ('lat_min', 'lat_max', 'lon_min', 'lon_max')
+    domain : dict
+        Dictionary with domain boundaries (lon_min, lon_max, lat_min, lat_max)
+        [degree]
 
     Returns
     -------
@@ -37,10 +37,10 @@ def get_gshhs_coastlines(dom):
 
     # Check arguments
     keys_req = ("lon_min", "lon_max", "lat_min", "lat_max")
-    if not set(keys_req).issubset(set(dom.keys())):
-        raise ValueError("one or multiple key(s) are missing in 'dom'")
-    if (dom["lon_min"] >= dom["lon_max"])\
-            or (dom["lat_min"] >= dom["lat_max"]):
+    if not set(keys_req).issubset(set(domain.keys())):
+        raise ValueError("one or multiple key(s) are missing in 'domain'")
+    if (domain["lon_min"] >= domain["lon_max"]) \
+            or (domain["lat_min"] >= domain["lat_max"]):
         raise ValueError("invalid domain extent")
 
     # Download data
@@ -80,8 +80,8 @@ def get_gshhs_coastlines(dom):
     bounds = np.load(file_bbc)
     geoms = pygeos.box(bounds[:, 0], bounds[:, 1], bounds[:, 2], bounds[:, 3])
     tree = pygeos.STRtree(geoms)
-    quer_rang = [dom["lon_min"], dom["lat_min"],
-                 dom["lon_max"], dom["lat_max"]]
+    quer_rang = [domain["lon_min"], domain["lat_min"],
+                 domain["lon_max"], domain["lat_max"]]
     ind = tree.query(pygeos.box(*quer_rang))
 
     # Load relevant polygons
