@@ -52,7 +52,7 @@ file_topo_par = "topo_par_SRTM_Alps.nc"
 
 # Check if output directory exists
 if not os.path.isdir(path_out):
-    raise ValueError("Output directory does not exist")
+    raise FileNotFoundError("Output directory does not exist")
 path_out += "gridded_SRTM_Alps/"
 if not os.path.isdir(path_out):
     os.mkdir(path_out)
@@ -70,8 +70,7 @@ file_dem = path_out + "N30E000/cut_n30e000.tif"
 lon, lat, elevation = hray.load_dem.srtm(file_dem, domain_outer)
 
 # Compute ellipsoidal heights
-undulation = hray.geoid.undulation(lon, lat, geoid="EGM96")
-elevation += undulation  # ellipsoidal height [m]
+elevation += hray.geoid.undulation(lon, lat, geoid="EGM96")  # [m]
 
 # Compute indices of inner domain
 slice_in = (slice(np.where(lat >= domain["lat_max"])[0][-1],
@@ -91,10 +90,9 @@ dem_dim_0, dem_dim_1 = elevation.shape
 trans = hray.transform.TransformerEcef2enu(lon, lat, x_ecef, y_ecef, z_ecef)
 x_enu, y_enu, z_enu = hray.transform.ecef2enu(x_ecef, y_ecef, z_ecef, trans)
 
-# Compute directional unit vectors in ENU coordinates for inner domain
-lon_in, lat_in = np.meshgrid(lon[slice_in[1]], lat[slice_in[0]])
-vec_norm_ecef = hray.direction.surf_norm(lon_in, lat_in)
-del lon_in, lat_in
+# Compute unit vectors (up and north) in ENU coordinates for inner domain
+vec_norm_ecef = hray.direction.surf_norm(*np.meshgrid(lon[slice_in[1]],
+                                                      lat[slice_in[0]]))
 vec_north_ecef = hray.direction.north_dir(x_ecef[slice_in], y_ecef[slice_in],
                                           z_ecef[slice_in], vec_norm_ecef,
                                           ellps=ellps)
@@ -104,10 +102,7 @@ vec_north_enu = hray.transform.ecef2enu_vector(vec_north_ecef, trans)
 del vec_norm_ecef, vec_north_ecef
 
 # Merge vertex coordinates and pad geometry buffer
-vert_grid = np.hstack((x_enu.reshape(x_enu.size, 1),
-                       y_enu.reshape(x_enu.size, 1),
-                       z_enu.reshape(x_enu.size, 1))).ravel()
-vert_grid = hray.auxiliary.pad_geometry_buffer(vert_grid)
+vert_grid = hray.auxiliary.rearrange_pad_buffer(x_enu, y_enu, z_enu)
 
 # Compute horizon
 hray.horizon.horizon_gridded(vert_grid, dem_dim_0, dem_dim_1,
@@ -130,14 +125,8 @@ ds.close()
 ds_ncview = ds.transpose("azim", "lat", "lon")
 ds_ncview.to_netcdf(path_out + file_hori[:-3] + "_ncview.nc")
 
-# Rotation matrix (global ENU -> local ENU)
-rot_mat = np.empty((vec_north_enu.shape[0] + 2, vec_north_enu.shape[1] + 2,
-                    3, 3), dtype=np.float32)
-rot_mat.fill(np.nan)
-rot_mat[1:-1, 1:-1, 0, :] = np.cross(vec_north_enu, vec_norm_enu, axisa=2,
-                                     axisb=2)  # vector pointing towards east
-rot_mat[1:-1, 1:-1, 1, :] = vec_north_enu
-rot_mat[1:-1, 1:-1, 2, :] = vec_norm_enu
+# Compute rotation matrix (global ENU -> local ENU)
+rot_mat = hray.transform.rotation_matrix(vec_north_enu, vec_norm_enu)
 del vec_north_enu, vec_norm_enu
 
 # Compute slope

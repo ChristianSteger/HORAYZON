@@ -421,6 +421,8 @@ def swiss2wgs(double[:, :] e, double[:, :] n, float[:, :] h_ch):
 # -----------------------------------------------------------------------------
 
 class TransformerEcef2enu:
+    """Transformer class that stores attributes to convert between ECEF and
+    ENU coordinates"""
     def __init__(self, lon, lat, x_ecef, y_ecef, z_ecef):
         self.__ind_0 = int(len(lat) / 2)
         self.__ind_1 = int(len(lon) / 2)
@@ -429,6 +431,41 @@ class TransformerEcef2enu:
         self.x_ecef_or = x_ecef[self.__ind_0, self.__ind_1]
         self.y_ecef_or = y_ecef[self.__ind_0, self.__ind_1]
         self.z_ecef_or = z_ecef[self.__ind_0, self.__ind_1]
+
+
+# -----------------------------------------------------------------------------
+
+def rotation_matrix(vec_north_enu, vec_norm_enu):
+    """Compute rotation matrix to transform global to local ENU coordinates.
+
+    Compute rotation matrix to transform global to local ENU coordinates and
+    pad data with a frame of NaN-values along the spatial dimensions.
+
+    Parameters
+    -------
+    vec_north_enu : ndarray of float
+        Array (three-dimensional) with surface normal components in ENU
+        coordinates (y, x, components) [metre]
+    vec_norm_enu : ndarray of float
+        Array (three-dimensional) with north vector components in ENU
+        coordinates (y, x, components) [metre]
+
+    Returns
+    ----------
+    lon : ndarray
+        Array (four-dimensional) with rotation matrix [metre]'"""
+
+    # Compute rotation matrix
+    rot_mat = np.empty((vec_north_enu.shape[0] + 2, vec_north_enu.shape[1] + 2,
+                        3, 3), dtype=np.float32)
+    rot_mat.fill(np.nan)
+    rot_mat[1:-1, 1:-1, 0, :] = np.cross(vec_north_enu, vec_norm_enu, axisa=2,
+                                         axisb=2)
+    # vector pointing towards east
+    rot_mat[1:-1, 1:-1, 1, :] = vec_north_enu
+    rot_mat[1:-1, 1:-1, 2, :] = vec_norm_enu
+
+    return rot_mat
 
 
 # -----------------------------------------------------------------------------

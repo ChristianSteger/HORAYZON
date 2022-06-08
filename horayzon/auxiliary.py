@@ -85,21 +85,28 @@ def download_file(file_url, file_local):
 
 # -----------------------------------------------------------------------------
 
-def pad_geometry_buffer(buffer):
-    """Padding of geometry buffer.
+def rearrange_pad_buffer(x, y, z):
+    """Rearrange elevation model data and pad geometry buffer.
 
-    Pads geometric buffer to make it conformal with 16-byte SSE load
-    instructions.
+    Rearrange digital elevation model data and pad geometric buffer to make it
+    conformal with 16-byte SSE load instructions.
 
     Parameters
     ----------
-    buffer : ndarray
-        Array (1-dimensional) with geometry buffer [arbitrary]
+    x : ndarray of float
+        Array (two-dimensional) with x-coordinates of digital elevation model
+        data [arbitrary]
+    y : ndarray of float
+        Array (two-dimensional) with y-coordinates of digital elevation model
+        data [arbitrary]
+    z : ndarray of float
+        Array (two-dimensional) with z-coordinates of digital elevation model
+        data [arbitrary]
 
     Returns
     -------
-    buffer : ndarray
-        Array (1-dimensional) with padded geometry buffer [arbitrary]
+    buffer : ndarray of float
+        Array (one-dimensional) with padded geometry buffer [arbitrary]
 
     Notes
     -----
@@ -108,11 +115,22 @@ def pad_geometry_buffer(buffer):
     section 7.45 rtcSetSharedGeometryBuffer)."""
 
     # Check arguments
-    if not isinstance(buffer, np.ndarray):
-        raise ValueError("argument 'buffer' has invalid type")
-    if buffer.ndim != 1:
-        raise ValueError("argument 'buffer' must be one-dimensional")
+    if (not isinstance(x, np.ndarray) or not isinstance(y, np.ndarray)
+            or not isinstance(z, np.ndarray)):
+        raise TypeError("One or more input arguments are of invalid type")
+    if ((x.dtype != np.float32) or (y.dtype != np.float32)
+            or (z.dtype != np.float32)):
+        raise TypeError("Not all input arguments are 32-bit floats")
+    if (any([i != 2 for i in [x.ndim, y.ndim, z.ndim]])
+            or not x.shape == y.shape == z.shape):
+        raise ValueError("Dimensions of input arguments are "
+                         "erroneous/inconsistent")
 
+    # Rearrange digital elevation model data
+    buffer = np.hstack((x.reshape(x.size, 1), y.reshape(x.size, 1),
+                        z.reshape(x.size, 1))).ravel()
+
+    # Padding of geometry buffer
     add_elem = 16
     if not (buffer.nbytes % 16) == 0:
         add_elem += ((16 - (buffer.nbytes % 16)) // buffer[0].nbytes)
