@@ -150,11 +150,11 @@ def dhm25(file_dem, domain):
     d_x = ds.GetGeoTransform()[1]
     x = np.linspace(ds.GetGeoTransform()[0] + (d_x / 2.0),
                     ds.GetGeoTransform()[0] + d_x * ds.RasterXSize
-                    - (d_x / 2.0), ds.RasterXSize)
+                    - (d_x / 2.0), ds.RasterXSize, dtype=np.float32)
     d_y = ds.GetGeoTransform()[5]
     y = np.linspace(ds.GetGeoTransform()[3] + (d_y / 2.0),
                     ds.GetGeoTransform()[3] + d_y * ds.RasterYSize
-                    - (d_y / 2.0), ds.RasterYSize)
+                    - (d_y / 2.0), ds.RasterYSize, dtype=np.float32)
 
     # Crop relevant domain
     if sum([domain["x_min"] > x.min(), domain["x_max"] < x.max(),

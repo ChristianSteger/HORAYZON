@@ -15,19 +15,11 @@ import sys
 import numpy as np
 import xarray as xr
 from netCDF4 import Dataset
-import matplotlib as mpl
-import matplotlib.pyplot as plt
-import matplotlib.gridspec as gridspec
-from matplotlib.ticker import MaxNLocator
-import cartopy.crs as ccrs
-from cmcrameri import cm
 import zipfile
 from osgeo import gdal
 sys.path.append("/Users/csteger/Downloads/HORAYZON/")  # ------------ temporary
-from horayzon import auxiliary, domain, geoid, horizon, load_dem, topo_param  # temporary
+from horayzon import auxiliary, domain, horizon, load_dem, topo_param  # temporary
 import horayzon as hray
-
-mpl.style.use("classic")
 
 # -----------------------------------------------------------------------------
 # Settings
@@ -37,7 +29,7 @@ mpl.style.use("classic")
 domain = {"x_min": 668000, "x_max": 707000,
           "y_min": 172000, "y_max": 200000}  # domain boundaries [metre]
 dist_search = 20.0  # search distance for horizon [kilometre]
-azim_num = 360  # number of azimuth sampling directions [-]
+azim_num = 180  # number of azimuth sampling directions [-]
 
 # Paths and file names
 dem_file_url = "https://cms.geo.admin.ch/ogd/topography/" \
@@ -70,55 +62,39 @@ domain_outer = hray.domain.planar_grid(domain, dist_search)
 file_dem = path_out + "ASCII_GRID_1part/dhm25_grid_raster.asc"
 x, y, elevation = hray.load_dem.dhm25(file_dem, domain_outer)
 
-# Compute ellipsoidal heights
-undulation = hray.geoid.undulation(lon, lat, geoid="EGM96")
-elevation += undulation  # ellipsoidal height [m]
-
 # Compute indices of inner domain
-slice_in = (slice(np.where(lat >= domain["lat_max"])[0][-1],
-                  np.where(lat <= domain["lat_min"])[0][0] + 1),
-            slice(np.where(lon <= domain["lon_min"])[0][-1],
-                  np.where(lon >= domain["lon_max"])[0][0] + 1))
+slice_in = (slice(np.where(y >= domain["y_max"])[0][-1],
+                  np.where(y <= domain["y_min"])[0][0] + 1),
+            slice(np.where(x <= domain["x_min"])[0][-1],
+                  np.where(x >= domain["x_max"])[0][0] + 1))
 offset_0 = slice_in[0].start
 offset_1 = slice_in[1].start
 print("Inner domain size: " + str(elevation[slice_in].shape))
 
-# Compute ECEF coordinates
-x_ecef, y_ecef, z_ecef = hray.transform.lonlat2ecef_1d(lon, lat, elevation,
-                                                       ellps=ellps)
+# Create directional unit vectors for inner domain
 dem_dim_0, dem_dim_1 = elevation.shape
-
-# Compute ENU coordinates
-trans = hray.transform.TransformerEcef2enu(lon, lat, x_ecef, y_ecef, z_ecef)
-x_enu, y_enu, z_enu = hray.transform.ecef2enu(x_ecef, y_ecef, z_ecef, trans)
-
-# Compute directional unit vectors in ENU coordinates for inner domain
-lon_in, lat_in = np.meshgrid(lon[slice_in[1]], lat[slice_in[0]])
-vec_norm_ecef = hray.direction.surf_norm(lon_in, lat_in)
-del lon_in, lat_in
-vec_north_ecef = hray.direction.north_dir(x_ecef[slice_in], y_ecef[slice_in],
-                                          z_ecef[slice_in], vec_norm_ecef,
-                                          ellps=ellps)
-del x_ecef, y_ecef, z_ecef
-vec_norm_enu = hray.transform.ecef2enu_vector(vec_norm_ecef, trans)
-vec_north_enu = hray.transform.ecef2enu_vector(vec_north_ecef, trans)
-del vec_norm_ecef, vec_north_ecef
+vec_norm = np.zeros((dem_dim_0 - (2 * offset_0),
+                     dem_dim_1 - (2 * offset_1), 3), dtype=np.float32)
+vec_norm[:, :, 2] = 1.0
+vec_north = np.zeros((dem_dim_0 - (2 * offset_0),
+                      dem_dim_1 - (2 * offset_1), 3), dtype=np.float32)
+vec_north[:, :, 1] = 1.0
 
 # Merge vertex coordinates and pad geometry buffer
-vert_grid = np.hstack((x_enu.reshape(x_enu.size, 1),
-                       y_enu.reshape(x_enu.size, 1),
-                       z_enu.reshape(x_enu.size, 1))).ravel()
+x_2d, y_2d = np.meshgrid(x, y)
+vert_grid = np.hstack((x_2d.reshape(x_2d.size, 1),
+                       y_2d.reshape(x_2d.size, 1),
+                       elevation.reshape(x_2d.size, 1))).ravel()
 vert_grid = hray.auxiliary.pad_geometry_buffer(vert_grid)
 
 # Compute horizon
 hray.horizon.horizon_gridded(vert_grid, dem_dim_0, dem_dim_1,
-                             vec_norm_enu, vec_north_enu,
-                             offset_0, offset_1,
+                             vec_norm, vec_north, offset_0, offset_1,
                              file_out=path_out + file_hori,
-                             x_axis_val=lon[slice_in[1]].astype(np.float32),
-                             y_axis_val=lat[slice_in[0]].astype(np.float32),
-                             x_axis_name="lon", y_axis_name="lat",
-                             units="degree", dist_search=dist_search,
+                             x_axis_val=x[slice_in[1]].astype(np.float32),
+                             y_axis_val=y[slice_in[0]].astype(np.float32),
+                             x_axis_name="x", y_axis_name="y",
+                             units="metre", dist_search=dist_search,
                              azim_num=azim_num)
 
 # Load horizon data
@@ -126,30 +102,20 @@ ds = xr.open_dataset(path_out + file_hori)
 hori = ds["horizon"].values
 azim = ds["azim"].values
 ds.close()
+del vec_north, vec_norm
 
 # Swap coordinate axes (-> make viewable with ncview)
-ds_ncview = ds.transpose("azim", "lat", "lon")
+ds_ncview = ds.transpose("azim", "y", "x")
 ds_ncview.to_netcdf(path_out + file_hori[:-3] + "_ncview.nc")
-
-# Rotation matrix (global ENU -> local ENU)
-rot_mat = np.empty((vec_north_enu.shape[0] + 2, vec_north_enu.shape[1] + 2,
-                    3, 3), dtype=np.float32)
-rot_mat.fill(np.nan)
-rot_mat[1:-1, 1:-1, 0, :] = np.cross(vec_north_enu, vec_norm_enu, axisa=2,
-                                     axisb=2)  # vector pointing towards east
-rot_mat[1:-1, 1:-1, 1, :] = vec_north_enu
-rot_mat[1:-1, 1:-1, 2, :] = vec_norm_enu
-del vec_north_enu, vec_norm_enu
 
 # Compute slope
 slice_in_a1 = (slice(slice_in[0].start - 1, slice_in[0].stop + 1),
                slice(slice_in[1].start - 1, slice_in[1].stop + 1))
-vec_tilt = hray.topo_param.slope_plane_meth(x_enu[slice_in_a1],
-                                            y_enu[slice_in_a1],
-                                            z_enu[slice_in_a1],
-                                            rot_mat)[1:-1, 1:-1]
-del rot_mat
-del x_enu, y_enu, z_enu
+vec_tilt = hray.topo_param.slope_vector_meth(
+    x_2d[slice_in_a1], y_2d[slice_in_a1], elevation[slice_in_a1])[1:-1, 1:-1]
+# -> Do not use hray.topo_param.slope_plane_meth() here -> the function
+#    produces artefacts -> issue is currently investigated...
+del x_2d, y_2d
 
 # Compute Sky View Factor
 svf = hray.topo_param.sky_view_factor(azim, hori, vec_tilt)
@@ -162,99 +128,34 @@ aspect[aspect < 0.0] += np.pi * 2.0  # [0.0, 2.0 * np.pi]
 
 # Save topographic parameters to NetCDF file
 ncfile = Dataset(filename=path_out + file_topo_par, mode="w")
-ncfile.createDimension(dimname="lat", size=svf.shape[0])
-ncfile.createDimension(dimname="lon", size=svf.shape[1])
-nc_lat = ncfile.createVariable(varname="lat", datatype="f",
-                               dimensions="lat")
-nc_lat[:] = lat[slice_in[0]]
-nc_lat.units = "degree"
-nc_lon = ncfile.createVariable(varname="lon", datatype="f",
-                               dimensions="lon")
-nc_lon[:] = lon[slice_in[1]]
-nc_lon.units = "degree"
+ncfile.createDimension(dimname="y", size=svf.shape[0])
+ncfile.createDimension(dimname="x", size=svf.shape[1])
+nc_lat = ncfile.createVariable(varname="y", datatype="f",
+                               dimensions="y")
+nc_lat[:] = y[slice_in[0]]
+nc_lat.units = "metre"
+nc_lon = ncfile.createVariable(varname="x", datatype="f",
+                               dimensions="x")
+nc_lon[:] = x[slice_in[1]]
+nc_lon.units = "metre"
 nc_data = ncfile.createVariable(varname="elevation", datatype="f",
-                                dimensions=("lat", "lon"))
+                                dimensions=("y", "x"))
 nc_data[:] = elevation[slice_in]
-nc_data.long_name = "ellipsoidal height"
+nc_data.long_name = "elevation"
 nc_data.units = "m"
 nc_data = ncfile.createVariable(varname="slope", datatype="f",
-                                dimensions=("lat", "lon"))
+                                dimensions=("y", "x"))
 nc_data[:] = slope
 nc_data.long_name = "slope angle"
 nc_data.units = "rad"
 nc_data = ncfile.createVariable(varname="aspect", datatype="f",
-                                dimensions=("lat", "lon"))
+                                dimensions=("y", "x"))
 nc_data[:] = aspect
 nc_data.long_name = "slope aspect (clockwise from North)"
 nc_data.units = "rad"
 nc_data = ncfile.createVariable(varname="svf", datatype="f",
-                                dimensions=("lat", "lon"))
+                                dimensions=("y", "x"))
 nc_data[:] = svf
 nc_data.long_name = "sky view factor"
 nc_data.units = "-"
 ncfile.close()
-
-# -----------------------------------------------------------------------------
-# Plot topographic parameters
-# -----------------------------------------------------------------------------
-
-# Plot settings
-data_plot = {"elevation": elevation[slice_in],
-             "slope": np.rad2deg(slope),
-             "aspect": np.rad2deg(aspect),
-             "svf": svf}
-cmaps = {"elevation": cm.batlowW, "slope": cm.lajolla,
-         "aspect": cm.romaO, "svf": cm.davos}
-pos = {"elevation": [0, 0], "slope": [0, 1],
-       "aspect":    [3, 0], "svf":   [3, 1]}
-titles = {"elevation": "Elevation [m]", "slope": "Slope [degree]",
-          "aspect": "Aspect (clockwise from North) [degree]",
-          "svf": "Sky View Factor [-]"}
-
-# Plot
-geo_crs = ccrs.PlateCarree()
-fig = plt.figure(figsize=(14.0, 16.0))
-gs = gridspec.GridSpec(5, 2, left=0.1, bottom=0.1, right=0.9, top=0.9,
-                       hspace=0.05, wspace=0.05,
-                       height_ratios=[1, 0.04, 0.07, 1, 0.04])
-for i in list(data_plot.keys()):
-    # -------------------------------------------------------------------------
-    if i != "aspect":
-        levels = MaxNLocator(nbins=20, steps=[1, 2, 5, 10], symmetric=False) \
-            .tick_values(np.percentile(data_plot[i], 5.0),
-                         np.percentile(data_plot[i], 95.0))
-        cmap = cmaps[i]
-        norm = mpl.colors.BoundaryNorm(levels, ncolors=cmap.N, extend="both")
-        ticks = levels
-    else:
-        levels = np.arange(0.0, 380.0, 20.0)
-        cmap = cmaps[i]
-        norm = mpl.colors.BoundaryNorm(levels, ncolors=cmap.N)
-        ticks = np.arange(20.0, 360.0, 40.0)
-    ax = plt.subplot(gs[pos[i][0], pos[i][1]], projection=geo_crs)
-    plt.pcolormesh(lon[slice_in[1]], lat[slice_in[0]], data_plot[i], cmap=cmap,
-                   norm=norm, shading="auto")
-    ax.set_aspect("auto")
-    if i == "elevation":
-        gl = ax.gridlines(draw_labels=True)
-        gl.top_labels = True
-        gl.left_labels = True
-        gl.bottom_labels = False
-        gl.right_labels = False
-        t = plt.text(0.17, 0.95, titles[i], fontsize=12, fontweight="bold",
-                     horizontalalignment="center", verticalalignment="center",
-                     transform=ax.transAxes)
-        t.set_bbox(dict(facecolor="white", alpha=0.8, edgecolor="none"))
-    else:
-        plt.xticks([])
-        plt.yticks([])
-        plt.title(titles[i], fontsize=12, fontweight="bold")
-    plt.axis([lon[slice_in[1]].min(), lon[slice_in[1]].max(),
-              lat[slice_in[0]].min(), lat[slice_in[0]].max()])
-    # -------------------------------------------------------------------------
-    ax = plt.subplot(gs[pos[i][0] + 1, pos[i][1]])
-    cb = mpl.colorbar.ColorbarBase(ax, cmap=cmap, norm=norm,
-                                   orientation="horizontal")
-    # -------------------------------------------------------------------------
-fig.savefig(path_out + "Topo_slope_SVF.png", dpi=300, bbox_inches="tight")
-plt.close(fig)
