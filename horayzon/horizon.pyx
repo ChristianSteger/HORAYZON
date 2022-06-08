@@ -119,7 +119,7 @@ def horizon_gridded(
     hori_fill : float
         Horizon fill values for masked locations
     ray_org_elev : float
-        Vertical elevation of ray origin [metre]"""
+        Vertical elevation of ray origin above surface [metre]"""
 
 	# Check consistency and validity of input arguments
     if len(vert_grid) < (dem_dim_0 * dem_dim_1 * 3):
@@ -304,7 +304,7 @@ def horizon_gridcells(
     elev_ang_low_lim : float
         Lower limit for elevation angle search [degree]
     ray_org_elev : float
-        Vertical elevation of ray origin [metre]
+        Vertical elevation of ray origin above surface [metre]
     hori_dist_out : bool
         Option to output distance to horizon
     """
@@ -464,7 +464,7 @@ def horizon_locations(
     elev_ang_low_lim : float
         Lower limit for elevation angle search [degree]
     ray_org_elev : ndarray of float
-        Vertical elevation of ray origin [metre]
+        Vertical elevation of ray origin above surface [metre]
     hori_dist_out : bool
         Option to output distance to horizon
     """
