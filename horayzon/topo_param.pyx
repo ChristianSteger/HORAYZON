@@ -80,10 +80,20 @@ def slope_plane_meth(float[:, :] x, float[:, :] y, float[:, :] z,
     vec_tilt[:] = NAN
 
     # Loop through grid cells
-    if rot_mat.shape[0] == 0:  # perform no coordinate transformation
+    if rot_mat.shape[0] == 0:
+        printf("Translate input coordinates\n")
 
         for i in range(1, (len_0 - 1)):
             for j in range(1, (len_1 - 1)):
+
+                # Translate input coordinates
+                count = 0
+                for k in range((i - 1), (i + 2)):
+                    for l in range((j - 1), (j + 2)):
+                        coord[count, 0] = x[k, l] - x[i, j]
+                        coord[count, 1] = y[k, l] - y[i, j]
+                        coord[count, 2] = z[k, l] - z[i, j]
+                        count = count + 1
 
                 # Compute normal vector of plane
                 x_l_sum = 0.0
@@ -94,16 +104,15 @@ def slope_plane_meth(float[:, :] x, float[:, :] y, float[:, :] z,
                 x_l_z_l_sum = 0.0
                 y_l_y_l_sum = 0.0
                 y_l_z_l_sum = 0.0
-                for k in range((i - 1), (i + 2)):
-                    for l in range((j - 1), (j + 2)):
-                        x_l_sum = x_l_sum + x[k, l]
-                        y_l_sum = y_l_sum + y[k, l]
-                        z_l_sum = z_l_sum + z[k, l]
-                        x_l_x_l_sum = x_l_x_l_sum + (x[k, l] * x[k, l])
-                        x_l_y_l_sum = x_l_y_l_sum + (x[k, l] * y[k, l])
-                        x_l_z_l_sum = x_l_z_l_sum + (x[k, l] * z[k, l])
-                        y_l_y_l_sum = y_l_y_l_sum + (y[k, l] * y[k, l])
-                        y_l_z_l_sum = y_l_z_l_sum + (y[k, l] * z[k, l])
+                for k in range(9):
+                    x_l_sum = x_l_sum + coord[k, 0]
+                    y_l_sum = y_l_sum + coord[k, 1]
+                    z_l_sum = z_l_sum + coord[k, 2]
+                    x_l_x_l_sum = x_l_x_l_sum + (coord[k, 0] * coord[k, 0])
+                    x_l_y_l_sum = x_l_y_l_sum + (coord[k, 0] * coord[k, 1])
+                    x_l_z_l_sum = x_l_z_l_sum + (coord[k, 0] * coord[k, 2])
+                    y_l_y_l_sum = y_l_y_l_sum + (coord[k, 1] * coord[k, 1])
+                    y_l_z_l_sum = y_l_z_l_sum + (coord[k, 1] * coord[k, 2])
                 # Fortran-contiguous
                 mat[0] = x_l_x_l_sum
                 mat[3] = x_l_y_l_sum
@@ -142,12 +151,12 @@ def slope_plane_meth(float[:, :] x, float[:, :] y, float[:, :] z,
                 vec_tilt[i, j, 2] = vec_z
 
     else:
-        printf("Perform local coordinate transformation\n")
+        printf("Translate and rotate input coordinates\n")
 
         for i in range(1, (len_0 - 1)):
             for j in range(1, (len_1 - 1)):
 
-                # Coordinate transformation (translation and rotation)
+                # Translate and rotate input coordinates
                 count = 0
                 for k in range((i - 1), (i + 2)):
                     for l in range((j - 1), (j + 2)):
@@ -323,9 +332,9 @@ def slope_vector_meth(float[:, :] x, float[:, :] y, float[:, :] z,
             vec_tilt[i, j, 1] = vec_y
             vec_tilt[i, j, 2] = vec_z
 
-    # Perform local coordinate transformation (optional)
+    # Rotate output vectors
     if rot_mat.shape[0] != 0:
-        printf("Perform local coordinate transformation\n")
+        printf("Rotate output vectors\n")
 
         # for i in range(1, (len_0 - 1)):
         for i in prange(1, (len_0 - 1), nogil=True, schedule="static"):
