@@ -1,17 +1,17 @@
 # Description: Compute gridded topographic parameters (slope angle and aspect,
-#              horizon and Sky View Factor) from swissALTI3D (~2 m) for an
-#              example region in the European Alps and simplify the outer
-#              DEM domain
+#              horizon and sky view factor) from swissALTI3D data (2 m) for
+#              an example region in Switzerland. Ignore Earth's surface
+#              curvature and simply the outer DEM domain.
 #
-# Required input data:
-#   - swissALTI3D: https://www.swisstopo.admin.ch/en/geodata/height/alti3d.html
+# Source of applied DEM data:
+#   https://www.swisstopo.admin.ch/en/geodata/height/alti3d.html
 #
 # Copyright (c) 2022 ETH Zurich, Christian R. Steger
 # MIT License
 
 # Load modules
-import sys
 import os
+import sys
 import numpy as np
 import xarray as xr
 from skimage.io import imsave
@@ -20,45 +20,81 @@ import time
 import trimesh
 import glob
 from netCDF4 import Dataset
+import requests
+sys.path.append("/Users/csteger/Downloads/HORAYZON/")  # ------------ temporary
+from horayzon import auxiliary, domain, horizon, load_dem, topo_param  # temporary
+import horayzon as hray
 
-# Paths to folders
-path_DEM = "/Users/csteger/Desktop/SwissALTI3D/"
-path_temp = "/Users/csteger/Desktop/temp/"
-path_out = "/Users/csteger/Desktop/output/"
-
-# Load required functions
-sys.path.append("/Users/csteger/Desktop/lib/")
-from horizon import horizon_gridded
-import functions_cy
-from load_dem import load_swissalti3d
-from auxiliary import pad_geometry_buffer
-
-###############################################################################
+# -----------------------------------------------------------------------------
 # Settings
-###############################################################################
+# -----------------------------------------------------------------------------
 
-# Miscellaneous
-loc = (46.844219, 9.011392)  # centre location (latitude, longitude) [degree]
-# -> Limmerensee, Glarus
-dom_len = np.array([1.5, 7.0, 28.0], dtype=np.float32)
-# inner domain, boundary domain (not simplified / simplified) [kilometre]
+# Domain size and computation settings
+domain = {"x_min": 2711700, "x_max": 2714700,
+          "y_min": 1184400, "y_max": 1187400}  # domain boundaries [metre]
+# -> 3 x 3 km domain centred around Toedi, Glarus
+# -> Swiss LV95 coordinates -> required domain can e.g. be determined with:
+#    https://map.geo.admin.ch/
+dist_search = 30.0  # search distance for horizon [kilometre]
+azim_num = 360  # number of azimuth sectors [-]
 hori_acc = np.array([0.15, 0.1], dtype=np.float32)
 # horizon accuracy due to algorithm and terrain simplification [degree]
-dem_res = 2.0  # resolution of DEM [degree]
-azim_num = 360  # number of azimuth sectors [-]
-dist_search = dom_len[1:].sum()  # search distance for horizon [kilometre]
 
-# Executables
-hmm_ex = "/Applications/hmm/hmm-master/hmm"  # path to 'hmm' executable
+# Path to heightmap meshing utility (hmm) executable
+hmm_ex = "/Applications/hmm/hmm-master/hmm"
 
-# Files
-file_dem = path_DEM + "swissalti3d_yyyy_eeee-nnnn_2_2056_5728.tif"
-file_hori = path_out + "hori_swissALTI3D_Alps.nc"
-file_topo_par = path_out + "topo_par_swissALTI3D_Alps.nc"
+# Paths and file names
+dem_file_url = "https://data.geo.admin.ch/ch.swisstopo.swissalti3d/" \
+               + "swissalti3d_yyyy_eeee-nnnn/" \
+               + "swissalti3d_yyyy_eeee-nnnn_2_2056_5728.tif"
+path_out = "/Users/csteger/Desktop/Output/"
+file_hori = "hori_swissALTI3D_Switzerland.nc"
+file_topo_par = "topo_par_swissALTI3D_Switzerland.nc"
 
-###############################################################################
+# -----------------------------------------------------------------------------
+# Download swissALTI3D tiles
+# -----------------------------------------------------------------------------
+
+# Check if output directory exists
+if not os.path.isdir(path_out):
+    raise ValueError("Output directory does not exist")
+path_out += "gridded_swissALTI3D_Switzerland/"
+if not os.path.isdir(path_out):
+    os.mkdir(path_out)
+
+# Check if heightmap meshing utility (hmm) executable exists
+if not os.path.isfile(hmm_ex):
+    raise ValueError("heightmap meshing utility (hmm) not installed or "
+                     + "path to executable erroneous")
+
+# Download data
+path_tiles = path_out + "tiles_dem/"
+if not os.path.isdir(path_tiles):
+    os.mkdir(path_tiles)
+tiles_east = list(range(
+    int(np.floor((domain["x_min"] - dist_search * 1000.0) / 1000)),
+    int(np.floor((domain["x_max"] + dist_search * 1000.0) / 1000)) + 1))
+tiles_north = list(range(
+    int(np.floor((domain["y_max"] + dist_search * 1000.0) / 1000)),
+    int(np.floor((domain["y_min"] - dist_search * 1000.0) / 1000)) - 1, -1))
+num_files = len(tiles_east) * len(tiles_north)
+count = 0
+for i in tiles_north:
+    for j in tiles_east:
+        for k in ("2019", "2020"):
+            file = dem_file_url.replace("eeee", str(j))\
+                .replace("nnnn", str(i)).replace("yyyy", k)
+            if requests.head(file).status_code == 200:
+                hray.auxiliary.download_file(file,
+                                             path_tiles + file.split("/")[-1])
+                count += 1
+                if (count != 0) and (count % 200 == 0):
+                    print("Number of files downloaded: " + str(count) + "/"
+                          + str(num_files))
+
+# -----------------------------------------------------------------------------
 # Load and prepare DEM
-###############################################################################
+# -----------------------------------------------------------------------------#
 
 # Load DEM data
 east, north, dem = load_swissalti3d(loc, dom_len.sum() * 2.0, path_DEM)
