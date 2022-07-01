@@ -18,7 +18,7 @@ from netCDF4 import Dataset
 import zipfile
 from osgeo import gdal
 sys.path.append("/Users/csteger/Downloads/HORAYZON/")  # ------------ temporary
-from horayzon import auxiliary, domain, horizon, load_dem, topo_param  # temporary
+from horayzon import auxiliary, domain, horizon, load_dem, topo_param, download  # temporary
 import horayzon as hray
 
 # -----------------------------------------------------------------------------
