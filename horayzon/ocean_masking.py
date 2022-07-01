@@ -11,7 +11,8 @@ import pygeos
 import time
 from skimage.measure import find_contours
 import horayzon.transform as transform
-from horayzon.auxiliary import get_path_aux_data, download_file
+from horayzon.auxiliary import get_path_aux_data
+from horayzon.download import file as download_file
 import zipfile
 import shutil
 
@@ -49,11 +50,11 @@ def get_gshhs_coastlines(domain):
         file_url = "http://www.soest.hawaii.edu/pwessel/gshhg/" \
                    + "gshhg-shp-2.3.7.zip"
         print("Download GSHHG data:")
-        download_file(file_url, path_aux_data + "gshhg-shp-2.3.7.zip")
-        with zipfile.ZipFile(path_aux_data + "gshhg-shp-2.3.7.zip", "r") \
-                as zip_ref:
+        download_file(file_url, path_aux_data)
+        file_zipped = path_aux_data + os.path.split(file_url)[-1]
+        with zipfile.ZipFile(file_zipped, "r") as zip_ref:
             zip_ref.extractall(path_aux_data + "GSHHG")
-        os.remove(path_aux_data + "gshhg-shp-2.3.7.zip")
+        os.remove(file_zipped)
 
         # Remove superfluous data (larger files)
         shutil.rmtree(path_aux_data + "GSHHG/WDBII_shp/", ignore_errors=True)

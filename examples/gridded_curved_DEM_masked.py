@@ -60,7 +60,7 @@ if not os.path.isdir(path_out):
 
 # Download and unzip SRTM tile (30 x 30 degree)
 print("Download SRTM tile (30 x 30 degree):")
-hray.auxiliary.download_file(dem_file_url, path_out + "S60W060.zip")
+hray.download.file(dem_file_url, path_out)
 with zipfile.ZipFile(path_out + "S60W060.zip", "r") as zip_ref:
     zip_ref.extractall(path_out + "S60W060")
 os.remove(path_out + "S60W060.zip")

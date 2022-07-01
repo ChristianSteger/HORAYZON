@@ -51,8 +51,7 @@ if not os.path.isdir(path_out):
 
 # Download and unzip DHM25 data
 print("Download DHM25 data:")
-hray.auxiliary.download_file(dem_file_url, path_out
-                             + "DHM25_MM_ASCII_GRID.zip")
+hray.download.file(dem_file_url, path_out)
 with zipfile.ZipFile(path_out + "DHM25_MM_ASCII_GRID.zip", "r") as zip_ref:
     zip_ref.extractall(path_out)
 os.remove(path_out + "DHM25_MM_ASCII_GRID.zip")

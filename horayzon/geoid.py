@@ -5,7 +5,8 @@
 import os
 import numpy as np
 from scipy import interpolate
-from horayzon.auxiliary import get_path_aux_data, download_file
+from horayzon.auxiliary import get_path_aux_data
+from horayzon.download import file as download_file
 import zipfile
 import gzip
 
@@ -68,10 +69,11 @@ def undulation(lon_ip, lat_ip, geoid="EGM96"):
             file_url = "https://earth-info.nga.mil/php/" \
                        + "download.php?file=egm-96interpolation"
             print("Download EGM96 data:")
-            download_file(file_url, path_aux_data + "EGM96.zip")
-            with zipfile.ZipFile(path_aux_data + "EGM96.zip", "r") as zip_ref:
+            download_file(file_url, path_aux_data)
+            file_zipped = path_aux_data + os.path.split(file_url)[-1]
+            with zipfile.ZipFile(file_zipped, "r") as zip_ref:
                 zip_ref.extractall(path_aux_data + "EGM96")
-            os.remove(path_aux_data + "EGM96.zip")
+            os.remove(file_zipped)
 
         # Load data
         data = np.fromfile(path_aux_data + "EGM96/WW15MGH.GRD", sep=" ",
@@ -99,7 +101,7 @@ def undulation(lon_ip, lat_ip, geoid="EGM96"):
             file_url = "https://www.ngs.noaa.gov/PC_PROD/GEOID12A/" \
                        + "Format_ascii/g2012aa0.asc.gz"
             print("Download GEOID12A data:")
-            download_file(file_url, path_aux_data + "GEOID12A/g2012aa0.asc.gz")
+            download_file(file_url, path_aux_data + "GEOID12A/")
 
         # Load data
         txt = gzip.open(path_aux_data + "GEOID12A/g2012aa0.asc.gz", "r") \

@@ -4,8 +4,6 @@
 # Load modules
 import os
 import numpy as np
-from tqdm import tqdm
-import requests
 import horayzon
 
 
@@ -44,43 +42,6 @@ def get_path_aux_data():
         file.close()
 
     return path_aux_data
-
-
-# -----------------------------------------------------------------------------
-
-def download_file(file_url, file_local):
-    """Download file from web.
-
-    Download file from web and show progress with bar.
-
-    Parameters
-    ----------
-    file_url : str
-        URL of file to download
-    file_local: str
-        Local path and name for downloaded file"""
-
-    # Check arguments
-    if not os.path.isdir(os.path.split(file_local)[0]):
-        raise ValueError("Local path does not exist")
-
-    # Try to download file
-    try:
-        response = requests.get(file_url, stream=True)
-        total_size_in_bytes = int(response.headers.get("content-length", 0))
-        block_size = 1024 * 10
-        # download seems to be faster with larger block size...
-        progress_bar = tqdm(total=total_size_in_bytes, unit="iB",
-                            unit_scale=True)
-        with open(file_local, "wb") as file:
-            for data in response.iter_content(block_size):
-                progress_bar.update(len(data))
-                file.write(data)
-        progress_bar.close()
-        if total_size_in_bytes != 0 and progress_bar.n != total_size_in_bytes:
-            raise ValueError("Inconsistency in file size")
-    except Exception:
-        print("Download failed (probably because URL does not exist)")
 
 
 # -----------------------------------------------------------------------------
