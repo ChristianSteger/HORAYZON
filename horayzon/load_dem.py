@@ -2,15 +2,16 @@
 # MIT License
 
 # Load modules
+import os
 import numpy as np
-from osgeo import gdal
+from importlib import import_module
 import xarray as xr
 import glob
 
 
 # -----------------------------------------------------------------------------
 
-def srtm(file_dem, domain):
+def srtm(file_dem, domain, engine="gdal"):
     """Load SRTM digital elevation model data.
 
     Load SRTM digital elevation model data from single GeoTIFF file.
@@ -22,6 +23,8 @@ def srtm(file_dem, domain):
     domain : dict
         Dictionary with domain boundaries (lon_min, lon_max, lat_min, lat_max)
         [degree]
+    engine: str
+        Backend for loading GeoTIFF file (either 'gdal' or 'pillow')
 
     Returns
     -------
@@ -36,27 +39,49 @@ def srtm(file_dem, domain):
     -----
     Data source: https://srtm.csi.cgiar.org"""
 
+    # Check arguments
+    if engine not in ("gdal", "pillow"):
+        raise ValueError("Input for 'engine' must be either "
+                         "'gdal' or 'pillow'")
+
     # Load digital elevation model data
-    ds = gdal.Open(file_dem)
-    elevation = ds.GetRasterBand(1).ReadAsArray()  # 16-bit integer
-    d_lon = ds.GetGeoTransform()[1]
-    lon = np.linspace(ds.GetGeoTransform()[0] + (d_lon / 2.0),
-                      ds.GetGeoTransform()[0] + d_lon * ds.RasterXSize
-                      - (d_lon / 2.0), ds.RasterXSize)
-    d_lat = ds.GetGeoTransform()[5]
-    lat = np.linspace(ds.GetGeoTransform()[3] + (d_lat / 2.0),
-                      ds.GetGeoTransform()[3] + d_lat * ds.RasterYSize
-                      - (d_lat / 2.0), ds.RasterYSize)
+    if engine == "gdal":
+        print("Read GeoTIFF with GDAL")
+        gdal = import_module("osgeo.gdal")
+        ds = gdal.Open(file_dem)
+        elevation = ds.GetRasterBand(1).ReadAsArray()  # 16-bit integer
+        raster_size_x, raster_size_y = ds.RasterXSize, ds.RasterYSize
+        lon_ulc, lat_ulc = ds.GetGeoTransform()[0], ds.GetGeoTransform()[3]
+        d_lon, d_lat = ds.GetGeoTransform()[1], ds.GetGeoTransform()[5]
+    else:
+        print("Read GeoTIFF with Pillow")
+        if (os.path.getsize(file_dem) / (1024 ** 2)) > 500.0:
+            print("Warning: reading of large GeoTIFF file with Pillow is slow")
+        Image = import_module("PIL.Image")
+        Image.MAX_IMAGE_PIXELS = 1300000000
+        img = Image.open(file_dem)
+        elevation = np.array(img)  # 32-bit integer
+        raster_size_x, raster_size_y = img.tag[256][0], img.tag[257][0]
+        lon_ulc, lat_ulc = img.tag[33922][3], img.tag[33922][4]
+        d_lon, d_lat = img.tag[33550][0], -img.tag[33550][1]
+        # Warning: unclear where sign of n-s pixel resolution is stored!
+    lon_edge = np.linspace(lon_ulc, lon_ulc + d_lon * raster_size_x,
+                           raster_size_x + 1)
+    lat_edge = np.linspace(lat_ulc, lat_ulc + d_lat * raster_size_y,
+                           raster_size_y + 1)
+    lon = lon_edge[:-1] + np.diff(lon_edge / 2.0)
+    lat = lat_edge[:-1] + np.diff(lat_edge / 2.0)
 
     # Crop relevant domain
-    if sum([domain["lon_min"] > lon.min(), domain["lon_max"] < lon.max(),
-            domain["lat_min"] > lat.min(), domain["lat_max"] < lat.max()]) \
-            != 4:
+    if any([domain["lon_min"] < lon_edge.min(),
+            domain["lon_max"] > lon_edge.max(),
+            domain["lat_min"] < lat_edge.min(),
+            domain["lat_max"] > lat_edge.max()]):
         raise ValueError("Provided tile does not cover domain")
-    slice_lon = slice(np.where(lon <= domain["lon_min"])[0][-1],
-                      np.where(lon >= domain["lon_max"])[0][0] + 1)
-    slice_lat = slice(np.where(lat >= domain["lat_max"])[0][-1],
-                      np.where(lat <= domain["lat_min"])[0][0] + 1)
+    slice_lon = slice(np.where(lon_edge <= domain["lon_min"])[0][-1],
+                      np.where(lon_edge >= domain["lon_max"])[0][0])
+    slice_lat = slice(np.where(lat_edge >= domain["lat_max"])[0][-1],
+                      np.where(lat_edge <= domain["lat_min"])[0][0])
     elevation = elevation[slice_lat, slice_lon].astype(np.float32)
     lon, lat = lon[slice_lon], lat[slice_lat]
 
@@ -91,7 +116,12 @@ def nasadem(files_dem, domain):
 
     Notes
     -----
-    Data source: https://lpdaac.usgs.gov/tools/earthdata-search/"""
+    Data source: https://lpdaac.usgs.gov/tools/earthdata-search/
+
+    To do
+    -----
+    Domain selection is not performed according to edge coordinates
+    (-> inconsistent with other 'load_dem' functions)"""
 
     # Load digital elevation model data for relevant domain
     ds = xr.open_mfdataset(files_dem, preprocess=preprocess)
@@ -119,7 +149,7 @@ def preprocess(ds):
 
 # -----------------------------------------------------------------------------
 
-def dhm25(file_dem, domain):
+def dhm25(file_dem, domain, engine="gdal"):
     """Load DHM25 digital elevation model data.
 
     Load SRTM digital elevation model data from single ESRI ASCII GRID file.
@@ -130,6 +160,8 @@ def dhm25(file_dem, domain):
         Name of DHM25 tile
     domain : dict
         Dictionary with domain boundaries (x_min, x_max, y_min, y_max) [metre]
+    engine: str
+        Backend for loading ESRI ASCII GRID file (either 'gdal' or 'numpy')
 
     Returns
     -------
@@ -144,27 +176,57 @@ def dhm25(file_dem, domain):
     -----
     Data source: https://www.swisstopo.admin.ch/en/geodata/height/dhm25.html"""
 
+    # Check arguments
+    if engine not in ("gdal", "numpy"):
+        raise ValueError("Input for 'engine' must be either "
+                         "'gdal' or 'numpy'")
+
     # Load digital elevation model data
-    ds = gdal.Open(file_dem)
-    elevation = ds.GetRasterBand(1).ReadAsArray()  # 32-bit float
-    d_x = ds.GetGeoTransform()[1]
-    x = np.linspace(ds.GetGeoTransform()[0] + (d_x / 2.0),
-                    ds.GetGeoTransform()[0] + d_x * ds.RasterXSize
-                    - (d_x / 2.0), ds.RasterXSize, dtype=np.float32)
-    d_y = ds.GetGeoTransform()[5]
-    y = np.linspace(ds.GetGeoTransform()[3] + (d_y / 2.0),
-                    ds.GetGeoTransform()[3] + d_y * ds.RasterYSize
-                    - (d_y / 2.0), ds.RasterYSize, dtype=np.float32)
+    if engine == "gdal":
+        print("Read GeoTIFF with GDAL")
+        gdal = import_module("osgeo.gdal")
+        ds = gdal.Open(file_dem)
+        elevation = ds.GetRasterBand(1).ReadAsArray()  # 32-bit float
+        raster_size_x, raster_size_y = ds.RasterXSize, ds.RasterYSize
+        x_ulc, y_ulc = ds.GetGeoTransform()[0], ds.GetGeoTransform()[3]
+        d_x, d_y = ds.GetGeoTransform()[1], ds.GetGeoTransform()[5]
+    else:
+        print("Read GeoTIFF with NumPy")
+        if (os.path.getsize(file_dem) / (1024 ** 2)) > 500.0:
+            print("Warning: reading of large ESRI ASCII GRID file with NumPy"
+                  " is slow")
+        elevation = np.loadtxt(file_dem, skiprows=6, dtype=np.float32)
+        header = {}
+        with open(file_dem) as file:
+            for i in range(5):
+                line = next(file).rstrip("\n").split()
+                if line[0] in ("ncols", "nrows"):
+                    header[line[0]] = int(line[1])
+                else:
+                    header[line[0]] = float(line[1])
+        raster_size_x, raster_size_y = header["ncols"], header["nrows"]
+        x_ulc = header["xllcorner"]
+        y_ulc = header["yllcorner"] + header["nrows"] * header["cellsize"]
+        d_x, d_y = header["cellsize"], -header["cellsize"]
+        # Warning: unclear where sign of n-s pixel resolution is stored!
+
+    x_edge = np.linspace(x_ulc, x_ulc + d_x * raster_size_x,
+                         raster_size_x + 1)
+    y_edge = np.linspace(y_ulc, y_ulc + d_y * raster_size_y,
+                         raster_size_y + 1)
+    x = x_edge[:-1] + np.diff(x_edge / 2.0)
+    y = y_edge[:-1] + np.diff(y_edge / 2.0)
 
     # Crop relevant domain
-    if sum([domain["x_min"] > x.min(), domain["x_max"] < x.max(),
-            domain["y_min"] > y.min(), domain["y_max"] < y.max()]) \
-            != 4:
+    if any([domain["x_min"] < x_edge.min(),
+            domain["x_max"] > x_edge.max(),
+            domain["y_min"] < y_edge.min(),
+            domain["y_max"] > y_edge.max()]):
         raise ValueError("Provided tile does not cover domain")
-    slice_x = slice(np.where(x <= domain["x_min"])[0][-1],
-                    np.where(x >= domain["x_max"])[0][0] + 1)
-    slice_y = slice(np.where(y >= domain["y_max"])[0][-1],
-                    np.where(y <= domain["y_min"])[0][0] + 1)
+    slice_x = slice(np.where(x_edge <= domain["x_min"])[0][-1],
+                    np.where(x_edge >= domain["x_max"])[0][0])
+    slice_y = slice(np.where(y_edge >= domain["y_max"])[0][-1],
+                    np.where(y_edge <= domain["y_min"])[0][0])
     elevation = elevation[slice_y, slice_x]
     x, y = x[slice_x], y[slice_y]
 
@@ -178,7 +240,7 @@ def dhm25(file_dem, domain):
 
 # -----------------------------------------------------------------------------
 
-def swissalti3d(path_dem, domain):
+def swissalti3d(path_dem, domain, engine="gdal"):
     """Load swissALTI3D digital elevation model data.
 
     Load swissALTI3D digital elevation model data from multiple GeoTIFF files.
@@ -189,6 +251,8 @@ def swissalti3d(path_dem, domain):
         Path of swissALTI3D tiles
     domain : dict
         Dictionary with domain boundaries (x_min, x_max, y_min, y_max) [metre]
+    engine: str
+        Backend for loading GeoTIFF file (either 'gdal' or 'pillow')
 
     Returns
     -------
@@ -204,15 +268,28 @@ def swissalti3d(path_dem, domain):
     Data source:
         https://www.swisstopo.admin.ch/en/geodata/height/alti3d.html"""
 
+    # Check arguments
+    if engine not in ("gdal", "pillow"):
+        raise ValueError("Input for 'engine' must be either "
+                         "'gdal' or 'pillow'")
+
     # Constant settings
     tiles_gc = 500  # number of grid cells per tile
     file_format = "swissalti3d_????_eeee-nnnn_2_2056_5728.tif"
 
     # Determine relevant tiles
     tiles_east = list(range(int(np.floor(domain["x_min"] / 1000)),
-                            int(np.floor(domain["x_max"] / 1000)) + 1))
-    tiles_north = list(range(int(np.floor(domain["y_max"] / 1000)),
-                             int(np.floor(domain["y_min"] / 1000)) - 1, -1))
+                            int(np.ceil(domain["x_max"] / 1000))))
+    tiles_north = list(range(int(np.floor(domain["y_min"] / 1000)),
+                             int(np.ceil(domain["y_max"] / 1000))))[::-1]
+
+    # Load required module
+    if engine == "gdal":
+        print("Read GeoTIFF with GDAL")
+        gdal = import_module("osgeo.gdal")
+    else:
+        print("Read GeoTIFF with Pillow")
+        Image = import_module("PIL.Image")
 
     # Load DEM data
     elevation = np.empty((len(tiles_north) * tiles_gc,
@@ -228,38 +305,39 @@ def swissalti3d(path_dem, domain):
             if len(file) == 0:
                 print("Warning: no tile found for e" + str(j) + "n" + str(i))
             else:
-                ds = gdal.Open(file[0])
                 slic = (slice((tiles_north[0] - i) * tiles_gc,
                               (tiles_north[0] - i + 1) * tiles_gc),
                         slice((j - tiles_east[0]) * tiles_gc,
                               (j - tiles_east[0] + 1) * tiles_gc))
-                elevation[slic] = ds.GetRasterBand(1).ReadAsArray()
+                if engine == "gdal":
+                    ds = gdal.Open(file[0])
+                    elevation[slic] = ds.GetRasterBand(1).ReadAsArray()
+                else:
+                    img = Image.open(file[0])
+                    elevation[slic] = np.array(img)
             count += 1
             if (count == 1) or (count % 100 == 0) or (count == num_tiles):
                 print("Tiles imported: " + str(count) + " of "
                       + str(num_tiles))
 
     # Generate LV95 coordinates
-    dx = ds.GetGeoTransform()[1]  # resolution of DEM in x-direction [m]
-    dy = ds.GetGeoTransform()[5]  # resolution of DEM in y-direction [m]
-    x = np.linspace(tiles_east[0] * 1000.0 + (dx / 2.0),
-                    tiles_east[0] * 1000.0 + (dx / 2.0)
-                    + (elevation.shape[1] - 1) * dx,
-                    elevation.shape[1], dtype=np.float32)
-    y = np.linspace((tiles_north[0] + 1) * 1000.0 + (dy / 2.0),
-                    (tiles_north[0] + 1) * 1000.0 + (dy / 2.0)
-                    + (elevation.shape[0] - 1) * dy,
-                    elevation.shape[0], dtype=np.float32)
+    d_x = 2.0  # resolution of DEM in x-direction [m]
+    d_y = -2.0  # resolution of DEM in y-direction [m]
+    x_edge = np.linspace(tiles_east[0] * 1000.0,
+                         tiles_east[0] * 1000.0 + elevation.shape[1] * d_x,
+                         elevation.shape[1] + 1, dtype=np.float32)
+    y_edge = np.linspace((tiles_north[0] + 1) * 1000.0,
+                         (tiles_north[0] + 1) * 1000.0
+                         + elevation.shape[0] * d_y,
+                         elevation.shape[0] + 1, dtype=np.float32)
+    x = x_edge[:-1] + np.diff(x_edge / 2.0)
+    y = y_edge[:-1] + np.diff(y_edge / 2.0)
 
     # Crop relevant domain
-    if sum([domain["x_min"] > x.min(), domain["x_max"] < x.max(),
-            domain["y_min"] > y.min(), domain["y_max"] < y.max()]) \
-            != 4:
-        raise ValueError("Provided tile does not cover domain")
-    slice_x = slice(np.where(x <= domain["x_min"])[0][-1],
-                    np.where(x >= domain["x_max"])[0][0] + 1)
-    slice_y = slice(np.where(y >= domain["y_max"])[0][-1],
-                    np.where(y <= domain["y_min"])[0][0] + 1)
+    slice_x = slice(np.where(x_edge <= domain["x_min"])[0][-1],
+                    np.where(x_edge >= domain["x_max"])[0][0])
+    slice_y = slice(np.where(y_edge >= domain["y_max"])[0][-1],
+                    np.where(y_edge <= domain["y_min"])[0][0])
     x, y = x[slice_x], y[slice_y]
     elevation = elevation[slice_y, slice_x]
 
