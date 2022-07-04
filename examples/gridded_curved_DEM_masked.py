@@ -68,7 +68,8 @@ os.remove(path_out + "S60W060.zip")
 # Load required DEM data (including outer boundary zone)
 domain_outer = hray.domain.curved_grid(domain, dist_search, ellps)
 file_dem = path_out + "S60W060/cut_s60w060.tif"
-lon, lat, elevation = hray.load_dem.srtm(file_dem, domain_outer)
+lon, lat, elevation = hray.load_dem.srtm(file_dem, domain_outer, engine="gdal")
+# -> GeoTIFF can also be read with Pillow in case GDAL is not available!
 mask_land_dem = (elevation != -32768.0)
 
 # Set ocean grid cells to 0.0 m

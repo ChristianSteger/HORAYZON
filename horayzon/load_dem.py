@@ -211,9 +211,9 @@ def dhm25(file_dem, domain, engine="gdal"):
         # Warning: unclear where sign of n-s pixel resolution is stored!
 
     x_edge = np.linspace(x_ulc, x_ulc + d_x * raster_size_x,
-                         raster_size_x + 1)
+                         raster_size_x + 1, dtype=np.float32)
     y_edge = np.linspace(y_ulc, y_ulc + d_y * raster_size_y,
-                         raster_size_y + 1)
+                         raster_size_y + 1, dtype=np.float32)
     x = x_edge[:-1] + np.diff(x_edge / 2.0)
     y = y_edge[:-1] + np.diff(y_edge / 2.0)
 

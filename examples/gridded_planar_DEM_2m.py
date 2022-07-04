@@ -71,12 +71,17 @@ if not os.path.isfile(hmm_ex):
 path_tiles = path_out + "tiles_dem/"
 if not os.path.isdir(path_tiles):
     os.mkdir(path_tiles)
-tiles_east = list(range(
-    int(np.floor((domain["x_min"] - dist_search * 1000.0) / 1000)),
-    int(np.floor((domain["x_max"] + dist_search * 1000.0) / 1000)) + 1))
-tiles_north = list(range(
-    int(np.floor((domain["y_max"] + dist_search * 1000.0) / 1000)),
-    int(np.floor((domain["y_min"] - dist_search * 1000.0) / 1000)) - 1, -1))
+add = dist_search * 1000.0
+tiles_east = list(range(int(np.floor((domain["x_min"] - add) / 1000)),
+                        int(np.ceil((domain["x_max"] + add) / 1000))))
+tiles_north = list(range(int(np.floor((domain["y_min"] - add) / 1000)),
+                         int(np.ceil((domain["y_max"] + add) / 1000))))[::-1]
+
+
+############################################################################### weitermachen !!!!!!!
+
+
+
 num_files = len(tiles_east) * len(tiles_north)
 count = 0
 for i in tiles_north:

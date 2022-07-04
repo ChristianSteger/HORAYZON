@@ -67,7 +67,8 @@ os.remove(path_out + "N30E000.zip")
 # Load required DEM data (including outer boundary zone)
 domain_outer = hray.domain.curved_grid(domain, dist_search, ellps)
 file_dem = path_out + "N30E000/cut_n30e000.tif"
-lon, lat, elevation = hray.load_dem.srtm(file_dem, domain_outer)
+lon, lat, elevation = hray.load_dem.srtm(file_dem, domain_outer, engine="gdal")
+# -> GeoTIFF can also be read with Pillow in case GDAL is not available!
 
 # Compute ellipsoidal heights
 elevation += hray.geoid.undulation(lon, lat, geoid="EGM96")  # [m]
