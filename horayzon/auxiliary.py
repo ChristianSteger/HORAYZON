@@ -87,11 +87,44 @@ def rearrange_pad_buffer(x, y, z):
         raise ValueError("Dimensions of input arguments are "
                          "erroneous/inconsistent")
 
-    # Rearrange digital elevation model data
+    # Rearrange digital elevation model data and pad geometry buffer
     buffer = np.hstack((x.reshape(x.size, 1), y.reshape(x.size, 1),
                         z.reshape(x.size, 1))).ravel()
+    buffer = pad_buffer(buffer)
 
-    # Padding of geometry buffer
+    return buffer
+
+
+# -----------------------------------------------------------------------------
+
+def pad_buffer(buffer):
+    """Padding of geometry buffer.
+
+    Pads geometric buffer to make it conformal with 16-byte SSE load
+    instructions.
+
+    Parameters
+    ----------
+    buffer : ndarray
+        Array (one-dimensional) with geometry buffer [arbitrary]
+
+    Returns
+    -------
+    buffer : ndarray
+        Array (one-dimensional) with padded geometry buffer [arbitrary]
+
+    Notes
+    -----
+    This function ensures that vertex buffer size is divisible by 16 and hence
+    conformal with 16-byte SSE load instructions (see Embree documentation;
+    section 7.45 rtcSetSharedGeometryBuffer)."""
+
+    # Check arguments
+    if not isinstance(buffer, np.ndarray):
+        raise ValueError("argument 'buffer' has invalid type")
+    if buffer.ndim != 1:
+        raise ValueError("argument 'buffer' must be one-dimensional")
+
     add_elem = 16
     if not (buffer.nbytes % 16) == 0:
         add_elem += ((16 - (buffer.nbytes % 16)) // buffer[0].nbytes)

@@ -316,7 +316,7 @@ def swissalti3d(path_dem, domain, engine="gdal"):
                     img = Image.open(file[0])
                     elevation[slic] = np.array(img)
             count += 1
-            if (count == 1) or (count % 100 == 0) or (count == num_tiles):
+            if (count == 1) or (count % 200 == 0) or (count == num_tiles):
                 print("Tiles imported: " + str(count) + " of "
                       + str(num_tiles))
 
