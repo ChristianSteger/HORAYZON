@@ -78,6 +78,7 @@ if not os.path.isfile(hmm_ex):
 # -----------------------------------------------------------------------------
 
 # Download data
+print("Download swissALTI3D 1 x 1 km tiles:")
 path_tiles = path_out + "tiles_dem/"
 if not os.path.isdir(path_tiles):
     os.mkdir(path_tiles)

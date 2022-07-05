@@ -40,8 +40,8 @@ ellps = "WGS84"  # Earth's surface approximation (sphere, GRS80 or WGS84)
 azim_num = 360  # number of azimuth sampling directions [-]
 
 # Paths and file names
-dem_file_url = "https://srtm.csi.cgiar.org/wp-content/uploads/files/" \
-               + "srtm_30x30/TIFF/N30E000.zip"
+dem_file_url = "https://srtm.csi.cgiar.org/wp-content/uploads/files/"\
+               + "srtm_5x5/TIFF/srtm_38_03.zip"
 path_out = "/Users/csteger/Desktop/Output/"
 file_hori = "hori_SRTM_Alps.nc"
 file_topo_par = "topo_par_SRTM_Alps.nc"
@@ -57,16 +57,16 @@ path_out += "gridded_SRTM_Alps/"
 if not os.path.isdir(path_out):
     os.mkdir(path_out)
 
-# Download and unzip SRTM tile (30 x 30 degree)
-print("Download SRTM tile (30 x 30 degree):")
+# Download and unzip SRTM tile (5 x 5 degree)
+print("Download SRTM tile (5 x 5 degree):")
 hray.download.file(dem_file_url, path_out)
-with zipfile.ZipFile(path_out + "N30E000.zip", "r") as zip_ref:
-    zip_ref.extractall(path_out + "n30e000")
-os.remove(path_out + "N30E000.zip")
+with zipfile.ZipFile(path_out + "srtm_38_03.zip", "r") as zip_ref:
+    zip_ref.extractall(path_out + "srtm_38_03")
+os.remove(path_out + "srtm_38_03.zip")
 
 # Load required DEM data (including outer boundary zone)
 domain_outer = hray.domain.curved_grid(domain, dist_search, ellps)
-file_dem = path_out + "N30E000/cut_n30e000.tif"
+file_dem = path_out + "srtm_38_03/srtm_38_03.tif"
 lon, lat, elevation = hray.load_dem.srtm(file_dem, domain_outer, engine="gdal")
 # -> GeoTIFF can also be read with Pillow in case GDAL is not available!
 
