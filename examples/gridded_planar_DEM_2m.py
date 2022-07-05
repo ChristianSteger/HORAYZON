@@ -11,7 +11,7 @@
 
 # Load modules
 import os
-import sys
+import sys  # ------------------------------------------------------- temporary
 import numpy as np
 import xarray as xr
 from skimage.io import imsave

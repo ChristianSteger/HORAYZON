@@ -11,12 +11,11 @@
 
 # Load modules
 import os
-import sys
+import sys  # ------------------------------------------------------- temporary
 import numpy as np
 import xarray as xr
 from netCDF4 import Dataset
 import zipfile
-from osgeo import gdal
 sys.path.append("/Users/csteger/Downloads/HORAYZON/")  # ------------ temporary
 from horayzon import auxiliary, domain, horizon, load_dem, topo_param, download  # temporary
 import horayzon as hray
