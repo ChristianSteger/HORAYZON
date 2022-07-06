@@ -222,7 +222,7 @@ for i in list(loc_sel.keys()):
 
 # Plot horizon and distance to horizon for locations
 for i in list(loc_sel.keys()):
-    plt.figure(figsize=(14, 5))
+    fig = plt.figure(figsize=(14, 5))
     ax_l = plt.axes()
     ind = list(loc_sel.keys()).index(i)
     plt.plot(np.rad2deg(azim), np.rad2deg(hori[ind, :]), color="black", lw=1.5)
@@ -240,3 +240,5 @@ for i in list(loc_sel.keys()):
             " $^{\circ}$, slope aspect: %.2f" % topo_param[i]["slope_aspect"] \
             + " $^{\circ}$, SVF: %.2f" % topo_param[i]["svf"]
     plt.title(title, fontsize=12, loc="right")
+    fig.savefig(path_out + i + ".png", dpi=300, bbox_inches="tight")
+    plt.close(fig)
