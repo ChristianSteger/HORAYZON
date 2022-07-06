@@ -40,7 +40,7 @@ elif sys.platform in ["darwin"]:
             raise ValueError("Library " + i + " not found")
 elif sys.platform in ["win32"]:
     print("Operating system: Windows")
-    raise ValueError("Warning: Package not yet tested for Windows")
+    print("Warning: Package not yet tested for Windows")
 else:
     raise ValueError("Unsupported operating system")
 

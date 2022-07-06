@@ -23,21 +23,6 @@ void horizon_gridded_comp(float* vert_grid,
     uint8_t* mask, float hori_fill,
     float ray_org_elev);
 
-// Compute horizon for individual grid cells
-void horizon_gridcells_comp(float* vert_grid, 
-	int dem_dim_0, int dem_dim_1,
-	int* indices,
-	float* vec_norm, float* vec_north,
-	int offset_0, int offset_1,
-	float* hori_buffer,
-	int num_gc,
-	int azim_num, float dist_search,
-	float hori_acc, char* ray_algorithm, char* geom_type,
-    char* file_out,
-    float elev_ang_low_lim,
-    float ray_org_elev,
-    int hori_dist_out);
-
 // Compute horizon for arbitrary locations
 void horizon_locations_comp(float* vert_grid, 
 	int dem_dim_0, int dem_dim_1,
