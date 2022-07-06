@@ -49,7 +49,6 @@ dem_file_url = "https://srtm.csi.cgiar.org/wp-content/uploads/files/"\
                + "srtm_5x5/TIFF/srtm_38_03.zip"
 path_out = "/Users/csteger/Desktop/Output/"
 file_hori = "hori_SRTM_Switzerland.nc"
-file_topo_par = "topo_par_SRTM_Switzerland.nc"
 
 # -----------------------------------------------------------------------------
 # Prepare digital elevation model data
