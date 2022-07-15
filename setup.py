@@ -65,14 +65,18 @@ ext_modules = [
               extra_compile_args=["-O3", "-ffast-math", "-fopenmp"],
               extra_link_args=["-fopenmp"],
               include_dirs=[np.get_include()]),
-    Extension(
-               "horizon",
-               sources=["horayzon/horizon.pyx", "horayzon/horizon_comp.cpp"],
-               include_dirs=include_dirs_cpp,
-               extra_objects=extra_objects_cpp,
-               extra_compile_args=["-O3"],
-               language="c++",
-          )
+    Extension("horizon",
+              sources=["horayzon/horizon.pyx", "horayzon/horizon_comp.cpp"],
+              include_dirs=include_dirs_cpp,
+              extra_objects=extra_objects_cpp,
+              extra_compile_args=["-O3"],
+              language="c++"),
+    Extension("shadow",
+              sources=["horayzon/shadow.pyx", "horayzon/shadow_comp.cpp"],
+              include_dirs=include_dirs_cpp,
+              extra_objects=extra_objects_cpp,
+              extra_compile_args=["-O3"],
+              language="c++")
     ]
 
 setup(name="test",
