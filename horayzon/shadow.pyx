@@ -11,8 +11,9 @@ cdef extern from "shadow_comp.h" namespace "shapes":
         int x0, y0, x1, y1
         int getArea()
         void move(int, int)
-        void initialise(float*, int, int, char*, int, int, float*, int, int)
-        void shootray(float*, float*)
+        void initialise(float*, int, int, char*, int, int, float*, float*,
+                        int, int)
+        void shadow(float*, float*)
 
 cdef class Terrain:
     cdef Rectangle *thisptr
@@ -29,14 +30,16 @@ cdef class Terrain:
                    str geom_type,
                    int offset_0, int offset_1,
                    np.ndarray[np.float32_t, ndim = 3] vec_tilt,
+                   np.ndarray[np.float32_t, ndim = 3] vec_norm,
                    int dim_in_0, int dim_in_1):
         self.thisptr.initialise(&vert_grid[0],
                                 dem_dim_0, dem_dim_1,
                                 geom_type.encode("utf-8"),
                                 offset_0, offset_1,
                                 &vec_tilt[0,0,0],
+                                &vec_norm[0,0,0],
                                 dim_in_0, dim_in_1)
 
-    def shootray(self, np.ndarray[np.float32_t, ndim = 1] sun_position,
+    def shadow(self, np.ndarray[np.float32_t, ndim = 1] sun_position,
                  np.ndarray[np.float32_t, ndim = 2] shaddow_buffer):
-        self.thisptr.shootray(&sun_position[0], &shaddow_buffer[0,0])
+        self.thisptr.shadow(&sun_position[0], &shaddow_buffer[0,0])

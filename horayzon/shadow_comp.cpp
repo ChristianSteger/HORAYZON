@@ -13,7 +13,6 @@
 #include <iostream>
 #include <string.h>
 #include <tbb/parallel_for.h>
-#include <tbb/parallel_reduce.h>
 #include <sstream>
 #include <iomanip>
 
@@ -233,14 +232,16 @@ void Rectangle::initialise(float* vert_grid,
 	char* geom_type,
 	int offset_0, int offset_1,
 	float* vec_tilt,
+	float* vec_norm,
 	int dim_in_0, int dim_in_1) {
 
 	dem_dim_0_cl = dem_dim_0;
 	dem_dim_1_cl = dem_dim_1;
 	vert_grid_cl = vert_grid;
 	offset_0_cl = offset_0;
-	offset_1_cl = offset_1;
+	offset_1_cl = offset_1;	
 	vec_tilt_cl = vec_tilt;
+	vec_norm_cl = vec_norm;
 	dim_in_0_cl = dim_in_0;
 	dim_in_1_cl = dim_in_1;
 
@@ -251,14 +252,29 @@ void Rectangle::initialise(float* vert_grid,
 	auto end_ini = std::chrono::high_resolution_clock::now();
   	std::chrono::duration<double> time = end_ini - start_ini;
   	cout << "Total initialisation time: " << time.count() << " s" << endl;
+  	
+  	// Allocate array (dim_in_0 * dim_in_1) for surface enlargement factor
+  	// surface_enl_fac (constant value; does not chance with moving sun)
 
 }
 
-void Rectangle::shootray(float* sun_position, float* shaddow_buffer) {
+void Rectangle::shadow(float* sun_position, float* shaddow_buffer) {
 
-	for (size_t i = 0; i < (size_t)dim_in_0_cl; i++) {  // serial
+	tbb::parallel_for(tbb::blocked_range<size_t>(0,dim_in_0_cl),
+		[&](tbb::blocked_range<size_t> r) {  // parallel
+
+	// for (size_t i = 0; i < (size_t)dim_in_0_cl; i++) {  // serial
+	for (size_t i=r.begin(); i<r.end(); ++i) {  // parallel
   		for (size_t j = 0; j < (size_t)dim_in_1_cl; j++) {
 
+    		// Get components of terrain surface normal
+    		size_t ind_vec = lin_ind_2d(dim_in_1_cl, i, j) * 3;
+  			float tilt_x = vec_tilt_cl[ind_vec];
+  			ind_vec += 1;
+  			float tilt_y = vec_tilt_cl[ind_vec];
+  			ind_vec += 1;
+  			float tilt_z = vec_tilt_cl[ind_vec];
+  
   			// Ray origin
   			size_t ind_2d = lin_ind_2d(dem_dim_1_cl, i + offset_0_cl,
   				j + offset_1_cl);
@@ -266,37 +282,63 @@ void Rectangle::shootray(float* sun_position, float* shaddow_buffer) {
   			float ray_org_y = vert_grid_cl[ind_2d * 3 + 1];
   			float ray_org_z = vert_grid_cl[ind_2d * 3 + 2] + 1.0; // ---- temporary! not a good solution!!!!
 
-			// Intersect context
-  			struct RTCIntersectContext context;
-  			rtcInitIntersectContext(&context);
+  			// Sun vector
+  			float sun_x = (sun_position[0] - ray_org_x);
+  			float sun_y = (sun_position[1] - ray_org_y);
+  			float sun_z = (sun_position[2] - ray_org_z);
+  			float mag = sqrt(sun_x * sun_x + sun_y * sun_y + sun_z * sun_z);
+  			sun_x = sun_x / mag;
+  			sun_y = sun_y / mag;
+  			sun_z = sun_z / mag;
+  			
+  			// Check for self-shadowing
+  			float dot_prod = tilt_x * sun_x + tilt_y * sun_y + tilt_z * sun_z;
+  			size_t ind_arr = lin_ind_2d(dim_in_1_cl, i, j);
+  			if (dot_prod > 0.0) {
+  			
+				// Intersect context
+  				struct RTCIntersectContext context;
+  				rtcInitIntersectContext(&context);
 
-  			// Ray structure
-  			struct RTCRay ray;
-  			ray.org_x = ray_org_x;
-  			ray.org_y = ray_org_y;
-  			ray.org_z = ray_org_z;
-  			ray.dir_x = sun_position[0] - ray_org_x;  // use unit vector later!
-  			ray.dir_y = sun_position[1] - ray_org_y;
-  			ray.dir_z = sun_position[2] - ray_org_z;
-  			ray.tnear = 0.0;
-  			//ray.tfar = std::numeric_limits<float>::infinity();
-  			ray.tfar = 100000.0;
-  			//ray.mask = -1;
-  			//ray.flags = 0;
+  				// Ray structure
+  				struct RTCRay ray;
+  				ray.org_x = ray_org_x;
+  				ray.org_y = ray_org_y;
+  				ray.org_z = ray_org_z;
+  				ray.dir_x = sun_x;  // use unit vector later!
+  				ray.dir_y = sun_y;
+  				ray.dir_z = sun_z;
+  				ray.tnear = 0.0;
+  				//ray.tfar = std::numeric_limits<float>::infinity();
+  				ray.tfar = 100000.0;
+  				//ray.mask = -1;
+  				//ray.flags = 0;
 
-  			// Intersect ray with scene
-  			rtcOccluded1(scene, &context, &ray);
-// 			cout << "ray.tfar: " << ray.tfar << endl;
-// 			cout << "dem_dim_0: " << dem_dim_0_cl << endl;
-// 			cout << "dem_dim_1: " << dem_dim_1_cl << endl;
-// 			cout << "vert_grid[8]: " << vert_grid_cl[8] << endl;
-// 			cout << "vert_grid[33]: " << vert_grid_cl[33] << endl;
+  				// Intersect ray with scene
+  				rtcOccluded1(scene, &context, &ray);
+// 				cout << "ray.tfar: " << ray.tfar << endl;
+// 				cout << "dem_dim_0: " << dem_dim_0_cl << endl;
+// 				cout << "dem_dim_1: " << dem_dim_1_cl << endl;
+// 				cout << "vert_grid[8]: " << vert_grid_cl[8] << endl;
+// 				cout << "vert_grid[33]: " << vert_grid_cl[33] << endl;
 
-			size_t ind_arr = lin_ind_2d(dim_in_1_cl, i, j);
-			shaddow_buffer[ind_arr] = ray.tfar;
+
+				if (ray.tfar < 0.0) {
+					shaddow_buffer[ind_arr] = 2.0;
+				} else {
+					shaddow_buffer[ind_arr] = 0.0;
+				}
+			
+			} else {
+			
+				shaddow_buffer[ind_arr] = 1.0;
+			
+			}
 	
 		}
 	}
+	
+	}); // parallel
 
 }
 

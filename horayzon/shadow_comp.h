@@ -10,7 +10,9 @@ public:
     float* vert_grid_cl;
     int offset_0_cl, offset_1_cl;
     float* vec_tilt_cl;
+    float* vec_norm_cl;
     int dim_in_0_cl, dim_in_1_cl;
+    float* surface_enl_fac;
     Rectangle(int x0, int y0, int x1, int y1);
     ~Rectangle();
     int getArea();
@@ -20,7 +22,8 @@ public:
     	char* geom_type,
     	int offset_0, int offset_1,
     	float* vec_tilt,
+    	float* vec_norm,
     	int dim_in_0, int dim_in_1);
-    void shootray(float* sun_position, float* shaddow_buffer);
+    void shadow(float* sun_position, float* shaddow_buffer);
 };
 }

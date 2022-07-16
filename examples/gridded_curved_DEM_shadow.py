@@ -1,5 +1,5 @@
-# Description: Compute gridded topographic parameters (slope angle and aspect,
-#              horizon and sky view factor) from SRTM data (~90 m) for an
+# Description: Compute gridded shadow mask and correction factor for downward
+#              direct shortwave radiation from SRTM data (~90 m) for an
 #              example region in the European Alps. Consider Earth's surface
 #              curvature.
 #
@@ -21,6 +21,9 @@ from matplotlib.ticker import MaxNLocator
 import cartopy.crs as ccrs
 from cmcrameri import cm
 import zipfile
+from skyfield.api import load, wgs84
+import time
+import datetime as dt
 sys.path.append("/Users/csteger/Downloads/HORAYZON/")  # ------------ temporary
 from horayzon import auxiliary, direction, domain, geoid, horizon, load_dem, topo_param, transform, shadow  # temporary
 import horayzon as hray
@@ -32,22 +35,24 @@ mpl.style.use("classic")
 # -----------------------------------------------------------------------------
 
 # Domain size and computation settings
-domain = {"lon_min": 7.70, "lon_max": 8.30,
-          "lat_min": 46.3, "lat_max": 46.75}  # domain boundaries [degree]
+domain = {"lon_min": 7.65, "lon_max": 8.40,
+          "lat_min": 46.3, "lat_max": 46.8}  # domain boundaries [degree]
 
-domain = {"lon_min": 7.70 - 0.5, "lon_max": 8.30 + 0.5,
-          "lat_min": 46.3 - 0.5, "lat_max": 46.75 + 0.5}  # domain boundaries [degree]
+add = 0.6
+domain = {"lon_min": 7.65 - add, "lon_max": 8.40 + add,
+          "lat_min": 46.3 - add, "lat_max": 46.8 + add}  # domain boundaries [degree]
 
+# add = 0.5
+# domain = {"lon_min": 8.005278 - add, "lon_max": 8.005278 + add,
+#           "lat_min": 46.5775 - add, "lat_max": 46.5775 + add}
 dist_search = 50.0  # search distance for horizon [kilometre]
 ellps = "WGS84"  # Earth's surface approximation (sphere, GRS80 or WGS84)
-azim_num = 360  # number of azimuth sampling directions [-]
 
 # Paths and file names
 dem_file_url = "https://srtm.csi.cgiar.org/wp-content/uploads/files/"\
                + "srtm_5x5/TIFF/srtm_38_03.zip"
 path_out = "/Users/csteger/Desktop/Output/"
-file_hori = "hori_SRTM_Alps.nc"
-file_topo_par = "topo_par_SRTM_Alps.nc"
+file_shadow = "shadow_SRTM_Alps.nc"
 
 # -----------------------------------------------------------------------------
 # Compute and save topographic parameters
@@ -56,7 +61,7 @@ file_topo_par = "topo_par_SRTM_Alps.nc"
 # Check if output directory exists
 if not os.path.isdir(path_out):
     raise FileNotFoundError("Output directory does not exist")
-path_out += "gridded_SRTM_Alps/"
+path_out += "gridded_SRTM_Alps_shadow/"
 if not os.path.isdir(path_out):
     os.mkdir(path_out)
 
@@ -127,17 +132,79 @@ vec_tilt = hray.topo_param.slope_plane_meth(x_enu[slice_in_a1],
 terrain = hray.shadow.Terrain(1, 1, 5, 5)
 dim_in_0, dim_in_1 = vec_tilt.shape[0], vec_tilt.shape[1]
 
+vec_tilt = np.ascontiguousarray(vec_tilt)
+print(vec_norm_enu.flags["C_CONTIGUOUS"])
+# -> all passed arrays must be C-contiguous!
+
 terrain.initialise(vert_grid, dem_dim_0, dem_dim_1, "grid",
-                   offset_0, offset_1, vec_tilt, dim_in_0, dim_in_1)
+                   offset_0, offset_1, vec_tilt, vec_norm_enu,
+                   dim_in_0, dim_in_1)
 
 shadow = np.zeros(vec_tilt.shape[:2], dtype=np.float32)
 
-sun_position = np.array([0.0, 0.0, 8000.0], dtype=np.float32)
 
-terrain.shootray(sun_position, shadow)
-print(shadow[np.isfinite(shadow)].shape)
+# Load data/planets
+planets = load("de421.bsp")
+sun = planets["sun"]
+earth = planets["earth"]
+loc_or = earth + wgs84.latlon(trans.lat_or, trans.lon_or)
 
-# Test plot
+time_dt_beg = dt.datetime(2022, 5, 6, 0, 0, tzinfo=dt.timezone.utc)
+time_dt_end = dt.datetime(2022, 5, 7, 0, 0, tzinfo=dt.timezone.utc)
+dt_step = dt.timedelta(hours=0.25)
+num_ts = int((time_dt_end - time_dt_beg) / dt_step)
+ta = [time_dt_beg + dt_step * i for i in range(num_ts)]
+
+
+ncfile = Dataset(filename=path_out + file_shadow, mode="w")
+ncfile.createDimension(dimname="time", size=None)
+ncfile.createDimension(dimname="lat", size=dim_in_0)
+ncfile.createDimension(dimname="lon", size=dim_in_1)
+nc_time = ncfile.createVariable(varname="time", datatype="f",
+                                dimensions="time")
+nc_lat = ncfile.createVariable(varname="lat", datatype="f",
+                               dimensions="lat")
+nc_lat[:] = lat[slice_in[0]]
+nc_lat.units = "degree"
+nc_lon = ncfile.createVariable(varname="lon", datatype="f",
+                               dimensions="lon")
+nc_lon[:] = lon[slice_in[1]]
+nc_lon.units = "degree"
+nc_data = ncfile.createVariable(varname="shadow", datatype="i",
+                                dimensions=("time", "lat", "lon"))
+ncfile.close()
+
+comp_time = []
+for i in range(len(ta)):
+
+    t_beg = time.time()
+
+    ts = load.timescale()
+    t = ts.from_datetime(ta[i])
+    astrometric = loc_or.at(t).observe(sun)
+    alt, az, d = astrometric.apparent().altaz()
+
+    x = d.m * np.cos(alt.radians) * np.sin(az.radians)
+    y = d.m * np.cos(alt.radians) * np.cos(az.radians)
+    z = d.m * np.sin(alt.radians)
+
+    sun_position = np.array([x, y, z], dtype=np.float32)
+
+    terrain.shadow(sun_position, shadow)
+
+    comp_time.append((time.time() - t_beg))
+
+    ncfile = Dataset(filename=path_out + file_shadow, mode="a")
+    nc_time = ncfile.variables["time"]
+    nc_time[i] = i
+    nc_data = ncfile.variables["shadow"]
+    nc_data[i, :, :] = shadow
+    # nc_data[i, :, :] = (shadow > 0).astype(int)
+    ncfile.close()
+
+
+# Performance plot
 plt.figure()
-plt.pcolormesh(lon[slice_in[1]], lat[slice_in[0]], shadow)
-plt.colorbar()
+plt.plot(ta, comp_time)
+print(sum(comp_time))
+print(np.array(comp_time).mean())
