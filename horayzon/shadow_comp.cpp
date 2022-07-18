@@ -202,6 +202,12 @@ RTCScene initializeScene(RTCDevice device, float* vert_grid,
 }
 
 //#############################################################################
+// Initialise terrain
+//#############################################################################
+
+//-----------------------------------------------------------------------------
+// Old stuff ... (keep constructor and destructor)
+//-----------------------------------------------------------------------------
 
 Rectangle::Rectangle(int X0, int Y0, int X1, int Y1) {
     x0 = X0;
@@ -227,13 +233,16 @@ void Rectangle::move(int dx, int dy) {
     y1 += dy;
 }
 
+//-----------------------------------------------------------------------------
+
 void Rectangle::initialise(float* vert_grid,
 	int dem_dim_0, int dem_dim_1,
 	char* geom_type,
 	int offset_0, int offset_1,
 	float* vec_tilt,
 	float* vec_norm,
-	int dim_in_0, int dim_in_1) {
+	int dim_in_0, int dim_in_1,
+	float* surf_enl_fac) {
 
 	dem_dim_0_cl = dem_dim_0;
 	dem_dim_1_cl = dem_dim_1;
@@ -244,6 +253,7 @@ void Rectangle::initialise(float* vert_grid,
 	vec_norm_cl = vec_norm;
 	dim_in_0_cl = dim_in_0;
 	dim_in_1_cl = dim_in_1;
+	surf_enl_fac_cl = surf_enl_fac;
 
 	auto start_ini = std::chrono::high_resolution_clock::now();
 
@@ -252,13 +262,16 @@ void Rectangle::initialise(float* vert_grid,
 	auto end_ini = std::chrono::high_resolution_clock::now();
   	std::chrono::duration<double> time = end_ini - start_ini;
   	cout << "Total initialisation time: " << time.count() << " s" << endl;
-  	
-  	// Allocate array (dim_in_0 * dim_in_1) for surface enlargement factor
-  	// surface_enl_fac (constant value; does not chance with moving sun)
 
 }
 
+//#############################################################################
+// Compute shadow or correction factor for direct downward shortwave radiation
+//#############################################################################
+
 void Rectangle::shadow(float* sun_position, float* shaddow_buffer) {
+
+	float ray_org_elev=0.05;
 
 	tbb::parallel_for(tbb::blocked_range<size_t>(0,dim_in_0_cl),
 		[&](tbb::blocked_range<size_t> r) {  // parallel
@@ -267,22 +280,28 @@ void Rectangle::shadow(float* sun_position, float* shaddow_buffer) {
 	for (size_t i=r.begin(); i<r.end(); ++i) {  // parallel
   		for (size_t j = 0; j < (size_t)dim_in_1_cl; j++) {
 
-    		// Get components of terrain surface normal
+    		// Get components of terrain surface and ellipsoid normal vectors
     		size_t ind_vec = lin_ind_2d(dim_in_1_cl, i, j) * 3;
   			float tilt_x = vec_tilt_cl[ind_vec];
+  			float norm_x = vec_norm_cl[ind_vec];
   			ind_vec += 1;
   			float tilt_y = vec_tilt_cl[ind_vec];
+  			float norm_y = vec_norm_cl[ind_vec];
   			ind_vec += 1;
   			float tilt_z = vec_tilt_cl[ind_vec];
+  			float norm_z = vec_norm_cl[ind_vec];
   
   			// Ray origin
   			size_t ind_2d = lin_ind_2d(dem_dim_1_cl, i + offset_0_cl,
   				j + offset_1_cl);
-  			float ray_org_x = vert_grid_cl[ind_2d * 3 + 0];
-  			float ray_org_y = vert_grid_cl[ind_2d * 3 + 1];
-  			float ray_org_z = vert_grid_cl[ind_2d * 3 + 2] + 1.0; // ---- temporary! not a good solution!!!!
+  			float ray_org_x = (vert_grid_cl[ind_2d * 3 + 0] 
+  				+ norm_x * ray_org_elev);
+  			float ray_org_y = (vert_grid_cl[ind_2d * 3 + 1] 
+  				+ norm_y * ray_org_elev);
+  			float ray_org_z = (vert_grid_cl[ind_2d * 3 + 2] 
+  				+ norm_z * ray_org_elev);
 
-  			// Sun vector
+  			// Compute sun unit vector
   			float sun_x = (sun_position[0] - ray_org_x);
   			float sun_y = (sun_position[1] - ray_org_y);
   			float sun_z = (sun_position[2] - ray_org_z);
@@ -305,23 +324,14 @@ void Rectangle::shadow(float* sun_position, float* shaddow_buffer) {
   				ray.org_x = ray_org_x;
   				ray.org_y = ray_org_y;
   				ray.org_z = ray_org_z;
-  				ray.dir_x = sun_x;  // use unit vector later!
+  				ray.dir_x = sun_x;
   				ray.dir_y = sun_y;
   				ray.dir_z = sun_z;
   				ray.tnear = 0.0;
-  				//ray.tfar = std::numeric_limits<float>::infinity();
-  				ray.tfar = 100000.0;
-  				//ray.mask = -1;
-  				//ray.flags = 0;
+  				ray.tfar = std::numeric_limits<float>::infinity();
 
   				// Intersect ray with scene
   				rtcOccluded1(scene, &context, &ray);
-// 				cout << "ray.tfar: " << ray.tfar << endl;
-// 				cout << "dem_dim_0: " << dem_dim_0_cl << endl;
-// 				cout << "dem_dim_1: " << dem_dim_1_cl << endl;
-// 				cout << "vert_grid[8]: " << vert_grid_cl[8] << endl;
-// 				cout << "vert_grid[33]: " << vert_grid_cl[33] << endl;
-
 
 				if (ray.tfar < 0.0) {
 					shaddow_buffer[ind_arr] = 2.0;
@@ -332,6 +342,98 @@ void Rectangle::shadow(float* sun_position, float* shaddow_buffer) {
 			} else {
 			
 				shaddow_buffer[ind_arr] = 1.0;
+			
+			}
+	
+		}
+	}
+	
+	}); // parallel
+
+}
+
+//-----------------------------------------------------------------------------
+
+void Rectangle::sw_dir_cor(float* sun_position, float* sw_dir_cor_buffer) {
+
+	float ray_org_elev=0.05;
+
+	tbb::parallel_for(tbb::blocked_range<size_t>(0,dim_in_0_cl),
+		[&](tbb::blocked_range<size_t> r) {  // parallel
+
+	// for (size_t i = 0; i < (size_t)dim_in_0_cl; i++) {  // serial
+	for (size_t i=r.begin(); i<r.end(); ++i) {  // parallel
+  		for (size_t j = 0; j < (size_t)dim_in_1_cl; j++) {
+
+    		// Get components of terrain surface and ellipsoid normal vectors
+    		size_t ind_vec = lin_ind_2d(dim_in_1_cl, i, j) * 3;
+  			float tilt_x = vec_tilt_cl[ind_vec];
+  			float norm_x = vec_norm_cl[ind_vec];
+  			ind_vec += 1;
+  			float tilt_y = vec_tilt_cl[ind_vec];
+  			float norm_y = vec_norm_cl[ind_vec];
+  			ind_vec += 1;
+  			float tilt_z = vec_tilt_cl[ind_vec];
+  			float norm_z = vec_norm_cl[ind_vec];
+  
+  			// Ray origin
+  			size_t ind_2d = lin_ind_2d(dem_dim_1_cl, i + offset_0_cl,
+  				j + offset_1_cl);
+  			float ray_org_x = (vert_grid_cl[ind_2d * 3 + 0] 
+  				+ norm_x * ray_org_elev);
+  			float ray_org_y = (vert_grid_cl[ind_2d * 3 + 1] 
+  				+ norm_y * ray_org_elev);
+  			float ray_org_z = (vert_grid_cl[ind_2d * 3 + 2] 
+  				+ norm_z * ray_org_elev);
+
+  			// Compute sun unit vector
+  			float sun_x = (sun_position[0] - ray_org_x);
+  			float sun_y = (sun_position[1] - ray_org_y);
+  			float sun_z = (sun_position[2] - ray_org_z);
+  			float mag = sqrt(sun_x * sun_x + sun_y * sun_y + sun_z * sun_z);
+  			sun_x = sun_x / mag;
+  			sun_y = sun_y / mag;
+  			sun_z = sun_z / mag;
+  			
+  			// Check for self-shadowing
+  			float dot_prod_ts = tilt_x * sun_x + tilt_y * sun_y 
+  				+ tilt_z * sun_z;
+  			size_t ind_arr = lin_ind_2d(dim_in_1_cl, i, j);
+  			if (dot_prod_ts > 0.0) {
+  			
+				// Intersect context
+  				struct RTCIntersectContext context;
+  				rtcInitIntersectContext(&context);
+
+  				// Ray structure
+  				struct RTCRay ray;
+  				ray.org_x = ray_org_x;
+  				ray.org_y = ray_org_y;
+  				ray.org_z = ray_org_z;
+  				ray.dir_x = sun_x;
+  				ray.dir_y = sun_y;
+  				ray.dir_z = sun_z;
+  				ray.tnear = 0.0;
+  				ray.tfar = std::numeric_limits<float>::infinity();
+
+  				// Intersect ray with scene
+  				rtcOccluded1(scene, &context, &ray);
+
+				if (ray.tfar < 0.0) {
+					sw_dir_cor_buffer[ind_arr] = 0.0;
+				} else {
+					float dot_prod_ns = (norm_x * sun_x + norm_y * sun_y  
+						+ norm_z * sun_z);
+					if (dot_prod_ns > 100.0) {
+						dot_prod_ns = 0.0;
+					}
+					sw_dir_cor_buffer[ind_arr] = ((1.0 / dot_prod_ns)
+						* surf_enl_fac_cl[ind_arr] * dot_prod_ts);	
+				}
+			
+			} else {
+			
+				sw_dir_cor_buffer[ind_arr] = 0.0;
 			
 			}
 	

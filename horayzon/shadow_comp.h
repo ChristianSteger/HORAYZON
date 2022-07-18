@@ -12,7 +12,7 @@ public:
     float* vec_tilt_cl;
     float* vec_norm_cl;
     int dim_in_0_cl, dim_in_1_cl;
-    float* surface_enl_fac;
+    float* surf_enl_fac_cl;
     Rectangle(int x0, int y0, int x1, int y1);
     ~Rectangle();
     int getArea();
@@ -23,7 +23,9 @@ public:
     	int offset_0, int offset_1,
     	float* vec_tilt,
     	float* vec_norm,
-    	int dim_in_0, int dim_in_1);
+    	int dim_in_0, int dim_in_1,
+    	float* surf_enl_fac);
     void shadow(float* sun_position, float* shaddow_buffer);
+    void sw_dir_cor(float* sun_position, float* sw_dir_cor_buffer);
 };
 }

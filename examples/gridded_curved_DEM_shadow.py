@@ -65,12 +65,12 @@ path_out += "gridded_SRTM_Alps_shadow/"
 if not os.path.isdir(path_out):
     os.mkdir(path_out)
 
-# Download and unzip SRTM tile (5 x 5 degree)
-print("Download SRTM tile (5 x 5 degree):")
-hray.download.file(dem_file_url, path_out)
-with zipfile.ZipFile(path_out + "srtm_38_03.zip", "r") as zip_ref:
-    zip_ref.extractall(path_out + "srtm_38_03")
-os.remove(path_out + "srtm_38_03.zip")
+# # Download and unzip SRTM tile (5 x 5 degree)
+# print("Download SRTM tile (5 x 5 degree):")
+# hray.download.file(dem_file_url, path_out)
+# with zipfile.ZipFile(path_out + "srtm_38_03.zip", "r") as zip_ref:
+#     zip_ref.extractall(path_out + "srtm_38_03")
+# os.remove(path_out + "srtm_38_03.zip")
 
 # Load required DEM data (including outer boundary zone)
 domain_outer = hray.domain.curved_grid(domain, dist_search, ellps)
@@ -132,13 +132,29 @@ vec_tilt = hray.topo_param.slope_plane_meth(x_enu[slice_in_a1],
 terrain = hray.shadow.Terrain(1, 1, 5, 5)
 dim_in_0, dim_in_1 = vec_tilt.shape[0], vec_tilt.shape[1]
 
+# Compute surface enlargement factor
+surf_enl_fac = 1.0 / (vec_norm_enu * vec_tilt).sum(axis=2)
+# surf_enl_fac[:] = 1.0
+
+# Test plot
+plt.figure()
+plt.pcolormesh(lon[slice_in[1]], lat[slice_in[0]], surf_enl_fac,
+               vmin=0.0, vmax=2.0)
+plt.colorbar()
+
+
 vec_tilt = np.ascontiguousarray(vec_tilt)
+print(vert_grid.flags["C_CONTIGUOUS"])
+print(vec_tilt.flags["C_CONTIGUOUS"])
 print(vec_norm_enu.flags["C_CONTIGUOUS"])
+print(surf_enl_fac.flags["C_CONTIGUOUS"])
 # -> all passed arrays must be C-contiguous!
+# -> passed vectors must be unit vectors!
+
 
 terrain.initialise(vert_grid, dem_dim_0, dem_dim_1, "grid",
                    offset_0, offset_1, vec_tilt, vec_norm_enu,
-                   dim_in_0, dim_in_1)
+                   dim_in_0, dim_in_1, surf_enl_fac)
 
 shadow = np.zeros(vec_tilt.shape[:2], dtype=np.float32)
 
@@ -149,8 +165,8 @@ sun = planets["sun"]
 earth = planets["earth"]
 loc_or = earth + wgs84.latlon(trans.lat_or, trans.lon_or)
 
-time_dt_beg = dt.datetime(2022, 5, 6, 0, 0, tzinfo=dt.timezone.utc)
-time_dt_end = dt.datetime(2022, 5, 7, 0, 0, tzinfo=dt.timezone.utc)
+time_dt_beg = dt.datetime(2022, 1, 6, 0, 0, tzinfo=dt.timezone.utc)
+time_dt_end = dt.datetime(2022, 1, 7, 0, 0, tzinfo=dt.timezone.utc)
 dt_step = dt.timedelta(hours=0.25)
 num_ts = int((time_dt_end - time_dt_beg) / dt_step)
 ta = [time_dt_beg + dt_step * i for i in range(num_ts)]
@@ -170,7 +186,7 @@ nc_lon = ncfile.createVariable(varname="lon", datatype="f",
                                dimensions="lon")
 nc_lon[:] = lon[slice_in[1]]
 nc_lon.units = "degree"
-nc_data = ncfile.createVariable(varname="shadow", datatype="i",
+nc_data = ncfile.createVariable(varname="shadow", datatype="f",
                                 dimensions=("time", "lat", "lon"))
 ncfile.close()
 
@@ -190,7 +206,8 @@ for i in range(len(ta)):
 
     sun_position = np.array([x, y, z], dtype=np.float32)
 
-    terrain.shadow(sun_position, shadow)
+    # terrain.shadow(sun_position, shadow)
+    terrain.sw_dir_cor(sun_position, shadow)
 
     comp_time.append((time.time() - t_beg))
 
@@ -208,3 +225,20 @@ plt.figure()
 plt.plot(ta, comp_time)
 print(sum(comp_time))
 print(np.array(comp_time).mean())
+
+
+ds = xr.open_dataset(path_out + "shadow_SRTM_Alps_surf_enhanc.nc")
+sw_dir_cor_enl = ds["shadow"].values
+ds.close()
+
+ds = xr.open_dataset(path_out + file_shadow)
+sw_dir_cor = ds["shadow"].values
+ds.close()
+
+plt.figure()
+plt.plot(sw_dir_cor_enl.mean(axis = (1, 2)), color="blue",
+                             label="with surf. enl.")
+plt.plot(sw_dir_cor.mean(axis = (1, 2)), color="red",
+                         label="without surf. enl.")
+plt.hlines(1.0, 0.0, 92.0, lw=1.5, color="black")
+plt.legend(frameon=False)
