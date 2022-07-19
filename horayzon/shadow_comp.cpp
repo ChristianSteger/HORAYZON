@@ -28,39 +28,18 @@ inline size_t lin_ind_2d(size_t dim_1, size_t ind_0, size_t ind_1) {
 	return (ind_0 * dim_1 + ind_1);
 }
 
-// Compute linear index from subscripts (3D-array)
-inline size_t lin_ind_3d(size_t dim_1, size_t dim_2, size_t ind_0, size_t ind_1,
-	size_t ind_2) {
-	return (ind_0 * (dim_1 * dim_2) + ind_1 * dim_2 + ind_2);
-}
-
 // Convert degree to radian
 inline float deg2rad(float ang) {
 	return ((ang / 180.0) * M_PI);
 }
 
-// Convert radian to degree
-inline float rad2deg(float ang) {
-	return ((ang / M_PI) * 180.0);
-}
-
 // Cross product
-inline void cross_prod(float a_x, float a_y, float a_z, float b_x, float b_y,
-	float b_z, float &c_x, float &c_y, float &c_z) {
-	c_x = a_y * b_z - a_z * b_y;
-    c_y = a_z * b_x - a_x * b_z;
-    c_z = a_x * b_y - a_y * b_x;
-}
-
-// Matrix vector multiplication
-inline void mat_vec_mult(float (&mat)[3][3], float (&vec)[3],
-	float (&vec_res)[3]) {
-
-	vec_res[0] = mat[0][0] * vec[0] + mat[0][1] * vec[1] + mat[0][2] * vec[2];
-    vec_res[1] = mat[1][0] * vec[0] + mat[1][1] * vec[1] + mat[1][2] * vec[2];
-    vec_res[2] = mat[2][0] * vec[0] + mat[2][1] * vec[1] + mat[2][2] * vec[2];
-
-}
+// inline void cross_prod(float a_x, float a_y, float a_z, float b_x, float b_y,
+// 	float b_z, float &c_x, float &c_y, float &c_z) {
+// 	c_x = a_y * b_z - a_z * b_y;
+//     c_y = a_z * b_x - a_x * b_z;
+//     c_z = a_x * b_y - a_y * b_x;
+// }
 
 //#############################################################################
 // Miscellaneous
@@ -205,37 +184,16 @@ RTCScene initializeScene(RTCDevice device, float* vert_grid,
 // Initialise terrain
 //#############################################################################
 
-//-----------------------------------------------------------------------------
-// Old stuff ... (keep constructor and destructor)
-//-----------------------------------------------------------------------------
-
-Rectangle::Rectangle(int X0, int Y0, int X1, int Y1) {
-    x0 = X0;
-    y0 = Y0;
-    x1 = X1;
-    y1 = Y1;
+CppTerrain::CppTerrain() {
     
     device = initializeDevice();
     
 }
 
-Rectangle::~Rectangle() {
+CppTerrain::~CppTerrain() {
 }
 
-int Rectangle::getArea() {
-    return (x1 - x0) * (y1 - y0);
-}
-
-void Rectangle::move(int dx, int dy) {
-    x0 += dx;
-    y0 += dy;
-    x1 += dx;
-    y1 += dy;
-}
-
-//-----------------------------------------------------------------------------
-
-void Rectangle::initialise(float* vert_grid,
+void CppTerrain::initialise(float* vert_grid,
 	int dem_dim_0, int dem_dim_1,
 	char* geom_type,
 	int offset_0, int offset_1,
@@ -269,7 +227,7 @@ void Rectangle::initialise(float* vert_grid,
 // Compute shadow or correction factor for direct downward shortwave radiation
 //#############################################################################
 
-void Rectangle::shadow(float* sun_position, float* shaddow_buffer) {
+void CppTerrain::shadow(float* sun_position, unsigned char* shaddow_buffer) {
 
 	float ray_org_elev=0.05;
 
@@ -334,14 +292,14 @@ void Rectangle::shadow(float* sun_position, float* shaddow_buffer) {
   				rtcOccluded1(scene, &context, &ray);
 
 				if (ray.tfar < 0.0) {
-					shaddow_buffer[ind_arr] = 2.0;
+					shaddow_buffer[ind_arr] = 2;
 				} else {
-					shaddow_buffer[ind_arr] = 0.0;
+					shaddow_buffer[ind_arr] = 0;
 				}
 			
 			} else {
 			
-				shaddow_buffer[ind_arr] = 1.0;
+				shaddow_buffer[ind_arr] = 1;
 			
 			}
 	
@@ -354,14 +312,15 @@ void Rectangle::shadow(float* sun_position, float* shaddow_buffer) {
 
 //-----------------------------------------------------------------------------
 
-void Rectangle::sw_dir_cor(float* sun_position, float* sw_dir_cor_buffer) {
+void CppTerrain::sw_dir_cor(float* sun_position, float* sw_dir_cor_buffer) {
 
 	float ray_org_elev=0.05;
+	float dot_prod_min = cos(deg2rad(89.0));
 
 	tbb::parallel_for(tbb::blocked_range<size_t>(0,dim_in_0_cl),
 		[&](tbb::blocked_range<size_t> r) {  // parallel
 
-	// for (size_t i = 0; i < (size_t)dim_in_0_cl; i++) {  // serial
+	//for (size_t i = 0; i < (size_t)dim_in_0_cl; i++) {  // serial
 	for (size_t i=r.begin(); i<r.end(); ++i) {  // parallel
   		for (size_t j = 0; j < (size_t)dim_in_1_cl; j++) {
 
@@ -399,7 +358,7 @@ void Rectangle::sw_dir_cor(float* sun_position, float* sw_dir_cor_buffer) {
   			float dot_prod_ts = tilt_x * sun_x + tilt_y * sun_y 
   				+ tilt_z * sun_z;
   			size_t ind_arr = lin_ind_2d(dim_in_1_cl, i, j);
-  			if (dot_prod_ts > 0.0) {
+  			if (dot_prod_ts > dot_prod_min) {
   			
 				// Intersect context
   				struct RTCIntersectContext context;
@@ -422,13 +381,13 @@ void Rectangle::sw_dir_cor(float* sun_position, float* sw_dir_cor_buffer) {
 				if (ray.tfar < 0.0) {
 					sw_dir_cor_buffer[ind_arr] = 0.0;
 				} else {
-					float dot_prod_ns = (norm_x * sun_x + norm_y * sun_y  
+					float dot_prod_ns = (norm_x * sun_x + norm_y * sun_y
 						+ norm_z * sun_z);
-					if (dot_prod_ns > 100.0) {
-						dot_prod_ns = 0.0;
+					if (dot_prod_ns < dot_prod_min) {
+						dot_prod_ns = dot_prod_min;
 					}
-					sw_dir_cor_buffer[ind_arr] = ((1.0 / dot_prod_ns)
-						* surf_enl_fac_cl[ind_arr] * dot_prod_ts);	
+					sw_dir_cor_buffer[ind_arr] = ((dot_prod_ts / dot_prod_ns)
+						* surf_enl_fac_cl[ind_arr]);	
 				}
 			
 			} else {

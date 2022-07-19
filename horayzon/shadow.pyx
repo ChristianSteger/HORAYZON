@@ -6,26 +6,19 @@ import numpy as np
 import os
 
 cdef extern from "shadow_comp.h" namespace "shapes":
-    cdef cppclass Rectangle:
-        Rectangle(int, int, int, int) except +
-        int x0, y0, x1, y1
-        int getArea()
-        void move(int, int)
+    cdef cppclass CppTerrain:
+        CppTerrain()
         void initialise(float*, int, int, char*, int, int, float*, float*,
                         int, int, float*)
-        void shadow(float*, float*)
+        void shadow(float*, unsigned char*)
         void sw_dir_cor(float*, float*)
 
 cdef class Terrain:
-    cdef Rectangle *thisptr
-    def __cinit__(self, int x0, int y0, int x1, int y1):
-        self.thisptr = new Rectangle(x0, y0, x1, y1)
+    cdef CppTerrain *thisptr
+    def __cinit__(self):
+        self.thisptr = new CppTerrain()
     def __dealloc__(self):
         del self.thisptr
-    def getArea(self):
-        return self.thisptr.getArea()
-    def move(self, dx, dy):
-        self.thisptr.move(dx, dy)
     def initialise(self, np.ndarray[np.float32_t, ndim = 1] vert_grid,
                    int dem_dim_0, int dem_dim_1,
                    str geom_type,
@@ -42,9 +35,8 @@ cdef class Terrain:
                                 &vec_norm[0,0,0],
                                 dim_in_0, dim_in_1,
                                 &surf_enl_fac[0,0])
-
     def shadow(self, np.ndarray[np.float32_t, ndim = 1] sun_position,
-                 np.ndarray[np.float32_t, ndim = 2] shaddow_buffer):
+                 np.ndarray[np.uint8_t, ndim = 2] shaddow_buffer):
         self.thisptr.shadow(&sun_position[0], &shaddow_buffer[0,0])
     def sw_dir_cor(self, np.ndarray[np.float32_t, ndim = 1] sun_position,
                  np.ndarray[np.float32_t, ndim = 2] sw_dir_cor_buffer):
