@@ -348,6 +348,86 @@ def swissalti3d(path_dem, domain, engine="gdal"):
 
 # -----------------------------------------------------------------------------
 
+def rema(file_dem, domain, engine="gdal"):
+    """Load REMA digital elevation model data.
+
+    Load REMA digital elevation model data from single GeoTIFF file.
+
+    Parameters
+    ----------
+    file_dem : str
+        Name of REMA tile
+    domain : dict
+        Dictionary with domain boundaries (x_min, x_max, y_min, y_max) [metre]
+    engine: str
+        Backend for loading GeoTIFF file (either 'gdal' or 'pillow')
+
+    Returns
+    -------
+    x : ndarray
+        Array (one-dimensional) with x-coordinate [metre]
+    y : ndarray
+        Array (one-dimensional) with y-coordinate [metre]
+    elevation : ndarray
+        Array (two-dimensional) with elevation [metre]
+
+    Notes
+    -----
+    Data source: https://www.pgc.umn.edu/data/rema/"""
+
+    # Check arguments
+    if engine not in ("gdal", "pillow"):
+        raise ValueError("Input for 'engine' must be either "
+                         "'gdal' or 'pillow'")
+
+    # Load digital elevation model data
+    if engine == "gdal":
+        print("Read GeoTIFF with GDAL")
+        gdal = import_module("osgeo.gdal")
+        ds = gdal.Open(file_dem)
+        elevation = ds.GetRasterBand(1).ReadAsArray()  # 32-bit float
+        raster_size_x, raster_size_y = ds.RasterXSize, ds.RasterYSize
+        x_ulc, y_ulc = ds.GetGeoTransform()[0], ds.GetGeoTransform()[3]
+        d_x, d_y = ds.GetGeoTransform()[1], ds.GetGeoTransform()[5]
+    else:
+        print("Read GeoTIFF with Pillow")
+        if (os.path.getsize(file_dem) / (1024 ** 2)) > 500.0:
+            print("Warning: reading of large GeoTIFF file with Pillow is slow")
+        Image = import_module("PIL.Image")
+        Image.MAX_IMAGE_PIXELS = 1300000000
+        img = Image.open(file_dem)
+        elevation = np.array(img)  # 32-bit float
+        raster_size_x, raster_size_y = img.tag[256][0], img.tag[257][0]
+        x_ulc, y_ulc = img.tag[33922][3], img.tag[33922][4]
+        d_x, d_y = img.tag[33550][0], -img.tag[33550][1]
+        # Warning: unclear where sign of n-s pixel resolution is stored!
+    x_edge = np.linspace(x_ulc, x_ulc + d_x * raster_size_x,
+                         raster_size_x + 1)
+    y_edge = np.linspace(y_ulc, y_ulc + d_y * raster_size_y,
+                         raster_size_y + 1)
+    x = x_edge[:-1] + np.diff(x_edge / 2.0)
+    y = y_edge[:-1] + np.diff(y_edge / 2.0)
+
+    # Crop relevant domain
+    if any([domain["x_min"] < x_edge.min(),
+            domain["x_max"] > x_edge.max(),
+            domain["y_min"] < y_edge.min(),
+            domain["y_max"] > y_edge.max()]):
+        raise ValueError("Provided tile does not cover domain")
+    slice_x = slice(np.where(x_edge <= domain["x_min"])[0][-1],
+                    np.where(x_edge >= domain["x_max"])[0][0])
+    slice_y = slice(np.where(y_edge >= domain["y_max"])[0][-1],
+                    np.where(y_edge <= domain["y_min"])[0][0])
+    elevation = elevation[slice_y, slice_x].astype(np.float32)
+    x, y = x[slice_x], y[slice_y]
+
+    print_dem_info(elevation)
+
+    return x, y, elevation
+
+
+# -----------------------------------------------------------------------------
+
 def print_dem_info(elevation):
     """Print digital elevation model information.
 

@@ -1,4 +1,4 @@
-# Description: Compute gridded shadow mask and correction factor for downward
+# Description: Compute gridded shadow map and correction factor for downward
 #              direct shortwave radiation from SRTM data (~90 m) for an
 #              example region in the European Alps. Consider Earth's surface
 #              curvature.
@@ -56,9 +56,9 @@ file_sw_dir_cor = "sw_dir_cor_SRTM_Alps.nc"
 # Check if output directory exists
 if not os.path.isdir(path_out):
     raise FileNotFoundError("Output directory does not exist")
-path_out += "gridded_SRTM_Alps_shadow/"
+path_out += "shadow_sw_dir_cor/gridded_SRTM_Alps/"
 if not os.path.isdir(path_out):
-    os.mkdir(path_out)
+    os.makedirs(path_out)
 
 # Download and unzip SRTM tile (5 x 5 degree)
 print("Download SRTM tile (5 x 5 degree):")
@@ -91,8 +91,11 @@ x_ecef, y_ecef, z_ecef = hray.transform.lonlat2ecef_1d(lon, lat, elevation,
 dem_dim_0, dem_dim_1 = elevation.shape
 
 # Compute ENU coordinates
-trans = hray.transform.TransformerEcef2enu(lon, lat, x_ecef, y_ecef, z_ecef)
-x_enu, y_enu, z_enu = hray.transform.ecef2enu(x_ecef, y_ecef, z_ecef, trans)
+trans_att = hray.transform.TransformerEcef2enu(lon_or=lon[int(len(lon) / 2)],
+                                               lat_or=lat[int(len(lat) / 2)],
+                                               ellps=ellps)
+x_enu, y_enu, z_enu = hray.transform.ecef2enu(x_ecef, y_ecef, z_ecef,
+                                              trans_att)
 
 # Compute unit vectors (up and north) in ENU coordinates for inner domain
 vec_norm_ecef = hray.direction.surf_norm(*np.meshgrid(lon[slice_in[1]],
@@ -101,34 +104,34 @@ vec_north_ecef = hray.direction.north_dir(x_ecef[slice_in], y_ecef[slice_in],
                                           z_ecef[slice_in], vec_norm_ecef,
                                           ellps=ellps)
 del x_ecef, y_ecef, z_ecef
-vec_norm_enu = hray.transform.ecef2enu_vector(vec_norm_ecef, trans)
-vec_north_enu = hray.transform.ecef2enu_vector(vec_north_ecef, trans)
+vec_norm_enu = hray.transform.ecef2enu_vector(vec_norm_ecef, trans_att)
+vec_north_enu = hray.transform.ecef2enu_vector(vec_north_ecef, trans_att)
 del vec_norm_ecef, vec_north_ecef
 
 # Merge vertex coordinates and pad geometry buffer
 vert_grid = hray.auxiliary.rearrange_pad_buffer(x_enu, y_enu, z_enu)
 
 # Compute rotation matrix (global ENU -> local ENU)
-rot_mat = hray.transform.rotation_matrix(vec_north_enu, vec_norm_enu)
+# rot_mat = hray.transform.rotation_matrix(vec_north_enu, vec_norm_enu)
 del vec_north_enu
 
 # Compute slope
 slice_in_a1 = (slice(slice_in[0].start - 1, slice_in[0].stop + 1),
                slice(slice_in[1].start - 1, slice_in[1].stop + 1))
-vec_tilt = np.ascontiguousarray(
-    hray.topo_param.slope_plane_meth(x_enu[slice_in_a1],
-                                     y_enu[slice_in_a1],
-                                     z_enu[slice_in_a1],
-                                     rot_mat)[1:-1, 1:-1])
+vec_tilt_enu = np.ascontiguousarray(
+    hray.topo_param.slope_vector_meth(x_enu[slice_in_a1],
+                                      y_enu[slice_in_a1],
+                                      z_enu[slice_in_a1])[1:-1, 1:-1])
 
 # Compute surface enlargement factor
-surf_enl_fac = 1.0 / (vec_norm_enu * vec_tilt).sum(axis=2)
+surf_enl_fac = 1.0 / (vec_norm_enu * vec_tilt_enu).sum(axis=2)
 # surf_enl_fac[:] = 1.0
 print("Surface enlargement factor (min/max): %.3f" % surf_enl_fac.min()
       + ", %.3f" % surf_enl_fac.max())
 
 # Ensure that all input arrays are C-contiguous
-if not all([vert_grid.flags["C_CONTIGUOUS"], vec_tilt.flags["C_CONTIGUOUS"],
+if not all([vert_grid.flags["C_CONTIGUOUS"],
+            vec_tilt_enu.flags["C_CONTIGUOUS"],
             vec_norm_enu.flags["C_CONTIGUOUS"],
             surf_enl_fac.flags["C_CONTIGUOUS"]]):
     raise ValueError("Not all input arrays are C-contiguous")
@@ -137,16 +140,16 @@ if not all([vert_grid.flags["C_CONTIGUOUS"], vec_tilt.flags["C_CONTIGUOUS"],
 
 # Initialise terrain
 terrain = hray.shadow.Terrain()
-dim_in_0, dim_in_1 = vec_tilt.shape[0], vec_tilt.shape[1]
+dim_in_0, dim_in_1 = vec_tilt_enu.shape[0], vec_tilt_enu.shape[1]
 terrain.initialise(vert_grid, dem_dim_0, dem_dim_1, "grid",
-                   offset_0, offset_1, vec_tilt, vec_norm_enu,
+                   offset_0, offset_1, vec_tilt_enu, vec_norm_enu,
                    dim_in_0, dim_in_1, surf_enl_fac)
 
 # Load Skyfield data
 planets = load("de421.bsp")
 sun = planets["sun"]
 earth = planets["earth"]
-loc_or = earth + wgs84.latlon(trans.lat_or, trans.lon_or)
+loc_or = earth + wgs84.latlon(trans_att.lat_or, trans_att.lon_or)
 
 # Create time axis
 time_dt_beg = dt.datetime(2022, 1, 6, 0, 0, tzinfo=dt.timezone.utc)
@@ -179,10 +182,10 @@ nc_lon.units = "degree"
 nc_data = ncfile.createVariable(varname="shadow", datatype="u2",
                                 dimensions=("time", "lat", "lon"))
 nc_data.long_name = "0: illuminated, 1: self-shaded, 2: terrain-shaded"
-nc_lon.units = "-"
+nc_data.units = "-"
 ncfile.close()
 comp_time_shadow = []
-shadow = np.zeros(vec_tilt.shape[:2], dtype=np.uint8)
+shadow = np.zeros(vec_tilt_enu.shape[:2], dtype=np.uint8)
 for i in range(len(ta)):
 
     t_beg = time.time()
@@ -232,10 +235,10 @@ nc_lon.units = "degree"
 nc_data = ncfile.createVariable(varname="sw_dir_cor", datatype="f",
                                 dimensions=("time", "lat", "lon"))
 nc_data.long_name = "correction factor for direct downward shortwave radiation"
-nc_lon.units = "-"
+nc_data.units = "-"
 ncfile.close()
 comp_time_sw_dir_cor = []
-sw_dir_cor = np.zeros(vec_tilt.shape[:2], dtype=np.float32)
+sw_dir_cor = np.zeros(vec_tilt_enu.shape[:2], dtype=np.float32)
 for i in range(len(ta)):
 
     t_beg = time.time()
@@ -262,7 +265,7 @@ for i in range(len(ta)):
     ncfile.close()
 
 # Performance plot
-plt.figure(figsize=(10, 6))
+fig = plt.figure(figsize=(10, 6))
 plt.plot(ta, comp_time_shadow, lw=1.5, color="blue",
          label="Shadow (mean: %.2f" % np.array(comp_time_shadow).mean() + ")")
 plt.plot(ta, comp_time_sw_dir_cor, lw=1.5, color="red",
@@ -272,15 +275,20 @@ plt.ylabel("Computing time [seconds]")
 plt.legend(loc="upper right", frameon=False, fontsize=11)
 plt.title("Terrain size (" + str(dim_in_0) + " x " + str(dim_in_1) + ")",
           fontweight="bold", fontsize=12)
+fig.savefig(path_out + "Performance.png", dpi=300, bbox_inches="tight")
+plt.close(fig)
 
 # Check spatial mean of correction factor
 ds = xr.open_dataset(path_out + file_sw_dir_cor)
 sw_dir_cor = ds["sw_dir_cor"].values
 ds.close()
 
-plt.figure(figsize=(10, 6))
+fig = plt.figure(figsize=(10, 6))
 for i in (0.0, 1.0):
     plt.hlines(i, ta[0], ta[-1], lw=1.5, ls="--", color="black")
 plt.plot(ta, sw_dir_cor.mean(axis=(1, 2)), lw=1.5, color="blue")
 plt.ylim([-0.1, 1.1])
 plt.ylabel("Spatial mean of correction factor [-]")
+fig.savefig(path_out + "SW_dir_cor_spatial_mean.png", dpi=300,
+            bbox_inches="tight")
+plt.close(fig)
