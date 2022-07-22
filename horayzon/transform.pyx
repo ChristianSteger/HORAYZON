@@ -12,7 +12,7 @@ from cython.parallel import prange
 
 # -----------------------------------------------------------------------------
 
-def lonlat2ecef(double[:, :] lon, double[:, :] lat, float[:, :] h, ellps):
+def lonlat2ecef(lon, lat, h, ellps):
     """Coordinate transformation from lon/lat to ECEF.
 
     Transformation of geodetic longitude/latitude to earth-centered,
@@ -21,22 +21,45 @@ def lonlat2ecef(double[:, :] lon, double[:, :] lat, float[:, :] h, ellps):
     Parameters
     ----------
     lon : ndarray of double
-        Array (two-dimensional) with geographic longitude [degree]
+        Array (with arbitrary dimensions) with geographic longitude [degree]
     lat : ndarray of double
-        Array (two-dimensional) with geographic latitude [degree]
+        Array (with arbitrary dimensions) with geographic latitude [degree]
     h : ndarray of float
-        Array (two-dimensional) with elevation above ellipsoid [metre]
+        Array (with arbitrary dimensions) with elevation above ellipsoid
+        [metre]
     ellps : str
         Earth's surface approximation (sphere, GRS80 or WGS84)
 
     Returns
     -------
     x_ecef : ndarray of double
-        Array (two-dimensional) with ECEF x-coordinates [metre]
+        Array (dimensions according to input) with ECEF x-coordinates [metre]
     y_ecef : ndarray of double
-        Array (two-dimensional) with ECEF y-coordinates [metre]
+        Array (dimensions according to input) with ECEF y-coordinates [metre]
     z_ecef : ndarray of double
-        Array (two-dimensional) with ECEF z-coordinates [metre]
+        Array (dimensions according to input) with ECEF z-coordinates [metre]
+        """
+
+    # Check arguments
+    if (lon.shape != lat.shape) or (lat.shape != h.shape):
+        raise ValueError("Inconsistent shapes / number of dimensions of "
+                         + "input arrays")
+    if ((lon.dtype != "float64") or (lat.dtype != "float64")
+            or (h.dtype != "float32")):
+        raise ValueError("The data type of at least one input array is "
+                         + "incorrect")
+    if ellps not in ("sphere", "GRS80", "WGS84"):
+        raise ValueError("Unknown value for 'ellps'")
+
+    # Wrapper for 1-dimensional function
+    shp = lon.shape
+    x_ecef, y_ecef, z_ecef = lonlat2ecef_1d(lon.ravel(), lat.ravel(),
+                                              h.ravel(), ellps)
+    return x_ecef.reshape(shp), y_ecef.reshape(shp), z_ecef.reshape(shp)
+
+
+def lonlat2ecef_1d(double[:] lon, double[:] lat, float[:] h, ellps):
+    """Coordinate transformation from lon/lat to ECEF (for 1-dimensional data).
 
     Sources
     -------
@@ -44,23 +67,21 @@ def lonlat2ecef(double[:, :] lon, double[:, :] lat, float[:, :] h, ellps):
     - Geoid parameters r, a and f: PROJ"""
 
     cdef int len_0 = lon.shape[0]
-    cdef int len_1 = lon.shape[1]
     cdef int i, j
     cdef double r, f, a, b, e_2, n
-    cdef double[:, :] x_ecef = np.empty((len_0, len_1), dtype=np.float64)
-    cdef double[:, :] y_ecef = np.empty((len_0, len_1), dtype=np.float64)
-    cdef double[:, :] z_ecef = np.empty((len_0, len_1), dtype=np.float64)
+    cdef double[:] x_ecef = np.empty(len_0, dtype=np.float64)
+    cdef double[:] y_ecef = np.empty(len_0, dtype=np.float64)
+    cdef double[:] z_ecef = np.empty(len_0, dtype=np.float64)
 
     # Spherical coordinates
     if ellps == "sphere":
         r = 6370997.0  # earth radius [m]
         for i in prange(len_0, nogil=True, schedule="static"):
-            for j in range(len_1):
-                x_ecef[i, j] = (r + h[i, j]) * cos(deg2rad(lat[i, j])) \
-                    * cos(deg2rad(lon[i, j]))
-                y_ecef[i, j] = (r + h[i, j]) * cos(deg2rad(lat[i, j])) \
-                    * sin(deg2rad(lon[i, j]))
-                z_ecef[i, j] = (r + h[i, j]) * sin(deg2rad(lat[i, j]))
+            x_ecef[i] = (r + h[i]) * cos(deg2rad(lat[i])) \
+                * cos(deg2rad(lon[i]))
+            y_ecef[i] = (r + h[i]) * cos(deg2rad(lat[i])) \
+                * sin(deg2rad(lon[i]))
+            z_ecef[i] = (r + h[i]) * sin(deg2rad(lat[i]))
         
     # Elliptic (geodetic) coordinates
     else:
@@ -72,96 +93,20 @@ def lonlat2ecef(double[:, :] lon, double[:, :] lat, float[:, :] h, ellps):
         b = a * (1.0 - f)  # polar radius (semi-minor axis) [m]
         e_2 = 1.0 - (b ** 2 / a ** 2)  # squared num. eccentricity [-]
         for i in prange(len_0, nogil=True, schedule="static"):
-            for j in range(len_1):
-                n = a / sqrt(1.0 - e_2 * sin(deg2rad(lat[i, j])) ** 2)
-                x_ecef[i, j] = (n + h[i, j]) * cos(deg2rad(lat[i, j])) \
-                    * cos(deg2rad(lon[i, j]))
-                y_ecef[i, j] = (n + h[i, j]) * cos(deg2rad(lat[i, j])) \
-                    * sin(deg2rad(lon[i, j]))
-                z_ecef[i, j] = (b ** 2 / a ** 2 * n + h[i, j]) \
-                    * sin(deg2rad(lat[i, j]))
-        
-    return np.asarray(x_ecef), np.asarray(y_ecef), np.asarray(z_ecef)
-
-
-# -----------------------------------------------------------------------------
-
-def lonlat2ecef_1d(double[:] lon, double[:] lat, float[:,:] h, ellps):
-    """Coordinate transformation from lon/lat to ECEF.
-
-    Transformation of geodetic longitude/latitude to earth-centered,
-    earth-fixed (ECEF) coordinates (for one-dimensional input coordinates)
-
-    Parameters
-    ----------
-    lon : ndarray of double
-        Array (one-dimensional) with geographic longitude [degree]
-    lat : ndarray of double
-        Array (one-dimensional) with geographic latitude [degree]
-    h : ndarray of float
-        Array (two-dimensional) with elevation above ellipsoid [metre]
-    ellps : str
-        Earth's surface approximation (sphere, GRS80 or WGS84)
-
-    Returns
-    -------
-    x_ecef : ndarray of double
-        Array (two-dimensional) with ECEF x-coordinates [metre]
-    y_ecef : ndarray of double
-        Array (two-dimensional) with ECEF y-coordinates [metre]
-    z_ecef : ndarray of double
-        Array (two-dimensional) with ECEF z-coordinates [metre]
-
-    Sources
-    -------
-    - https://en.wikipedia.org/wiki/Geographic_coordinate_conversion
-    - Geoid parameters r, a and f: PROJ"""
-
-    cdef int len_0 = lat.shape[0]
-    cdef int len_1 = lon.shape[0]
-    cdef int i, j
-    cdef double r, f, a, b, e_2, n
-    cdef double[:, :] x_ecef = np.empty((len_0, len_1), dtype=np.float64)
-    cdef double[:, :] y_ecef = np.empty((len_0, len_1), dtype=np.float64)
-    cdef double[:, :] z_ecef = np.empty((len_0, len_1), dtype=np.float64)
-
-    # Spherical coordinates
-    if ellps == "sphere":
-        r = 6370997.0  # earth radius [m]
-        for i in prange(len_0, nogil=True, schedule="static"):
-            for j in range(len_1):
-                x_ecef[i, j] = (r + h[i, j]) * cos(deg2rad(lat[i])) \
-                    * cos(deg2rad(lon[j]))
-                y_ecef[i, j] = (r + h[i, j]) * cos(deg2rad(lat[i])) \
-                    * sin(deg2rad(lon[j]))
-                z_ecef[i, j] = (r + h[i, j]) * sin(deg2rad(lat[i]))
-
-    # Elliptic (geodetic) coordinates
-    else:
-        a = 6378137.0  # equatorial radius (semi-major axis) [m]
-        if ellps == "GRS80":
-            f = (1.0 / 298.257222101)  # flattening [-]
-        else:  # WGS84
-            f = (1.0 / 298.257223563)  # flattening [-]
-        b = a * (1.0 - f)  # polar radius (semi-minor axis) [m]
-        e_2 = 1.0 - (b ** 2 / a ** 2)  # squared num. eccentricity [-]
-        for i in prange(len_0, nogil=True, schedule="static"):
-            for j in range(len_1):
-                n = a / sqrt(1.0 - e_2 * sin(deg2rad(lat[i])) ** 2)
-                x_ecef[i, j] = (n + h[i, j]) * cos(deg2rad(lat[i])) \
-                    * cos(deg2rad(lon[j]))
-                y_ecef[i, j] = (n + h[i, j]) * cos(deg2rad(lat[i])) \
-                    * sin(deg2rad(lon[j]))
-                z_ecef[i, j] = (b ** 2 / a ** 2 * n + h[i, j]) \
-                    * sin(deg2rad(lat[i]))
+            n = a / sqrt(1.0 - e_2 * sin(deg2rad(lat[i])) ** 2)
+            x_ecef[i] = (n + h[i]) * cos(deg2rad(lat[i])) \
+                * cos(deg2rad(lon[i]))
+            y_ecef[i] = (n + h[i]) * cos(deg2rad(lat[i])) \
+                * sin(deg2rad(lon[i]))
+            z_ecef[i] = (b ** 2 / a ** 2 * n + h[i]) \
+                * sin(deg2rad(lat[i]))
 
     return np.asarray(x_ecef), np.asarray(y_ecef), np.asarray(z_ecef)
 
 
 # -----------------------------------------------------------------------------
 
-def ecef2enu(double[:, :] x_ecef, double[:, :] y_ecef, double[:, :] z_ecef,
-             trans_att):
+def ecef2enu(x_ecef, y_ecef, z_ecef, trans_att):
     """Coordinate transformation from ECEF to ENU.
 
     Transformation of earth-centered, earth-fixed (ECEF) to local tangent
@@ -178,7 +123,6 @@ def ecef2enu(double[:, :] x_ecef, double[:, :] y_ecef, double[:, :] z_ecef,
     trans_att : class
         Instance of class `TransformerEcef2enu`
 
-
     Returns
     -------
     x_enu : ndarray of float
@@ -186,7 +130,28 @@ def ecef2enu(double[:, :] x_ecef, double[:, :] y_ecef, double[:, :] z_ecef,
     y_enu : ndarray of float
         Array (two-dimensional) with ENU y-coordinates [metre]
     z_enu : ndarray of float
-        Array (two-dimensional) with ENU z-coordinates [metre]
+        Array (two-dimensional) with ENU z-coordinates [metre]"""
+
+    # # Check arguments
+    # if (lon.shape != lat.shape) or (lat.shape != h.shape):
+    #     raise ValueError("Inconsistent shapes / number of dimensions of "
+    #                      + "input arrays")
+    # if ((lon.dtype != "float64") or (lat.dtype != "float64")
+    #         or (h.dtype != "float32")):
+    #     raise ValueError("The data type of at least one input array is "
+    #                      + "incorrect")
+    # if ellps not in ("sphere", "GRS80", "WGS84"):
+    #     raise ValueError("Unknown value for 'ellps'")
+
+    # Wrapper for 1-dimensional function
+    shp = x_ecef.shape
+    x_enu, y_enu, z_enu = ecef2enu_1d(x_ecef.ravel(), y_ecef.ravel(),
+                                              z_ecef.ravel(), trans_att)
+    return x_enu.reshape(shp), y_enu.reshape(shp), z_enu.reshape(shp)
+
+def ecef2enu(double[:, :] x_ecef, double[:, :] y_ecef, double[:, :] z_ecef,
+             trans_att):
+    """Coordinate transformation from ECEF to ENU (for 1-dimensional data).
 
     Sources
     -------

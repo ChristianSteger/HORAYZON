@@ -86,8 +86,8 @@ offset_1 = slice_in[1].start
 print("Inner domain size: " + str(elevation[slice_in].shape))
 
 # Compute ECEF coordinates
-x_ecef, y_ecef, z_ecef = hray.transform.lonlat2ecef_1d(lon, lat, elevation,
-                                                       ellps=ellps)
+x_ecef, y_ecef, z_ecef = hray.transform.lonlat2ecef(*np.meshgrid(lon, lat),
+                                                    elevation, ellps=ellps)
 dem_dim_0, dem_dim_1 = elevation.shape
 
 # Compute ENU coordinates
