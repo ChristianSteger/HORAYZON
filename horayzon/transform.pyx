@@ -5,6 +5,7 @@
 
 # Load modules
 import numpy as np
+from math import prod
 from libc.math cimport sin, cos, sqrt
 from libc.math cimport M_PI
 from cython.parallel import prange
@@ -46,19 +47,18 @@ def lonlat2ecef(lon, lat, h, ellps):
                          + "input arrays")
     if ((lon.dtype != "float64") or (lat.dtype != "float64")
             or (h.dtype != "float32")):
-        raise ValueError("The data type of at least one input array is "
-                         + "incorrect")
+        raise ValueError("Input array(s) has/have incorrect data type(s)")
     if ellps not in ("sphere", "GRS80", "WGS84"):
         raise ValueError("Unknown value for 'ellps'")
 
     # Wrapper for 1-dimensional function
     shp = lon.shape
-    x_ecef, y_ecef, z_ecef = lonlat2ecef_1d(lon.ravel(), lat.ravel(),
+    x_ecef, y_ecef, z_ecef = _lonlat2ecef_1d(lon.ravel(), lat.ravel(),
                                               h.ravel(), ellps)
     return x_ecef.reshape(shp), y_ecef.reshape(shp), z_ecef.reshape(shp)
 
 
-def lonlat2ecef_1d(double[:] lon, double[:] lat, float[:] h, ellps):
+def _lonlat2ecef_1d(double[:] lon, double[:] lat, float[:] h, ellps):
     """Coordinate transformation from lon/lat to ECEF (for 1-dimensional data).
 
     Sources
@@ -67,7 +67,7 @@ def lonlat2ecef_1d(double[:] lon, double[:] lat, float[:] h, ellps):
     - Geoid parameters r, a and f: PROJ"""
 
     cdef int len_0 = lon.shape[0]
-    cdef int i, j
+    cdef int i
     cdef double r, f, a, b, e_2, n
     cdef double[:] x_ecef = np.empty(len_0, dtype=np.float64)
     cdef double[:] y_ecef = np.empty(len_0, dtype=np.float64)
@@ -106,7 +106,7 @@ def lonlat2ecef_1d(double[:] lon, double[:] lat, float[:] h, ellps):
 
 # -----------------------------------------------------------------------------
 
-def ecef2enu(x_ecef, y_ecef, z_ecef, trans_att):
+def ecef2enu(x_ecef, y_ecef, z_ecef, trans_ecef2enu):
     """Coordinate transformation from ECEF to ENU.
 
     Transformation of earth-centered, earth-fixed (ECEF) to local tangent
@@ -115,42 +115,40 @@ def ecef2enu(x_ecef, y_ecef, z_ecef, trans_att):
     Parameters
     ----------
     x_ecef : ndarray of double
-        Array (two-dimensional) with ECEF x-coordinates [metre]
+        Array (with arbitrary dimensions) with ECEF x-coordinates [metre]
     y_ecef : ndarray of double
-        Array (two-dimensional) with ECEF y-coordinates [metre]
+        Array (with arbitrary dimensions) with ECEF y-coordinates [metre]
     z_ecef : ndarray of double
-        Array (two-dimensional) with ECEF z-coordinates [metre]
-    trans_att : class
+        Array (with arbitrary dimensions) with ECEF z-coordinates [metre]
+    trans_ecef2enu : class
         Instance of class `TransformerEcef2enu`
 
     Returns
     -------
     x_enu : ndarray of float
-        Array (two-dimensional) with ENU x-coordinates [metre]
+        Array (dimensions according to input) with ENU x-coordinates [metre]
     y_enu : ndarray of float
-        Array (two-dimensional) with ENU y-coordinates [metre]
+        Array (dimensions according to input) with ENU y-coordinates [metre]
     z_enu : ndarray of float
-        Array (two-dimensional) with ENU z-coordinates [metre]"""
+        Array (dimensions according to input) with ENU z-coordinates [metre]"""
 
-    # # Check arguments
-    # if (lon.shape != lat.shape) or (lat.shape != h.shape):
-    #     raise ValueError("Inconsistent shapes / number of dimensions of "
-    #                      + "input arrays")
-    # if ((lon.dtype != "float64") or (lat.dtype != "float64")
-    #         or (h.dtype != "float32")):
-    #     raise ValueError("The data type of at least one input array is "
-    #                      + "incorrect")
-    # if ellps not in ("sphere", "GRS80", "WGS84"):
-    #     raise ValueError("Unknown value for 'ellps'")
+    # Check arguments
+    if (x_ecef.shape != y_ecef.shape) or (y_ecef.shape != z_ecef.shape):
+        raise ValueError("Inconsistent shapes / number of dimensions of "
+                         + "input arrays")
+    if ((x_ecef.dtype != "float64") or (y_ecef.dtype != "float64")
+            or (z_ecef.dtype != "float64")):
+        raise ValueError("Input array(s) has/have incorrect data type(s)")
 
     # Wrapper for 1-dimensional function
     shp = x_ecef.shape
-    x_enu, y_enu, z_enu = ecef2enu_1d(x_ecef.ravel(), y_ecef.ravel(),
-                                              z_ecef.ravel(), trans_att)
+    x_enu, y_enu, z_enu = _ecef2enu_1d(x_ecef.ravel(), y_ecef.ravel(),
+                                              z_ecef.ravel(), trans_ecef2enu)
     return x_enu.reshape(shp), y_enu.reshape(shp), z_enu.reshape(shp)
 
-def ecef2enu(double[:, :] x_ecef, double[:, :] y_ecef, double[:, :] z_ecef,
-             trans_att):
+
+def _ecef2enu_1d(double[:] x_ecef, double[:] y_ecef, double[:] z_ecef,
+                trans_ecef2enu):
     """Coordinate transformation from ECEF to ENU (for 1-dimensional data).
 
     Sources
@@ -158,17 +156,16 @@ def ecef2enu(double[:, :] x_ecef, double[:, :] y_ecef, double[:, :] z_ecef,
     - https://en.wikipedia.org/wiki/Geographic_coordinate_conversion"""
 
     cdef int len_0 = x_ecef.shape[0]
-    cdef int len_1 = x_ecef.shape[1]
-    cdef int i, j
+    cdef int i
     cdef double sin_lon, cos_lon, sin_lat, cos_lat
-    cdef float[:, :] x_enu = np.empty((len_0, len_1), dtype=np.float32)
-    cdef float[:, :] y_enu = np.empty((len_0, len_1), dtype=np.float32)
-    cdef float[:, :] z_enu = np.empty((len_0, len_1), dtype=np.float32)
-    cdef double x_ecef_or = trans_att.x_ecef_or
-    cdef double y_ecef_or = trans_att.y_ecef_or
-    cdef double z_ecef_or = trans_att.z_ecef_or
-    cdef double lon_or = trans_att.lon_or
-    cdef double lat_or = trans_att.lat_or
+    cdef float[:] x_enu = np.empty(len_0, dtype=np.float32)
+    cdef float[:] y_enu = np.empty(len_0, dtype=np.float32)
+    cdef float[:] z_enu = np.empty(len_0, dtype=np.float32)
+    cdef double x_ecef_or = trans_ecef2enu.x_ecef_or
+    cdef double y_ecef_or = trans_ecef2enu.y_ecef_or
+    cdef double z_ecef_or = trans_ecef2enu.z_ecef_or
+    cdef double lon_or = trans_ecef2enu.lon_or
+    cdef double lat_or = trans_ecef2enu.lat_or
 
     # Trigonometric functions
     sin_lon = sin(deg2rad(lon_or))
@@ -178,23 +175,21 @@ def ecef2enu(double[:, :] x_ecef, double[:, :] y_ecef, double[:, :] z_ecef,
 
     # Coordinate transformation
     for i in prange(len_0, nogil=True, schedule="static"):
-        for j in range(len_1):
-            
-            x_enu[i, j] = (- sin_lon * (x_ecef[i, j] - x_ecef_or)
-                           + cos_lon * (y_ecef[i, j] - y_ecef_or))
-            y_enu[i, j] = (- sin_lat * cos_lon * (x_ecef[i, j] - x_ecef_or)
-                           - sin_lat * sin_lon * (y_ecef[i, j] - y_ecef_or)
-                           + cos_lat * (z_ecef[i, j] - z_ecef_or))
-            z_enu[i, j] = (+ cos_lat * cos_lon * (x_ecef[i, j] - x_ecef_or)
-                           + cos_lat * sin_lon * (y_ecef[i, j] - y_ecef_or)
-                           + sin_lat * (z_ecef[i, j] - z_ecef_or))
+        x_enu[i] = (- sin_lon * (x_ecef[i] - x_ecef_or)
+                    + cos_lon * (y_ecef[i] - y_ecef_or))
+        y_enu[i] = (- sin_lat * cos_lon * (x_ecef[i] - x_ecef_or)
+                    - sin_lat * sin_lon * (y_ecef[i] - y_ecef_or)
+                    + cos_lat * (z_ecef[i] - z_ecef_or))
+        z_enu[i] = (+ cos_lat * cos_lon * (x_ecef[i] - x_ecef_or)
+                    + cos_lat * sin_lon * (y_ecef[i] - y_ecef_or)
+                    + sin_lat * (z_ecef[i] - z_ecef_or))
 
     return np.asarray(x_enu), np.asarray(y_enu), np.asarray(z_enu)
 
 
 # -----------------------------------------------------------------------------
 
-def ecef2enu_vector(float[:, :, :] vec_ecef, trans_att):
+def ecef2enu_vector(vec_ecef, trans_ecef2enu):
     """Coordinate transformation from ECEF to ENU.
 
     Transformation of earth-centered, earth-fixed (ECEF) to local tangent
@@ -203,28 +198,44 @@ def ecef2enu_vector(float[:, :, :] vec_ecef, trans_att):
     Parameters
     ----------
     vec_ecef : ndarray of float
-        Array (three-dimensional) with vectors in ECEF coordinates
-        (y, x, components) [metre]
-    trans_att : class
+        Array (at least two-dimensional; vector components must be stored in
+        last dimension) with vectors in ECEF coordinates [metre]
+    trans_ecef2enu : class
         Instance of class `TransformerEcef2enu`
 
     Returns
     -------
     vec_enu : ndarray of float
-        Array (three-dimensional) with vectors in ENU coordinates
-        (y, x, components) [metre]
+        Array (dimensions according to input; vector components are stored in
+        last dimension) with vectors in ENU coordinates [metre]"""
+
+    # Check arguments
+    if (vec_ecef.ndim < 2) or (vec_ecef.shape[vec_ecef.ndim - 1] != 3):
+        raise ValueError("Inccorect shape / number of dimensions of input "
+                         + "array")
+    if vec_ecef.dtype != "float32":
+        raise ValueError("Input array has incorrect data type")
+
+    # Wrapper for 1-dimensional function
+    shp = vec_ecef.shape[:(vec_ecef.ndim - 1)]
+    vec_enu = _ecef2enu_vector_1d(vec_ecef.reshape(prod(shp), 3),
+                                 trans_ecef2enu)
+    return vec_enu.reshape(shp + (3,))
+
+
+def _ecef2enu_vector_1d(float[:, :] vec_ecef, trans_ecef2enu):
+    """Coordinate transformation from ECEF to ENU (for 1-dimensional data).
 
     Sources
     -------
     - https://en.wikipedia.org/wiki/Geographic_coordinate_conversion"""
 
     cdef int len_0 = vec_ecef.shape[0]
-    cdef int len_1 = vec_ecef.shape[1]
-    cdef int i, j
+    cdef int i
     cdef double sin_lon, cos_lon, sin_lat, cos_lat
-    cdef float[:, :, :] vec_enu = np.empty((len_0, len_1, 3), dtype=np.float32)
-    cdef double lon_or = trans_att.lon_or
-    cdef double lat_or = trans_att.lat_or
+    cdef float[:, :] vec_enu = np.empty((len_0, 3), dtype=np.float32)
+    cdef double lon_or = trans_ecef2enu.lon_or
+    cdef double lat_or = trans_ecef2enu.lat_or
 
     # Trigonometric functions
     sin_lon = sin(deg2rad(lon_or))
@@ -234,23 +245,20 @@ def ecef2enu_vector(float[:, :, :] vec_ecef, trans_att):
 
     # Coordinate transformation
     for i in prange(len_0, nogil=True, schedule="static"):
-        for j in range(len_1):
-            
-            vec_enu[i, j, 0] = (- sin_lon * vec_ecef[i, j, 0]
-                                + cos_lon * vec_ecef[i, j, 1])
-            vec_enu[i, j, 1] = (- sin_lat * cos_lon * vec_ecef[i, j, 0]
-                                - sin_lat * sin_lon * vec_ecef[i, j, 1]
-                                + cos_lat * vec_ecef[i, j, 2])
-            vec_enu[i, j, 2] = (+ cos_lat * cos_lon * vec_ecef[i, j, 0]
-                                + cos_lat * sin_lon * vec_ecef[i, j, 1]
-                                + sin_lat * vec_ecef[i, j, 2])
+        vec_enu[i, 0] = (- sin_lon * vec_ecef[i, 0] + cos_lon * vec_ecef[i, 1])
+        vec_enu[i, 1] = (- sin_lat * cos_lon * vec_ecef[i, 0]
+                         - sin_lat * sin_lon * vec_ecef[i, 1]
+                         + cos_lat * vec_ecef[i, 2])
+        vec_enu[i, 2] = (+ cos_lat * cos_lon * vec_ecef[i, 0]
+                         + cos_lat * sin_lon * vec_ecef[i, 1]
+                         + sin_lat * vec_ecef[i, 2])
 
     return np.asarray(vec_enu)
 
 
 # -----------------------------------------------------------------------------
 
-def wgs2swiss(double[:, :] lon, double[:, :] lat, float[:, :] h_wgs):
+def wgs2swiss(lon, lat, h_wgs):
     """Coordinate transformation from lon/lat to LV95.
 
     Transformation of ellipsoidal WGS84 to Swiss projection coordinates (LV95).
@@ -258,20 +266,40 @@ def wgs2swiss(double[:, :] lon, double[:, :] lat, float[:, :] h_wgs):
     Parameters
     ----------
     lon : ndarray of double
-        Array (two-dimensional) with geographic longitude [degree]
+        Array (with arbitrary dimensions) with geographic longitude [degree]
     lat : ndarray of double
-        Array (two-dimensional) with geographic latitude [degree]
+        Array (with arbitrary dimensions) with geographic latitude [degree]
     h_wgs : ndarray of float
-        Array (two-dimensional) with elevation above ellipsoid [metre]
+        Array (with arbitrary dimensions) with elevation above ellipsoid
+        [metre]
 
     Returns
     -------
     e : ndarray of double
-        Array (two-dimensional) with coordinates in eastward direction [metre]
+        Array (dimensions according to input) with coordinates in eastward
+        direction [metre]
     n : ndarray of double
-        Array (two-dimensional) with coordinates in northward direction [metre]
+        Array (dimensions according to input) with coordinates in northward
+        direction [metre]
     h_ch : ndarray of double
-        Array (two-dimensional) with height [metre]
+        Array (dimensions according to input) with height [metre]"""
+
+    # Check arguments
+    if (lon.shape != lat.shape) or (lat.shape != h_wgs.shape):
+        raise ValueError("Inconsistent shapes / number of dimensions of "
+                         + "input arrays")
+    if ((lon.dtype != "float64") or (lat.dtype != "float64")
+            or (h_wgs.dtype != "float32")):
+        raise ValueError("Input array(s) has/have incorrect data type(s)")
+
+    # Wrapper for 1-dimensional function
+    shp = lon.shape
+    e, n, h_ch = _wgs2swiss_1d(lon.ravel(), lat.ravel(), h_wgs.ravel())
+    return e.reshape(shp), n.reshape(shp), h_ch.reshape(shp)
+
+
+def _wgs2swiss_1d(double[:] lon, double[:] lat, float[:] h_wgs):
+    """Coordinate transformation from lon/lat to LV95 (for 1-dimensional data).
 
     Sources
     -------
@@ -279,43 +307,41 @@ def wgs2swiss(double[:, :] lon, double[:, :] lat, float[:, :] h_wgs):
       projection coordinates and- WGS84'"""
 
     cdef int len_0 = lon.shape[0]
-    cdef int len_1 = lon.shape[1]
-    cdef int i, j
+    cdef int i
     cdef double lon_pr, lat_pr
-    cdef double[:, :] e = np.empty((len_0, len_1), dtype=np.float64)
-    cdef double[:, :] n = np.empty((len_0, len_1), dtype=np.float64)
-    cdef float[:, :] h_ch = np.empty((len_0, len_1), dtype=np.float32)
+    cdef double[:] e = np.empty(len_0, dtype=np.float64)
+    cdef double[:] n = np.empty(len_0, dtype=np.float64)
+    cdef float[:] h_ch = np.empty(len_0, dtype=np.float32)
 
     # Coordinate transformation
     for i in prange(len_0, nogil=True, schedule="static"):
-        for j in range(len_1):
 
-            # Convert angles to arc-seconds and compute auxiliary values
-            lon_pr = ((lon[i, j] * 3600.0) - 26782.5) / 10000.0
-            lat_pr = ((lat[i, j] * 3600.0) - 169028.66) / 10000.0
+        # Convert angles to arc-seconds and compute auxiliary values
+        lon_pr = ((lon[i] * 3600.0) - 26782.5) / 10000.0
+        lat_pr = ((lat[i] * 3600.0) - 169028.66) / 10000.0
 
-            # Calculate projection coordinates in LV95
-            e[i, j] = 2600072.37 \
-                      + 211455.93 * lon_pr \
-                      - 10938.51 * lon_pr * lat_pr \
-                      - 0.36 * lon_pr * lat_pr ** 2 \
-                      - 44.54 * lon_pr ** 3
-            n[i, j] = 1200147.07 \
-                      + 308807.95 * lat_pr \
-                      + 3745.25 * lon_pr ** 2 \
-                      + 76.63 * lat_pr ** 2 \
-                      - 194.56 * lon_pr ** 2 * lat_pr \
-                      + 119.79 * lat_pr ** 3
-            h_ch[i, j] = h_wgs[i, j] - 49.55 \
-                         + 2.73 * lon_pr \
-                         + 6.94 * lat_pr
+        # Calculate projection coordinates in LV95
+        e[i] = 2600072.37 \
+               + 211455.93 * lon_pr \
+               - 10938.51 * lon_pr * lat_pr \
+               - 0.36 * lon_pr * lat_pr ** 2 \
+               - 44.54 * lon_pr ** 3
+        n[i] = 1200147.07 \
+               + 308807.95 * lat_pr \
+               + 3745.25 * lon_pr ** 2 \
+               + 76.63 * lat_pr ** 2 \
+               - 194.56 * lon_pr ** 2 * lat_pr \
+               + 119.79 * lat_pr ** 3
+        h_ch[i] = h_wgs[i] - 49.55 \
+                  + 2.73 * lon_pr \
+                  + 6.94 * lat_pr
 
     return np.asarray(e), np.asarray(n), np.asarray(h_ch)
 
 
 # -----------------------------------------------------------------------------
 
-def swiss2wgs(double[:, :] e, double[:, :] n, float[:, :] h_ch):
+def swiss2wgs(e, n, h_ch):
     """Coordinate transformation from LV95 to lon/lat.
 
     Transformation of swiss projection (LV95) to ellipsoidal WGS84 coordinates.
@@ -323,20 +349,41 @@ def swiss2wgs(double[:, :] e, double[:, :] n, float[:, :] h_ch):
     Parameters
     -------
     e : ndarray of double
-        Array (two-dimensional) with coordinates in eastward direction [metre]
+        Array (with arbitrary dimensions) with coordinates in eastward
+        direction [metre]
     n : ndarray of double
-        Array (two-dimensional) with coordinates in northward direction [metre]
+        Array (with arbitrary dimensions) with coordinates in northward
+        direction [metre]
     h_ch : ndarray of double
-        Array (two-dimensional) with height [metre]
+        Array (with arbitrary dimensions) with height [metre]
 
     Returns
     ----------
     lon : ndarray of double
-        Array (two-dimensional) with geographic longitude [degree]
+        Array (dimensions according to input) with geographic longitude
+        [degree]
     lat : ndarray of double
-        Array (two-dimensional) with geographic latitude [degree]
+        Array (dimensions according to input) with geographic latitude [degree]
     h_wgs : ndarray of float
-        Array (two-dimensional) with elevation above ellipsoid [metre]
+        Array (dimensions according to input) with elevation above ellipsoid
+        [metre]"""
+
+    # Check arguments
+    if (e.shape != n.shape) or (n.shape != h_ch.shape):
+        raise ValueError("Inconsistent shapes / number of dimensions of "
+                         + "input arrays")
+    if ((e.dtype != "float64") or (n.dtype != "float64")
+            or (h_ch.dtype != "float32")):
+        raise ValueError("Input array(s) has/have incorrect data type(s)")
+
+    # Wrapper for 1-dimensional function
+    shp = e.shape
+    lon, lat, h_wgs = _swiss2wgs_1d(e.ravel(), n.ravel(), h_ch.ravel())
+    return lon.reshape(shp), lat.reshape(shp), h_wgs.reshape(shp)
+
+
+def _swiss2wgs_1d(double[:] e, double[:] n, float[:] h_ch):
+    """Coordinate transformation from LV95 to lon/lat (for 1-dimensional data).
 
     Sources
     -------
@@ -344,41 +391,39 @@ def swiss2wgs(double[:, :] e, double[:, :] n, float[:, :] h_ch):
       projection coordinates and- WGS84'"""
 
     cdef int len_0 = e.shape[0]
-    cdef int len_1 = e.shape[1]
-    cdef int i, j
+    cdef int i
     cdef double e_pr, n_pr
-    cdef double[:, :] lon = np.empty((len_0, len_1), dtype=np.float64)
-    cdef double[:, :] lat = np.empty((len_0, len_1), dtype=np.float64)
-    cdef float[:, :] h_wgs = np.empty((len_0, len_1), dtype=np.float32)
+    cdef double[:] lon = np.empty(len_0, dtype=np.float64)
+    cdef double[:] lat = np.empty(len_0, dtype=np.float64)
+    cdef float[:] h_wgs = np.empty(len_0, dtype=np.float32)
 
     # Coordinate transformation
     for i in prange(len_0, nogil=True, schedule="static"):
-        for j in range(len_1):
 
-            # Convert projected coordinates in civilian system and convert
-            # to 1000 km
-            e_pr = (e[i, j] - 2600000.0) / 1000000.0
-            n_pr = (n[i, j] - 1200000.0) / 1000000.0
+        # Convert projected coordinates in civilian system and convert
+        # to 1000 km
+        e_pr = (e[i] - 2600000.0) / 1000000.0
+        n_pr = (n[i] - 1200000.0) / 1000000.0
 
-            # Calculate longitude, latitude and elevation
-            lon[i, j] = 2.6779094 \
-                        + 4.728982 * e_pr \
-                        + 0.791484 * e_pr * n_pr \
-                        + 0.1306 * e_pr * n_pr ** 2 \
-                        - 0.0436 * e_pr ** 3
-            lat[i, j] = 16.9023892 \
-                        + 3.238272 * n_pr \
-                        - 0.270978 * e_pr ** 2 \
-                        - 0.002528 * n_pr ** 2 \
-                        - 0.0447 * e_pr ** 2 * n_pr \
-                        - 0.0140 * n_pr ** 3
-            h_wgs[i, j] = h_ch[i, j] + 49.55 \
-                          - 12.60 * e_pr \
-                          - 22.64 * n_pr
+        # Calculate longitude, latitude and elevation
+        lon[i] = 2.6779094 \
+                 + 4.728982 * e_pr \
+                 + 0.791484 * e_pr * n_pr \
+                 + 0.1306 * e_pr * n_pr ** 2 \
+                 - 0.0436 * e_pr ** 3
+        lat[i] = 16.9023892 \
+                 + 3.238272 * n_pr \
+                 - 0.270978 * e_pr ** 2 \
+                 - 0.002528 * n_pr ** 2 \
+                 - 0.0447 * e_pr ** 2 * n_pr \
+                 - 0.0140 * n_pr ** 3
+        h_wgs[i] = h_ch[i] + 49.55 \
+                   - 12.60 * e_pr \
+                   - 22.64 * n_pr
 
-            # Convert longitude and latitude to degree
-            lon[i, j] *= (100.0 / 36.)
-            lat[i, j] *= (100.0 / 36.)
+        # Convert longitude and latitude to degree
+        lon[i] *= (100.0 / 36.)
+        lat[i] *= (100.0 / 36.)
 
     return np.asarray(lon), np.asarray(lat), np.asarray(h_wgs)
 
@@ -432,41 +477,48 @@ class TransformerEcef2enu:
             self.z_ecef_or = (b ** 2 / a ** 2 * n) \
                              * np.sin(np.deg2rad(self.lat_or))
         else:
-            raise ValueError("Value for 'ellps' is invalid")
+            raise ValueError("Unknown value for 'ellps'")
+
 
 # -----------------------------------------------------------------------------
 
-def rotation_matrix(vec_north_enu, vec_norm_enu):
-    """Compute rotation matrix to transform global to local ENU coordinates.
+def rotation_matrix_glob2loc(vec_north_enu, vec_norm_enu):
+    """Matrices to rotate vectors from global to local ENU coordinates.
 
-    Compute rotation matrix to transform global to local ENU coordinates and
-    pad data with a frame of NaN-values along the spatial dimensions.
+    Array with matrices to rotate vector from global to local ENU coordinates.
 
     Parameters
     -------
     vec_north_enu : ndarray of float
-        Array (three-dimensional) with surface normal components in ENU
-        coordinates (y, x, components) [metre]
+        Array (at least two-dimensional; vector components must be stored in
+        last dimension) with north vector components in ENU coordinates [metre]
     vec_norm_enu : ndarray of float
-        Array (three-dimensional) with north vector components in ENU
-        coordinates (y, x, components) [metre]
+        Array (at least two-dimensional; vector components must be stored in
+        last dimension) with surface normal components in ENU coordinates
+        [metre]
 
     Returns
     ----------
     lon : ndarray
-        Array (four-dimensional) with rotation matrix [metre]'"""
+        Array (dimensions according to input; rotation matrices stored in last
+        two dimensions) with rotation matrices [metre]'"""
+
+    # Check arguments
+    if vec_north_enu.shape != vec_norm_enu.shape:
+        raise ValueError("Inconsistent shapes / number of dimensions of "
+                         + "input arrays")
 
     # Compute rotation matrix
-    rot_mat = np.empty((vec_north_enu.shape[0] + 2, vec_north_enu.shape[1] + 2,
-                        3, 3), dtype=np.float32)
-    rot_mat.fill(np.nan)
-    rot_mat[1:-1, 1:-1, 0, :] = np.cross(vec_north_enu, vec_norm_enu, axisa=2,
-                                         axisb=2)
+    ind_last = vec_north_enu.ndim - 1
+    rot_mat_glob2loc = np.empty(vec_north_enu.shape[:ind_last] + (3, 3),
+                                dtype=np.float32)
+    rot_mat_glob2loc[..., 0, :] = np.cross(vec_north_enu, vec_norm_enu,
+                                           axisa=ind_last, axisb=ind_last)
     # vector pointing towards east
-    rot_mat[1:-1, 1:-1, 1, :] = vec_north_enu
-    rot_mat[1:-1, 1:-1, 2, :] = vec_norm_enu
+    rot_mat_glob2loc[..., 1, :] = vec_north_enu
+    rot_mat_glob2loc[..., 2, :] = vec_norm_enu
 
-    return rot_mat
+    return rot_mat_glob2loc
 
 
 # -----------------------------------------------------------------------------

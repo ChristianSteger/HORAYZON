@@ -91,11 +91,10 @@ x_ecef, y_ecef, z_ecef = hray.transform.lonlat2ecef(*np.meshgrid(lon, lat),
 dem_dim_0, dem_dim_1 = elevation.shape
 
 # Compute ENU coordinates
-trans_att = hray.transform.TransformerEcef2enu(lon_or=lon[int(len(lon) / 2)],
-                                               lat_or=lat[int(len(lat) / 2)],
-                                               ellps=ellps)
+trans_ecef2enu = hray.transform.TransformerEcef2enu(
+    lon_or=lon[int(len(lon) / 2)], lat_or=lat[int(len(lat) / 2)], ellps=ellps)
 x_enu, y_enu, z_enu = hray.transform.ecef2enu(x_ecef, y_ecef, z_ecef,
-                                              trans_att)
+                                              trans_ecef2enu)
 
 # Compute unit vectors (up and north) in ENU coordinates for inner domain
 vec_norm_ecef = hray.direction.surf_norm(*np.meshgrid(lon[slice_in[1]],
@@ -104,8 +103,8 @@ vec_north_ecef = hray.direction.north_dir(x_ecef[slice_in], y_ecef[slice_in],
                                           z_ecef[slice_in], vec_norm_ecef,
                                           ellps=ellps)
 del x_ecef, y_ecef, z_ecef
-vec_norm_enu = hray.transform.ecef2enu_vector(vec_norm_ecef, trans_att)
-vec_north_enu = hray.transform.ecef2enu_vector(vec_north_ecef, trans_att)
+vec_norm_enu = hray.transform.ecef2enu_vector(vec_norm_ecef, trans_ecef2enu)
+vec_north_enu = hray.transform.ecef2enu_vector(vec_north_ecef, trans_ecef2enu)
 del vec_norm_ecef, vec_north_ecef
 
 # Merge vertex coordinates and pad geometry buffer
@@ -149,7 +148,7 @@ terrain.initialise(vert_grid, dem_dim_0, dem_dim_1, "grid",
 planets = load("de421.bsp")
 sun = planets["sun"]
 earth = planets["earth"]
-loc_or = earth + wgs84.latlon(trans_att.lat_or, trans_att.lon_or)
+loc_or = earth + wgs84.latlon(trans_ecef2enu.lat_or, trans_ecef2enu.lon_or)
 
 # Create time axis
 time_dt_beg = dt.datetime(2022, 1, 6, 0, 0, tzinfo=dt.timezone.utc)
