@@ -490,11 +490,11 @@ def rotation_matrix_glob2loc(vec_north_enu, vec_norm_enu):
     Parameters
     -------
     vec_north_enu : ndarray of float
-        Array (at least two-dimensional; vector components must be stored in
-        last dimension) with north vector components in ENU coordinates [metre]
+        Array (three-dimensional; vector components must be stored in last
+        dimension) with north vector components in ENU coordinates [metre]
     vec_norm_enu : ndarray of float
-        Array (at least two-dimensional; vector components must be stored in
-        last dimension) with surface normal components in ENU coordinates
+        Array (three-dimensional; vector components must be stored in last
+        dimension) with surface normal components in ENU coordinates
         [metre]
 
     Returns
@@ -509,14 +509,15 @@ def rotation_matrix_glob2loc(vec_north_enu, vec_norm_enu):
                          + "input arrays")
 
     # Compute rotation matrix
-    ind_last = vec_north_enu.ndim - 1
-    rot_mat_glob2loc = np.empty(vec_north_enu.shape[:ind_last] + (3, 3),
+    rot_mat_glob2loc = np.empty((vec_north_enu.shape[0] + 2,
+                                 vec_north_enu.shape[1] + 2, 3, 3),
                                 dtype=np.float32)
-    rot_mat_glob2loc[..., 0, :] = np.cross(vec_north_enu, vec_norm_enu,
-                                           axisa=ind_last, axisb=ind_last)
+    rot_mat_glob2loc.fill(np.nan)
+    rot_mat_glob2loc[1:-1, 1:-1, 0, :] = np.cross(vec_north_enu, vec_norm_enu,
+                                                  axisa=2, axisb=2)
     # vector pointing towards east
-    rot_mat_glob2loc[..., 1, :] = vec_north_enu
-    rot_mat_glob2loc[..., 2, :] = vec_norm_enu
+    rot_mat_glob2loc[1:-1, 1:-1, 1, :] = vec_north_enu
+    rot_mat_glob2loc[1:-1, 1:-1, 2, :] = vec_norm_enu
 
     return rot_mat_glob2loc
 

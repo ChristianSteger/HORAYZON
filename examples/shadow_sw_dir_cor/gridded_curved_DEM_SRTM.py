@@ -111,16 +111,22 @@ del vec_norm_ecef, vec_north_ecef
 vert_grid = hray.auxiliary.rearrange_pad_buffer(x_enu, y_enu, z_enu)
 
 # Compute rotation matrix (global ENU -> local ENU)
-# rot_mat = hray.transform.rotation_matrix(vec_north_enu, vec_norm_enu)
+rot_mat_glob2loc = hray.transform.rotation_matrix_glob2loc(vec_north_enu,
+                                                           vec_norm_enu)
 del vec_north_enu
 
 # Compute slope
 slice_in_a1 = (slice(slice_in[0].start - 1, slice_in[0].stop + 1),
                slice(slice_in[1].start - 1, slice_in[1].stop + 1))
+# vec_tilt_enu = np.ascontiguousarray(
+#     hray.topo_param.slope_vector_meth(x_enu[slice_in_a1],
+#                                       y_enu[slice_in_a1],
+#                                       z_enu[slice_in_a1])[1:-1, 1:-1])
 vec_tilt_enu = np.ascontiguousarray(
-    hray.topo_param.slope_vector_meth(x_enu[slice_in_a1],
+    hray.topo_param.slope_plane_meth(x_enu[slice_in_a1],
                                       y_enu[slice_in_a1],
-                                      z_enu[slice_in_a1])[1:-1, 1:-1])
+                                      z_enu[slice_in_a1], rot_mat_glob2loc,
+                                     output_rot=False)[1:-1, 1:-1])
 
 # Compute surface enlargement factor
 surf_enl_fac = 1.0 / (vec_norm_enu * vec_tilt_enu).sum(axis=2)

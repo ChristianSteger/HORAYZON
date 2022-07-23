@@ -15,9 +15,7 @@ from scipy.linalg.cython_lapack cimport sgesv
 
 # -----------------------------------------------------------------------------
 
-def slope_plane_meth(float[:, :] x, float[:, :] y, float[:, :] z,
-                     float[:, :, :, :] rot_mat=np.empty((0, 0, 3, 3),
-                                                        dtype=np.float32)):
+def slope_plane_meth(x, y, z, rot_mat=None, output_rot=False):
     """Plane-based slope computation.
 
     Compute surface slope of DEM from central and 8 neighbouring grid cells.
@@ -35,15 +33,47 @@ def slope_plane_meth(float[:, :] x, float[:, :] y, float[:, :] z,
     z : ndarray of float
         Array (two-dimensional) with z-coordinates [metre]
     rot_mat: ndarray of float, optional
-        Array (four-dimensional) with rotation matrix (y, x, 3, 3) to transform
-        coordinates to a local coordinate system in which the z-axis aligns
+        Array (four-dimensional; rotation matrices stored in last
+        two dimensions) with rotation matrices to transform
+        coordinates to a local reference frame in which the z-axis aligns
         with local up
+    output_rot: bool
+        Rotate output according to rotation matrices
 
     Returns
     -------
     vec_tilt : ndarray of float
-        Array (three-dimensional) with titled surface normal components
-        (y, x, components) [metre]
+        Array (three-dimensional; vector components are stored in
+        last dimension) with titled surface normals [metre]"""
+
+    # Check arguments
+    if (x.shape != y.shape) or (y.shape != z.shape):
+        raise ValueError("Inconsistent shapes / number of dimensions of "
+                         + "input arrays")
+    if ((x.dtype != "float32") or (y.dtype != "float32")
+            or (z.dtype != "float32")):
+        raise ValueError("Input array(s) has/have incorrect data type(s)")
+    if rot_mat is not None:
+        if ((x.shape[0] != rot_mat.shape[0])
+                or (x.shape[1] != rot_mat.shape[1])):
+            raise ValueError("Inconsistent shapes / number of dimensions of "
+                             + "input arrays")
+        if rot_mat.dtype != "float32":
+            raise ValueError("'rot mat' has incorrect data type")
+
+    # Wrapper for Cython function
+    if rot_mat is None:
+        rot_mat = np.empty(x.shape + (3, 3), dtype=np.float32)
+        rot_mat[...,:,:] = np.eye(3, dtype=np.float32)
+        print("No rotation matrices provided, use identity matrices")
+        print(np.eye(3, dtype=np.float32))
+        print("that cause no rotation")
+    vec_tilt = _slope_plane_meth_cy(x, y, z, rot_mat, output_rot)
+    return vec_tilt
+
+def _slope_plane_meth_cy(float[:, :] x, float[:, :] y, float[:, :] z,
+                         float[:, :, :, :] rot_mat, bint output_rot):
+    """Plane-based slope computation.
 
     Sources
     -------
@@ -80,155 +110,104 @@ def slope_plane_meth(float[:, :] x, float[:, :] y, float[:, :] z,
     vec_tilt[:] = NAN
 
     # Loop through grid cells
-    if rot_mat.shape[0] == 0:
-        printf("Translate input coordinates\n")
+    for i in range(1, (len_0 - 1)):
+        for j in range(1, (len_1 - 1)):
 
-        for i in range(1, (len_0 - 1)):
-            for j in range(1, (len_1 - 1)):
+            # Translate and rotate input coordinates
+            count = 0
+            for k in range((i - 1), (i + 2)):
+                for l in range((j - 1), (j + 2)):
+                    coord[count, 0] = x[k, l] - x[i, j]
+                    coord[count, 1] = y[k, l] - y[i, j]
+                    coord[count, 2] = z[k, l] - z[i, j]
+                    count = count + 1
+            for k in range(9):
+                vec_x = rot_mat[i, j, 0, 0] * coord[k, 0] \
+                        + rot_mat[i, j, 0, 1] * coord[k, 1] \
+                        + rot_mat[i, j, 0, 2] * coord[k, 2]
+                vec_y = rot_mat[i, j, 1, 0] * coord[k, 0] \
+                        + rot_mat[i, j, 1, 1] * coord[k, 1] \
+                        + rot_mat[i, j, 1, 2] * coord[k, 2]
+                vec_z = rot_mat[i, j, 2, 0] * coord[k, 0] \
+                        + rot_mat[i, j, 2, 1] * coord[k, 1] \
+                        + rot_mat[i, j, 2, 2] * coord[k, 2]
+                coord[k, 0] = vec_x
+                coord[k, 1] = vec_y
+                coord[k, 2] = vec_z
 
-                # Translate input coordinates
-                count = 0
-                for k in range((i - 1), (i + 2)):
-                    for l in range((j - 1), (j + 2)):
-                        coord[count, 0] = x[k, l] - x[i, j]
-                        coord[count, 1] = y[k, l] - y[i, j]
-                        coord[count, 2] = z[k, l] - z[i, j]
-                        count = count + 1
+            # Compute normal vector of plane
+            x_l_sum = 0.0
+            y_l_sum = 0.0
+            z_l_sum = 0.0
+            x_l_x_l_sum = 0.0
+            x_l_y_l_sum = 0.0
+            x_l_z_l_sum = 0.0
+            y_l_y_l_sum = 0.0
+            y_l_z_l_sum = 0.0
+            for k in range(9):
+                x_l_sum = x_l_sum + coord[k, 0]
+                y_l_sum = y_l_sum + coord[k, 1]
+                z_l_sum = z_l_sum + coord[k, 2]
+                x_l_x_l_sum = x_l_x_l_sum + (coord[k, 0] * coord[k, 0])
+                x_l_y_l_sum = x_l_y_l_sum + (coord[k, 0] * coord[k, 1])
+                x_l_z_l_sum = x_l_z_l_sum + (coord[k, 0] * coord[k, 2])
+                y_l_y_l_sum = y_l_y_l_sum + (coord[k, 1] * coord[k, 1])
+                y_l_z_l_sum = y_l_z_l_sum + (coord[k, 1] * coord[k, 2])
+            # Fortran-contiguous
+            mat[0] = x_l_x_l_sum
+            mat[3] = x_l_y_l_sum
+            mat[6] = x_l_sum
+            mat[1] = x_l_y_l_sum
+            mat[4] = y_l_y_l_sum
+            mat[7] = y_l_sum
+            mat[2] = x_l_sum
+            mat[5] = y_l_sum
+            mat[8] = 9.0
+            vec[0] = x_l_z_l_sum
+            vec[1] = y_l_z_l_sum
+            vec[2] = z_l_sum
+            sgesv(&num, &nrhs, &mat[0], &lda, &ipiv[0], &vec[0], &ldb,
+                  &info)
+            vec[2] = -1.0
 
-                # Compute normal vector of plane
-                x_l_sum = 0.0
-                y_l_sum = 0.0
-                z_l_sum = 0.0
-                x_l_x_l_sum = 0.0
-                x_l_y_l_sum = 0.0
-                x_l_z_l_sum = 0.0
-                y_l_y_l_sum = 0.0
-                y_l_z_l_sum = 0.0
-                for k in range(9):
-                    x_l_sum = x_l_sum + coord[k, 0]
-                    y_l_sum = y_l_sum + coord[k, 1]
-                    z_l_sum = z_l_sum + coord[k, 2]
-                    x_l_x_l_sum = x_l_x_l_sum + (coord[k, 0] * coord[k, 0])
-                    x_l_y_l_sum = x_l_y_l_sum + (coord[k, 0] * coord[k, 1])
-                    x_l_z_l_sum = x_l_z_l_sum + (coord[k, 0] * coord[k, 2])
-                    y_l_y_l_sum = y_l_y_l_sum + (coord[k, 1] * coord[k, 1])
-                    y_l_z_l_sum = y_l_z_l_sum + (coord[k, 1] * coord[k, 2])
-                # Fortran-contiguous
-                mat[0] = x_l_x_l_sum
-                mat[3] = x_l_y_l_sum
-                mat[6] = x_l_sum
-                mat[1] = x_l_y_l_sum
-                mat[4] = y_l_y_l_sum
-                mat[7] = y_l_sum
-                mat[2] = x_l_sum
-                mat[5] = y_l_sum
-                mat[8] = 9.0
-                vec[0] = x_l_z_l_sum
-                vec[1] = y_l_z_l_sum
-                vec[2] = z_l_sum
-                sgesv(&num, &nrhs, &mat[0], &lda, &ipiv[0], &vec[0], &ldb,
-                      &info)
-                vec[2] = -1.0
+            vec_x = vec[0]
+            vec_y = vec[1]
+            vec_z = vec[2]
 
-                vec_x = vec[0]
-                vec_y = vec[1]
-                vec_z = vec[2]
+            # Normalise vector
+            vec_mag = sqrt(vec_x ** 2 + vec_y ** 2 + vec_z ** 2)
+            vec_x = vec_x / vec_mag
+            vec_y = vec_y / vec_mag
+            vec_z = vec_z / vec_mag
 
-                # Normalise vector
-                vec_mag = sqrt(vec_x ** 2 + vec_y ** 2 + vec_z ** 2)
-                vec_x = vec_x / vec_mag
-                vec_y = vec_y / vec_mag
-                vec_z = vec_z / vec_mag
+            # Reverse orientation of plane's normal vector (if necessary)
+            if vec_z < 0.0:
+                vec_x = vec_x * -1.0
+                vec_y = vec_y * -1.0
+                vec_z = vec_z * -1.0
 
-                # Reverse orientation of plane's normal vector (if necessary)
-                if vec_z < 0.0:
-                    vec_x = vec_x * -1.0
-                    vec_y = vec_y * -1.0
-                    vec_z = vec_z * -1.0
+            vec_tilt[i, j, 0] = vec_x
+            vec_tilt[i, j, 1] = vec_y
+            vec_tilt[i, j, 2] = vec_z
 
-                vec_tilt[i, j, 0] = vec_x
-                vec_tilt[i, j, 1] = vec_y
-                vec_tilt[i, j, 2] = vec_z
-
+    # Rotate output vectors
+    if output_rot:
+        printf("Tilted surface normals are rotated according to 'rot_mat'\n")
     else:
-        printf("Translate and rotate input coordinates\n")
 
-        for i in range(1, (len_0 - 1)):
+        # Rotate vector back to input reference frame (-> use transposes of
+        # rotation matrices)
+        for i in prange(1, (len_0 - 1), nogil=True, schedule="static"):
             for j in range(1, (len_1 - 1)):
-
-                # Translate and rotate input coordinates
-                count = 0
-                for k in range((i - 1), (i + 2)):
-                    for l in range((j - 1), (j + 2)):
-                        coord[count, 0] = x[k, l] - x[i, j]
-                        coord[count, 1] = y[k, l] - y[i, j]
-                        coord[count, 2] = z[k, l] - z[i, j]
-                        count = count + 1
-                for k in range(9):
-                    vec_x = rot_mat[i, j, 0, 0] * coord[k, 0] \
-                            + rot_mat[i, j, 0, 1] * coord[k, 1] \
-                            + rot_mat[i, j, 0, 2] * coord[k, 2]
-                    vec_y = rot_mat[i, j, 1, 0] * coord[k, 0] \
-                            + rot_mat[i, j, 1, 1] * coord[k, 1] \
-                            + rot_mat[i, j, 1, 2] * coord[k, 2]
-                    vec_z = rot_mat[i, j, 2, 0] * coord[k, 0] \
-                            + rot_mat[i, j, 2, 1] * coord[k, 1] \
-                            + rot_mat[i, j, 2, 2] * coord[k, 2]
-                    coord[k, 0] = vec_x
-                    coord[k, 1] = vec_y
-                    coord[k, 2] = vec_z
-
-                # Compute normal vector of plane
-                x_l_sum = 0.0
-                y_l_sum = 0.0
-                z_l_sum = 0.0
-                x_l_x_l_sum = 0.0
-                x_l_y_l_sum = 0.0
-                x_l_z_l_sum = 0.0
-                y_l_y_l_sum = 0.0
-                y_l_z_l_sum = 0.0
-                for k in range(9):
-                    x_l_sum = x_l_sum + coord[k, 0]
-                    y_l_sum = y_l_sum + coord[k, 1]
-                    z_l_sum = z_l_sum + coord[k, 2]
-                    x_l_x_l_sum = x_l_x_l_sum + (coord[k, 0] * coord[k, 0])
-                    x_l_y_l_sum = x_l_y_l_sum + (coord[k, 0] * coord[k, 1])
-                    x_l_z_l_sum = x_l_z_l_sum + (coord[k, 0] * coord[k, 2])
-                    y_l_y_l_sum = y_l_y_l_sum + (coord[k, 1] * coord[k, 1])
-                    y_l_z_l_sum = y_l_z_l_sum + (coord[k, 1] * coord[k, 2])
-                # Fortran-contiguous
-                mat[0] = x_l_x_l_sum
-                mat[3] = x_l_y_l_sum
-                mat[6] = x_l_sum
-                mat[1] = x_l_y_l_sum
-                mat[4] = y_l_y_l_sum
-                mat[7] = y_l_sum
-                mat[2] = x_l_sum
-                mat[5] = y_l_sum
-                mat[8] = 9.0
-                vec[0] = x_l_z_l_sum
-                vec[1] = y_l_z_l_sum
-                vec[2] = z_l_sum
-                sgesv(&num, &nrhs, &mat[0], &lda, &ipiv[0], &vec[0], &ldb,
-                      &info)
-                vec[2] = -1.0
-
-                vec_x = vec[0]
-                vec_y = vec[1]
-                vec_z = vec[2]
-
-                # Normalise vector
-                vec_mag = sqrt(vec_x ** 2 + vec_y ** 2 + vec_z ** 2)
-                vec_x = vec_x / vec_mag
-                vec_y = vec_y / vec_mag
-                vec_z = vec_z / vec_mag
-
-                # Reverse orientation of plane's normal vector (if necessary)
-                if vec_z < 0.0:
-                    vec_x = vec_x * -1.0
-                    vec_y = vec_y * -1.0
-                    vec_z = vec_z * -1.0
-
+                vec_x = rot_mat[i, j, 0, 0] * vec_tilt[i, j, 0] \
+                        + rot_mat[i, j, 1, 0] * vec_tilt[i, j, 1] \
+                        + rot_mat[i, j, 2, 0] * vec_tilt[i, j, 2]
+                vec_y = rot_mat[i, j, 0, 1] * vec_tilt[i, j, 0] \
+                        + rot_mat[i, j, 1, 1] * vec_tilt[i, j, 1] \
+                        + rot_mat[i, j, 2, 1] * vec_tilt[i, j, 2]
+                vec_z = rot_mat[i, j, 0, 2] * vec_tilt[i, j, 0] \
+                        + rot_mat[i, j, 1, 2] * vec_tilt[i, j, 1] \
+                        + rot_mat[i, j, 2, 2] * vec_tilt[i, j, 2]
                 vec_tilt[i, j, 0] = vec_x
                 vec_tilt[i, j, 1] = vec_y
                 vec_tilt[i, j, 2] = vec_z
@@ -238,9 +217,7 @@ def slope_plane_meth(float[:, :] x, float[:, :] y, float[:, :] z,
 
 # -----------------------------------------------------------------------------
 
-def slope_vector_meth(float[:, :] x, float[:, :] y, float[:, :] z,
-                      float[:, :, :, :] rot_mat=np.empty((0, 0, 3, 3),
-                                                         dtype=np.float32)):
+def slope_vector_meth(x, y, z, rot_mat=None, output_rot=False):
     """Vector-based slope computation.
 
     Compute surface slope of DEM from central and 4 neighbouring grid cells.
@@ -256,15 +233,46 @@ def slope_vector_meth(float[:, :] x, float[:, :] y, float[:, :] z,
     z : ndarray of float
         Array (two-dimensional) with z-coordinates [metre]
     rot_mat: ndarray of float, optional
-        Array (four-dimensional) with rotation matrix (y, x, 3, 3) to transform
-        coordinates to a local coordinate system in which the z-axis aligns
+        Array (four-dimensional; rotation matrices stored in last
+        two dimensions) with rotation matrices to transform
+        coordinates to a local reference frame in which the z-axis aligns
         with local up
+    output_rot: bool
+        Rotate output according to rotation matrices
 
     Returns
     -------
     vec_tilt : ndarray of float
-        Array (three-dimensional) with titled surface normal components
-        (y, x, components) [metre]
+        Array (three-dimensional; vector components are stored in
+        last dimension) with titled surface normals [metre]"""
+
+    # Check arguments
+    if (x.shape != y.shape) or (y.shape != z.shape):
+        raise ValueError("Inconsistent shapes / number of dimensions of "
+                         + "input arrays")
+    if ((x.dtype != "float32") or (y.dtype != "float32")
+            or (z.dtype != "float32")):
+        raise ValueError("Input array(s) has/have incorrect data type(s)")
+    if output_rot and (rot_mat is None):
+        raise ValueError("'rot_mat' must be provided for 'output_rot = True'")
+    if rot_mat is not None:
+        if ((x.shape[0] != rot_mat.shape[0])
+                or (x.shape[1] != rot_mat.shape[1])):
+            raise ValueError("Inconsistent shapes / number of dimensions of "
+                             + "input arrays")
+        if rot_mat.dtype != "float32":
+            raise ValueError("'rot mat' has incorrect data type")
+
+    # Wrapper for Cython function
+    if rot_mat is None:
+        rot_mat = np.empty((0, 0, 3, 3), dtype=np.float32)
+    vec_tilt = _slope_vector_meth_cy(x, y, z, rot_mat, output_rot)
+    return vec_tilt
+
+
+def _slope_vector_meth_cy(float[:, :] x, float[:, :] y, float[:, :] z,
+                          float[:, :, :, :] rot_mat, bint output_rot):
+    """Vector-based slope computation.
 
     References
     ----------
@@ -285,7 +293,6 @@ def slope_vector_meth(float[:, :] x, float[:, :] y, float[:, :] z,
     vec_tilt[:] = NAN
 
     # Loop through grid cells
-    # for i in range(1, (len_0 - 1)):
     for i in prange(1, (len_0 - 1), nogil=True, schedule="static"):
         for j in range(1, (len_1 - 1)):
 
@@ -333,10 +340,9 @@ def slope_vector_meth(float[:, :] x, float[:, :] y, float[:, :] z,
             vec_tilt[i, j, 2] = vec_z
 
     # Rotate output vectors
-    if rot_mat.shape[0] != 0:
-        printf("Rotate output vectors\n")
+    if output_rot:
+        printf("Tilted surface normals are rotated according to 'rot_mat'\n")
 
-        # for i in range(1, (len_0 - 1)):
         for i in prange(1, (len_0 - 1), nogil=True, schedule="static"):
             for j in range(1, (len_1 - 1)):
                 vec_x = rot_mat[i, j, 0, 0] * vec_tilt[i, j, 0] \
@@ -358,7 +364,7 @@ def slope_vector_meth(float[:, :] x, float[:, :] y, float[:, :] z,
 # -----------------------------------------------------------------------------
 
 def sky_view_factor(float[:] azim, float[:, :, :] hori,
-    float[:, :, :] vec_tilt):
+                    float[:, :, :] vec_tilt):
     """Sky view factor (SVF) computation.
 
     Compute sky view factor (SVF) in local horizontal coordinate system. The
@@ -430,7 +436,7 @@ def sky_view_factor(float[:] azim, float[:, :, :] hori,
 # -----------------------------------------------------------------------------
 
 def visible_sky_fraction(float[:] azim, float[:, :, :] hori,
-    float[:, :, :] vec_tilt):
+                         float[:, :, :] vec_tilt):
     """Visible sky fraction (VSF) computation.
 
     Compute visible sky fraction (VSF) in local horizontal coordinate system.
