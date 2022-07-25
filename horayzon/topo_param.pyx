@@ -18,11 +18,22 @@ from scipy.linalg.cython_lapack cimport sgesv
 def slope_plane_meth(x, y, z, rot_mat=None, output_rot=False):
     """Plane-based slope computation.
 
-    Compute surface slope of DEM from central and 8 neighbouring grid cells.
     Plane-based method that computes the surface normal by fitting a plane
     to the central and 8 neighbouring grid cells. The optimal fit is computed
     by minimising the sum of the squared errors in the z-direction. The same
     method is used in ArcGIS.
+    To guarantee a solution to the system of linear equations for every grid
+    grid cell, the following two coordinate transformations are applied:
+    - translation: coordinates are shifted so that the centre grid cell of the
+                   9x9 cells coincides with the coordinate system origin
+    - rotation: the 9x9 cells are rotated so that local up aligns with the
+                z-axis of the coordinate system. This is already the case for
+                planar coordinates but e.g. not for global ENU coordinates.
+    The option 'output_rot' determines, if computed tilted surface normals
+    are outputted in the input reference frame ('output_rot = False'; e.g.
+    global ENU coordinates) or in the internally applied rotated reference
+    frame ('output_rot = True'; e.g. local ENU coordinates). This option has
+    no effect for planar coordinates.
 
     Parameters
     ----------
@@ -220,9 +231,10 @@ def _slope_plane_meth_cy(float[:, :] x, float[:, :] y, float[:, :] z,
 def slope_vector_meth(x, y, z, rot_mat=None, output_rot=False):
     """Vector-based slope computation.
 
-    Compute surface slope of DEM from central and 4 neighbouring grid cells.
     Vector-based method that averages the surface normals of the 4 adjacent
     triangles. Concept based on Corripio (2003).
+    The option 'output_rot' allows to rotate tilted surface normals to another
+    reference frame, e.g. from a global to a local ENU coordinates.
 
     Parameters
     ----------
@@ -363,8 +375,7 @@ def _slope_vector_meth_cy(float[:, :] x, float[:, :] y, float[:, :] z,
 
 # -----------------------------------------------------------------------------
 
-def sky_view_factor(float[:] azim, float[:, :, :] hori,
-                    float[:, :, :] vec_tilt):
+def sky_view_factor(azim, hori, vec_tilt):
     """Sky view factor (SVF) computation.
 
     Compute sky view factor (SVF) in local horizontal coordinate system. The
@@ -385,6 +396,23 @@ def sky_view_factor(float[:] azim, float[:, :, :] hori,
     -------
     svf : ndarray of float
         Array (two-dimensional) with sky view factor [-]"""
+
+    # Check arguments
+    if (len(azim) != hori.shape[2]) or (hori.shape[:2] != vec_tilt.shape[:2])\
+            or (vec_tilt.shape[2] != 3):
+        raise ValueError("Inconsistent/incorrect shapes of input arrays")
+    if ((azim.dtype != "float32") or (hori.dtype != "float32")
+            or (vec_tilt.dtype != "float32")):
+        raise ValueError("Input array(s) has/have incorrect data type(s)")
+
+    # Wrapper for Cython function
+    svf = _sky_view_factor_cy(azim, hori, vec_tilt)
+    return svf
+
+
+def _sky_view_factor_cy(float[:] azim, float[:, :, :] hori,
+                        float[:, :, :] vec_tilt):
+    """Sky view factor (SVF) computation."""
 
     cdef int len_0 = hori.shape[0]
     cdef int len_1 = hori.shape[1]
@@ -435,8 +463,7 @@ def sky_view_factor(float[:] azim, float[:, :, :] hori,
 
 # -----------------------------------------------------------------------------
 
-def visible_sky_fraction(float[:] azim, float[:, :, :] hori,
-                         float[:, :, :] vec_tilt):
+def visible_sky_fraction(azim, hori, vec_tilt):
     """Visible sky fraction (VSF) computation.
 
     Compute visible sky fraction (VSF) in local horizontal coordinate system.
@@ -456,6 +483,23 @@ def visible_sky_fraction(float[:] azim, float[:, :, :] hori,
     -------
     vsf : ndarray of float
         Array (two-dimensional) with Visible Sky Fraction [-]"""
+
+    # Check arguments
+    if (len(azim) != hori.shape[2]) or (hori.shape[:2] != vec_tilt.shape[:2])\
+            or (vec_tilt.shape[2] != 3):
+        raise ValueError("Inconsistent/incorrect shapes of input arrays")
+    if ((azim.dtype != "float32") or (hori.dtype != "float32")
+            or (vec_tilt.dtype != "float32")):
+        raise ValueError("Input array(s) has/have incorrect data type(s)")
+
+    # Wrapper for Cython function
+    vsf = _visible_sky_fraction_cy(azim, hori, vec_tilt)
+    return vsf
+
+
+def _visible_sky_fraction_cy(float[:] azim, float[:, :, :] hori,
+                             float[:, :, :] vec_tilt):
+    """Visible sky fraction (VSF) computation."""
 
     cdef int len_0 = hori.shape[0]
     cdef int len_1 = hori.shape[1]
@@ -502,7 +546,7 @@ def visible_sky_fraction(float[:] azim, float[:, :, :] hori,
 
 # -----------------------------------------------------------------------------
 
-def topographic_openness(float[:] azim, float[:, :, :] hori):
+def topographic_openness(azim, hori):
     """Topographic openness (positive) computation.
 
     Compute positive topographic openness. The definition is based on
@@ -518,7 +562,21 @@ def topographic_openness(float[:] azim, float[:, :, :] hori):
     Returns
     -------
     top : ndarray of float
-        Array (two-dimensional) with positive topographic openness [radian]
+        Array (two-dimensional) with positive topographic openness [radian]"""
+
+    # Check arguments
+    if len(azim) != hori.shape[2]:
+        raise ValueError("Inconsistent/incorrect shapes of input arrays")
+    if (azim.dtype != "float32") or (hori.dtype != "float32"):
+        raise ValueError("Input array(s) has/have incorrect data type(s)")
+
+    # Wrapper for Cython function
+    top = _topographic_openness_cy(azim, hori)
+    return top
+
+
+def _topographic_openness_cy(float[:] azim, float[:, :, :] hori):
+    """Topographic openness (positive) computation.
 
     References
     ----------

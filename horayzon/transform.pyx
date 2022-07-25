@@ -139,6 +139,9 @@ def ecef2enu(x_ecef, y_ecef, z_ecef, trans_ecef2enu):
     if ((x_ecef.dtype != "float64") or (y_ecef.dtype != "float64")
             or (z_ecef.dtype != "float64")):
         raise ValueError("Input array(s) has/have incorrect data type(s)")
+    if not isinstance(trans_ecef2enu, TransformerEcef2enu):
+        raise ValueError("Last input argument must be instance of class "
+                         + "'TransformerEcef2enu'")
 
     # Wrapper for 1-dimensional function
     shp = x_ecef.shape
@@ -211,10 +214,13 @@ def ecef2enu_vector(vec_ecef, trans_ecef2enu):
 
     # Check arguments
     if (vec_ecef.ndim < 2) or (vec_ecef.shape[vec_ecef.ndim - 1] != 3):
-        raise ValueError("Inccorect shape / number of dimensions of input "
+        raise ValueError("Incorrect shape / number of dimensions of input "
                          + "array")
     if vec_ecef.dtype != "float32":
         raise ValueError("Input array has incorrect data type")
+    if not isinstance(trans_ecef2enu, TransformerEcef2enu):
+        raise ValueError("Last input argument must be instance of class "
+                         + "'TransformerEcef2enu'")
 
     # Wrapper for 1-dimensional function
     shp = vec_ecef.shape[:(vec_ecef.ndim - 1)]
@@ -486,6 +492,9 @@ def rotation_matrix_glob2loc(vec_north_enu, vec_norm_enu):
     """Matrices to rotate vectors from global to local ENU coordinates.
 
     Array with matrices to rotate vector from global to local ENU coordinates.
+    Extend spatial dimensions by one grid cell on each side (filled with NaN)
+    to make the dimensions consistent with the DEM domain used to compute slope
+    angle and aspect.
 
     Parameters
     -------
@@ -500,8 +509,8 @@ def rotation_matrix_glob2loc(vec_north_enu, vec_norm_enu):
     Returns
     ----------
     lon : ndarray
-        Array (dimensions according to input; rotation matrices stored in last
-        two dimensions) with rotation matrices [metre]'"""
+        Array (four-dimensional; rotation matrices stored in last two
+        dimensions) with rotation matrices [metre]'"""
 
     # Check arguments
     if vec_north_enu.shape != vec_norm_enu.shape:

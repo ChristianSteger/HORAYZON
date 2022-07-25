@@ -72,10 +72,10 @@ x, y, elevation = hray.load_dem.rema(file_dem, domain_outer, engine="gdal")
 # Set ocean grid cells to 0.0 m
 elevation[elevation == -9999.0] = 0.0
 
-# # Test plot
-# plt.figure()
-# plt.pcolormesh(x, y, elevation, shading="auto")
-# plt.colorbar()
+# Test plot
+plt.figure()
+plt.pcolormesh(x, y, elevation, shading="auto")
+plt.colorbar()
 
 # -----------------------------------------------------------------------------
 # Artifical terrain
@@ -120,10 +120,10 @@ dem_dim_0, dem_dim_1 = elevation.shape
 
 # Compute ENU coordinates
 ind_or = (int(lon.shape[0] / 2), int(lon.shape[1] / 2))
-trans_att = hray.transform.TransformerEcef2enu(lon_or=lon[ind_or],
-                                               lat_or=lat[ind_or], ellps=ellps)
+trans_ecef2enu = hray.transform.TransformerEcef2enu(
+    lon_or=lon[ind_or], lat_or=lat[ind_or], ellps=ellps)
 x_enu, y_enu, z_enu = hray.transform.ecef2enu(x_ecef, y_ecef, z_ecef,
-                                              trans_att)
+                                              trans_ecef2enu)
 
 # Compute unit vectors (up and north) in ENU coordinates for inner domain
 vec_norm_ecef = hray.direction.surf_norm(lon[slice_in], lat[slice_in])
@@ -131,15 +131,16 @@ vec_north_ecef = hray.direction.north_dir(x_ecef[slice_in], y_ecef[slice_in],
                                           z_ecef[slice_in], vec_norm_ecef,
                                           ellps=ellps)
 del x_ecef, y_ecef, z_ecef
-vec_norm_enu = hray.transform.ecef2enu_vector(vec_norm_ecef, trans_att)
-vec_north_enu = hray.transform.ecef2enu_vector(vec_north_ecef, trans_att)
+vec_norm_enu = hray.transform.ecef2enu_vector(vec_norm_ecef, trans_ecef2enu)
+vec_north_enu = hray.transform.ecef2enu_vector(vec_north_ecef, trans_ecef2enu)
 del vec_norm_ecef, vec_north_ecef
 
 # Merge vertex coordinates and pad geometry buffer
 vert_grid = hray.auxiliary.rearrange_pad_buffer(x_enu, y_enu, z_enu)
 
 # Compute rotation matrix (global ENU -> local ENU)
-# rot_mat = hray.transform.rotation_matrix(vec_north_enu, vec_norm_enu)
+rot_mat_glob2loc = hray.transform.rotation_matrix_glob2loc(vec_north_enu,
+                                                           vec_norm_enu)
 del vec_north_enu
 
 # Compute slope
