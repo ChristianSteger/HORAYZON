@@ -30,8 +30,9 @@ elif sys.platform in ["darwin"]:
     print("Operating system: Mac OS X")
     lib_end = ".dylib"
     libraries_cython = ["m", "iomp5", "pthread"]
-    print("Provide path to NetCDF library (e.g. '/opt/local/lib/'):")
-    path_lib = input()
+    # print("Provide path to NetCDF library (e.g. '/opt/local/lib/'):")
+    #path_lib = input()
+    path_lib = "/opt/local/lib/"
     include_dirs_cpp = [np.get_include()]
     extra_objects_cpp = [path_lib_conda + "libembree3" + lib_end] \
         + [path_lib + i + lib_end for i in lib_netcdf]
