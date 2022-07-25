@@ -1,0 +1,49 @@
+{% set name = "horayzon" %}
+{% set version = "1.2.0" %}
+{% set build = "0" %}
+
+package:
+  name: {{ name | lower }}
+  version: {{ version }}
+
+source:
+  #git_rev: v{{ version }}
+  git_rev: Conda
+  git_url: git+ssh://git@github.com/ChristianSteger/HORAYZON.git
+
+build:
+  noarch: python
+  number: {{ build }}
+  #script: {{ PYTHON }} setup.py build_ext --build-lib horayzon/
+  script: {{ PYTHON }} -m pip install .
+
+requirements:
+  build:
+    - python
+    - pip
+    - numpy>=1.22
+    - cython
+    - scipy
+    - embree3
+    - tbb-devel
+    - netcdf-cxx4
+  run:
+    - python
+    - xarray
+    - matplotlib
+    - cartopy
+    - cmcrameri
+    - netcdf4
+    - rasterio
+    - trimesh
+    - geographiclib
+    - pyproj
+    - gdal
+    - shapely
+    - fiona
+    - pygeos
+    - scikit-image
+
+test:
+imports:
+  - {{ name }}
