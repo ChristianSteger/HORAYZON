@@ -83,4 +83,6 @@ ext_modules = [
 
 setup(name="test",
       cmdclass={"build_ext": build_ext},
+      packages=["horayzon"],
+      package_dir={"horayzon": "."},
       ext_modules=ext_modules)
