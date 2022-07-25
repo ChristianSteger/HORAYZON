@@ -38,6 +38,7 @@ elif sys.platform in ["darwin"]:
         + [path_lib + i + lib_end for i in lib_netcdf]
     for i in extra_objects_cpp:
         if not os.path.isfile(i):
+            print(i)
             raise ValueError("Library " + i + " not found")
 elif sys.platform in ["win32"]:
     print("Operating system: Windows")
