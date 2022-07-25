@@ -124,7 +124,7 @@ def north_dir(x_ecef, y_ecef, z_ecef, vec_norm_ecef, ellps):
 
 
 def _north_dir_1d(double[:] x_ecef, double[:] y_ecef, double[:] z_ecef,
-                  float[:, :] vec_norm_ecef, ellps="sphere"):
+                  float[:, :] vec_norm_ecef, ellps):
     """Compute unit vectors pointing towards North (for 1-dimensional data).
 
     Sources

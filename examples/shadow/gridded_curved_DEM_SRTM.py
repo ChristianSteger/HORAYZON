@@ -56,7 +56,7 @@ file_sw_dir_cor = "sw_dir_cor_SRTM_Alps.nc"
 # Check if output directory exists
 if not os.path.isdir(path_out):
     raise FileNotFoundError("Output directory does not exist")
-path_out += "shadow_sw_dir_cor/gridded_SRTM_Alps/"
+path_out += "shadow/gridded_SRTM_Alps/"
 if not os.path.isdir(path_out):
     os.makedirs(path_out)
 
@@ -118,14 +118,10 @@ del vec_north_enu
 # Compute slope
 slice_in_a1 = (slice(slice_in[0].start - 1, slice_in[0].stop + 1),
                slice(slice_in[1].start - 1, slice_in[1].stop + 1))
-# vec_tilt_enu = np.ascontiguousarray(
-#     hray.topo_param.slope_vector_meth(x_enu[slice_in_a1],
-#                                       y_enu[slice_in_a1],
-#                                       z_enu[slice_in_a1])[1:-1, 1:-1])
 vec_tilt_enu = np.ascontiguousarray(
-    hray.topo_param.slope_plane_meth(x_enu[slice_in_a1],
-                                      y_enu[slice_in_a1],
-                                      z_enu[slice_in_a1], rot_mat_glob2loc,
+    hray.topo_param.slope_plane_meth(x_enu[slice_in_a1], y_enu[slice_in_a1],
+                                     z_enu[slice_in_a1],
+                                     rot_mat=rot_mat_glob2loc,
                                      output_rot=False)[1:-1, 1:-1])
 
 # Compute surface enlargement factor
@@ -141,7 +137,9 @@ if not all([vert_grid.flags["C_CONTIGUOUS"],
             surf_enl_fac.flags["C_CONTIGUOUS"]]):
     raise ValueError("Not all input arrays are C-contiguous")
 
-# Additional note: All input vector arrays must be unit vectors!
+# Check that all input vector arrays represent unit vectors
+print(np.abs((vec_norm_enu ** 2).sum(axis=2) - 1.0).max())
+print(np.abs((vec_tilt_enu ** 2).sum(axis=2) - 1.0).max())
 
 # Initialise terrain
 terrain = hray.shadow.Terrain()

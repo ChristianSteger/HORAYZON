@@ -44,9 +44,9 @@ file_topo_par = "topo_par_DHM25_Switzerland.nc"
 # Check if output directory exists
 if not os.path.isdir(path_out):
     raise ValueError("Output directory does not exist")
-path_out += "gridded_DHM25_Switzerland/"
+path_out += "horizon/gridded_DHM25_Switzerland/"
 if not os.path.isdir(path_out):
-    os.mkdir(path_out)
+    os.makedirs(path_out)
 
 # Download and unzip DHM25 data
 print("Download DHM25 data:")

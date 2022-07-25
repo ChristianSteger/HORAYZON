@@ -54,9 +54,9 @@ file_topo_par = "topo_par_SRTM_South_Georgia.nc"
 # Check if output directory exists
 if not os.path.isdir(path_out):
     raise FileNotFoundError("Output directory does not exist")
-path_out += "gridded_SRTM_South_Georgia/"
+path_out += "horizon/gridded_SRTM_South_Georgia/"
 if not os.path.isdir(path_out):
-    os.mkdir(path_out)
+    os.makedirs(path_out)
 
 # Download and unzip SRTM tile (30 x 30 degree)
 print("Download SRTM tile (30 x 30 degree):")
@@ -88,13 +88,15 @@ offset_1 = slice_in[1].start
 print("Inner domain size: " + str(elevation[slice_in].shape))
 
 # Compute ECEF coordinates
-x_ecef, y_ecef, z_ecef = hray.transform.lonlat2ecef_1d(lon, lat, elevation,
-                                                       ellps=ellps)
+x_ecef, y_ecef, z_ecef = hray.transform.lonlat2ecef(*np.meshgrid(lon, lat),
+                                                    elevation, ellps=ellps)
 dem_dim_0, dem_dim_1 = elevation.shape
 
 # Compute ENU coordinates
-trans = hray.transform.TransformerEcef2enu(lon, lat, x_ecef, y_ecef, z_ecef)
-x_enu, y_enu, z_enu = hray.transform.ecef2enu(x_ecef, y_ecef, z_ecef, trans)
+trans_ecef2enu = hray.transform.TransformerEcef2enu(
+    lon_or=lon[int(len(lon) / 2)], lat_or=lat[int(len(lat) / 2)], ellps=ellps)
+x_enu, y_enu, z_enu = hray.transform.ecef2enu(x_ecef, y_ecef, z_ecef,
+                                              trans_ecef2enu)
 
 # Compute unit vectors (up and north) in ENU coordinates for inner domain
 vec_norm_ecef = hray.direction.surf_norm(*np.meshgrid(lon[slice_in[1]],
@@ -102,8 +104,8 @@ vec_norm_ecef = hray.direction.surf_norm(*np.meshgrid(lon[slice_in[1]],
 vec_north_ecef = hray.direction.north_dir(x_ecef[slice_in], y_ecef[slice_in],
                                           z_ecef[slice_in], vec_norm_ecef,
                                           ellps=ellps)
-vec_norm_enu = hray.transform.ecef2enu_vector(vec_norm_ecef, trans)
-vec_north_enu = hray.transform.ecef2enu_vector(vec_north_ecef, trans)
+vec_norm_enu = hray.transform.ecef2enu_vector(vec_norm_ecef, trans_ecef2enu)
+vec_north_enu = hray.transform.ecef2enu_vector(vec_north_ecef, trans_ecef2enu)
 del vec_norm_ecef, vec_north_ecef
 
 # Merge vertex coordinates and pad geometry buffer
@@ -199,7 +201,8 @@ ds_ncview = ds.transpose("azim", "lat", "lon")
 ds_ncview.to_netcdf(path_out + file_hori[:-3] + "_ncview.nc")
 
 # Compute rotation matrix (global ENU -> local ENU)
-rot_mat = hray.transform.rotation_matrix(vec_north_enu, vec_norm_enu)
+rot_mat_glob2loc = hray.transform.rotation_matrix_glob2loc(vec_north_enu,
+                                                           vec_norm_enu)
 del vec_north_enu, vec_norm_enu
 
 # Compute slope
@@ -208,8 +211,9 @@ slice_in_a1 = (slice(slice_in[0].start - 1, slice_in[0].stop + 1),
 vec_tilt = hray.topo_param.slope_plane_meth(x_enu[slice_in_a1],
                                             y_enu[slice_in_a1],
                                             z_enu[slice_in_a1],
-                                            rot_mat)[1:-1, 1:-1]
-del rot_mat
+                                            rot_mat=rot_mat_glob2loc,
+                                            output_rot=False)[1:-1, 1:-1]
+del rot_mat_glob2loc
 del x_enu, y_enu, z_enu
 
 # Compute Sky View Factor

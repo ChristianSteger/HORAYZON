@@ -64,9 +64,9 @@ if domain_out_frac.sum() != 1.0:
 # Check if output directory exists
 if not os.path.isdir(path_out):
     raise ValueError("Output directory does not exist")
-path_out += "gridded_swissALTI3D_Switzerland/"
+path_out += "horizon/gridded_swissALTI3D_Switzerland/"
 if not os.path.isdir(path_out):
-    os.mkdir(path_out)
+    os.makedirs(path_out)
 
 # Check if heightmap meshing utility (hmm) executable exists
 if not os.path.isfile(hmm_ex):

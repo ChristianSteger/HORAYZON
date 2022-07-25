@@ -55,13 +55,13 @@ file_shadow = "shadow_REMA_Antarctica.nc"
 # Check if output directory exists
 if not os.path.isdir(path_out):
     raise FileNotFoundError("Output directory does not exist")
-path_out += "shadow_sw_dir_cor/gridded_REMA_Antarctica/"
+path_out += "shadow/gridded_REMA_Antarctica/"
 if not os.path.isdir(path_out):
     os.makedirs(path_out)
 
-# # Download REMA tile for Antarctic Peninsula
-# print("Download REMA tile for Antarctic Peninsula:")
-# hray.download.file(dem_file_url, path_out)
+# Download REMA tile for Antarctic Peninsula
+print("Download REMA tile for Antarctic Peninsula:")
+hray.download.file(dem_file_url, path_out)
 
 # Load required DEM data (including outer boundary zone)
 domain_outer = hray.domain.planar_grid(domain, dist_search)
@@ -102,11 +102,6 @@ offset_0 = slice_in[0].start
 offset_1 = slice_in[1].start
 print("Inner domain size: " + str(elevation[slice_in].shape))
 
-# Test plot
-plt.figure()
-plt.pcolormesh(x[slice_in[1]], y[slice_in[0]], elevation[slice_in])
-plt.colorbar()
-
 # Compute geodetic coordinates
 crs_proj = CRS.from_epsg(3031)
 crs_wgs84 = CRS.from_epsg(4326)
@@ -124,6 +119,11 @@ trans_ecef2enu = hray.transform.TransformerEcef2enu(
     lon_or=lon[ind_or], lat_or=lat[ind_or], ellps=ellps)
 x_enu, y_enu, z_enu = hray.transform.ecef2enu(x_ecef, y_ecef, z_ecef,
                                               trans_ecef2enu)
+
+# Test plot
+plt.figure()
+plt.pcolormesh(x_enu[slice_in], y_enu[slice_in], z_enu[slice_in])
+plt.colorbar()
 
 # Compute unit vectors (up and north) in ENU coordinates for inner domain
 vec_norm_ecef = hray.direction.surf_norm(lon[slice_in], lat[slice_in])
@@ -147,9 +147,10 @@ del vec_north_enu
 slice_in_a1 = (slice(slice_in[0].start - 1, slice_in[0].stop + 1),
                slice(slice_in[1].start - 1, slice_in[1].stop + 1))
 vec_tilt_enu = np.ascontiguousarray(
-    hray.topo_param.slope_vector_meth(x_enu[slice_in_a1],
-                                      y_enu[slice_in_a1],
-                                      z_enu[slice_in_a1])[1:-1, 1:-1])
+    hray.topo_param.slope_vector_meth(x_enu[slice_in_a1], y_enu[slice_in_a1],
+                                      z_enu[slice_in_a1],
+                                      rot_mat=rot_mat_glob2loc,
+                                      output_rot=False)[1:-1, 1:-1])
 
 # Compute slope angle and aspect (->in global ENU coordinates!)
 slope = np.arccos(vec_tilt_enu[:, :, 2].clip(max=1.0))
@@ -177,7 +178,9 @@ if not all([vert_grid.flags["C_CONTIGUOUS"],
             surf_enl_fac.flags["C_CONTIGUOUS"]]):
     raise ValueError("Not all input arrays are C-contiguous")
 
-# Additional note: All input vector arrays must be unit vectors!
+# Check that all input vector arrays represent unit vectors
+print(np.abs((vec_norm_enu ** 2).sum(axis=2) - 1.0).max())
+print(np.abs((vec_tilt_enu ** 2).sum(axis=2) - 1.0).max())
 
 # Initialise terrain
 terrain = hray.shadow.Terrain()

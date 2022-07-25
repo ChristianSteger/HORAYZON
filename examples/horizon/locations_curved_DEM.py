@@ -57,9 +57,9 @@ file_hori = "hori_SRTM_Switzerland.nc"
 # Check if output directory exists
 if not os.path.isdir(path_out):
     raise FileNotFoundError("Output directory does not exist")
-path_out += "locations_SRTM_Switzerland/"
+path_out += "horizon/locations_SRTM_Switzerland/"
 if not os.path.isdir(path_out):
-    os.mkdir(path_out)
+    os.makedirs(path_out)
 
 # Download and unzip SRTM tile (5 x 5 degree)
 print("Download SRTM tile (5 x 5 degree):")
@@ -83,18 +83,20 @@ lon, lat, elevation = hray.load_dem.srtm(file_dem, domain_outer, engine="gdal")
 elevation += hray.geoid.undulation(lon, lat, geoid="EGM96")  # [m]
 
 # Compute ECEF coordinates
-x_ecef, y_ecef, z_ecef = hray.transform.lonlat2ecef_1d(lon, lat, elevation,
-                                                       ellps=ellps)
+x_ecef, y_ecef, z_ecef = hray.transform.lonlat2ecef(*np.meshgrid(lon, lat),
+                                                    elevation, ellps=ellps)
 dem_dim_0, dem_dim_1 = elevation.shape
 
 # Compute ENU coordinates
-trans = hray.transform.TransformerEcef2enu(lon, lat, x_ecef, y_ecef, z_ecef)
-x_enu, y_enu, z_enu = hray.transform.ecef2enu(x_ecef, y_ecef, z_ecef, trans)
+trans_ecef2enu = hray.transform.TransformerEcef2enu(
+    lon_or=lon[int(len(lon) / 2)], lat_or=lat[int(len(lat) / 2)], ellps=ellps)
+x_enu, y_enu, z_enu = hray.transform.ecef2enu(x_ecef, y_ecef, z_ecef,
+                                              trans_ecef2enu)
 del x_ecef, y_ecef, z_ecef
 
 # Merge vertex coordinates and pad geometry buffer
 vert_grid = hray.auxiliary.rearrange_pad_buffer(x_enu, y_enu, z_enu)
-# del x_enu, y_enu, z_enu
+del x_enu, y_enu, z_enu
 
 # -----------------------------------------------------------------------------
 # Prepare data for selected locations
@@ -103,25 +105,20 @@ vert_grid = hray.auxiliary.rearrange_pad_buffer(x_enu, y_enu, z_enu)
 # Compute ECEF coordinates
 elev_0_loc = np.zeros(len(loc_sel), dtype=np.float32)
 x_ecef_loc, y_ecef_loc, z_ecef_loc \
-    = hray.transform.lonlat2ecef(lon_loc[:, np.newaxis],
-                                 lat_loc[:, np.newaxis],
-                                 elev_0_loc[:, np.newaxis], ellps=ellps)
+    = hray.transform.lonlat2ecef(lon_loc, lat_loc, elev_0_loc, ellps=ellps)
 
 # Compute ENU coordinates
-x_enu_loc, y_enu_loc, z_enu_loc \
-    = hray.transform.ecef2enu(x_ecef_loc, y_ecef_loc, z_ecef_loc, trans)
-coords = np.hstack((x_enu_loc, y_enu_loc, z_enu_loc))
-# del x_enu_loc, y_enu_loc, z_enu_loc
+coords = np.array(hray.transform.ecef2enu(x_ecef_loc, y_ecef_loc, z_ecef_loc,
+                              trans_ecef2enu)).transpose()
 
 # Compute unit vectors (in ENU coordinates)
-vec_norm_ecef = hray.direction.surf_norm(lon_loc[:, np.newaxis],
-                                         lat_loc[:, np.newaxis])
+vec_norm_ecef = hray.direction.surf_norm(lon_loc, lat_loc)
 vec_north_ecef = hray.direction.north_dir(x_ecef_loc, y_ecef_loc,
                                           z_ecef_loc, vec_norm_ecef,
                                           ellps=ellps)
 del x_ecef_loc, y_ecef_loc, z_ecef_loc
-vec_norm_enu = hray.transform.ecef2enu_vector(vec_norm_ecef, trans).squeeze()
-vec_north_enu = hray.transform.ecef2enu_vector(vec_north_ecef, trans).squeeze()
+vec_norm_enu = hray.transform.ecef2enu_vector(vec_norm_ecef, trans_ecef2enu)
+vec_north_enu = hray.transform.ecef2enu_vector(vec_north_ecef, trans_ecef2enu)
 del vec_norm_ecef, vec_north_ecef
 
 # -----------------------------------------------------------------------------
@@ -167,7 +164,7 @@ for i in list(loc_sel.keys()):
 
     # Compute ENU coordinates
     x_enu, y_enu, z_enu \
-        = hray.transform.ecef2enu(x_ecef, y_ecef, z_ecef, trans)
+        = hray.transform.ecef2enu(x_ecef, y_ecef, z_ecef, trans_ecef2enu)
 
     # Compute unit vectors (in ENU coordinates)
     slice_3x3 = (slice(slice_5x5[0].start + 1, slice_5x5[0].stop - 1),
@@ -180,18 +177,22 @@ for i in list(loc_sel.keys()):
                                               z_ecef[1:-1, 1:-1],
                                               vec_norm_ecef, ellps=ellps)
     del x_ecef, y_ecef, z_ecef
-
-    vec_norm_enu = hray.transform.ecef2enu_vector(vec_norm_ecef, trans)
-    vec_north_enu = hray.transform.ecef2enu_vector(vec_north_ecef, trans)
+    vec_norm_enu = hray.transform.ecef2enu_vector(vec_norm_ecef,
+                                                  trans_ecef2enu)
+    vec_north_enu = hray.transform.ecef2enu_vector(vec_north_ecef,
+                                                   trans_ecef2enu)
     del vec_norm_ecef, vec_north_ecef
 
     # Compute rotation matrix (global ENU -> local ENU)
-    rot_mat = hray.transform.rotation_matrix(vec_north_enu, vec_norm_enu)
+    rot_mat_glob2loc = hray.transform.rotation_matrix_glob2loc(vec_north_enu,
+                                                               vec_norm_enu)
     del vec_north_enu, vec_norm_enu
 
     # Compute slope
-    vec_tilt = hray.topo_param.slope_plane_meth(x_enu, y_enu, z_enu,
-                                                rot_mat)[1: -1, 1: -1, :]
+    vec_tilt \
+        = hray.topo_param.slope_plane_meth(x_enu, y_enu, z_enu,
+                                           rot_mat=rot_mat_glob2loc,
+                                           output_rot=False)[1:-1, 1:-1, :]
 
     # Bilinear interpolation of slope at location
     vec_tilt_ip = np.empty((1, 1, 3), dtype=np.float32)
@@ -236,9 +237,9 @@ for i in list(loc_sel.keys()):
     ax_r.tick_params(axis="y", colors="blue")
     plt.title(i.replace("_", " "), fontsize=12, fontweight="bold",
               loc="left")
-    title = "Slope angle: %.2f" % topo_param[i]["slope_angle"] + \
-            " $^{\circ}$, slope aspect: %.2f" % topo_param[i]["slope_aspect"] \
-            + " $^{\circ}$, SVF: %.2f" % topo_param[i]["svf"]
+    title = "Slope angle: %.1f" % topo_param[i]["slope_angle"] + \
+            "$^{\circ}$, slope aspect: %.1f" % topo_param[i]["slope_aspect"] \
+            + "$^{\circ}$, SVF: %.2f" % topo_param[i]["svf"]
     plt.title(title, fontsize=12, loc="right")
     fig.savefig(path_out + i + ".png", dpi=300, bbox_inches="tight")
     plt.close(fig)
