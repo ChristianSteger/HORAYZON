@@ -191,6 +191,11 @@ CppTerrain::CppTerrain() {
 }
 
 CppTerrain::~CppTerrain() {
+
+  	// Release resources allocated through Embree
+  	rtcReleaseScene(scene);
+  	rtcReleaseDevice(device);
+
 }
 
 void CppTerrain::initialise(float* vert_grid,
