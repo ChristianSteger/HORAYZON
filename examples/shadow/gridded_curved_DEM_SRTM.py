@@ -130,11 +130,12 @@ print("Surface enlargement factor (min/max): %.3f" % surf_enl_fac.min()
       + ", %.3f" % surf_enl_fac.max())
 
 # Initialise terrain
+mask = np.ones(vec_tilt_enu.shape[:2], dtype=np.uint8)
 terrain = hray.shadow.Terrain()
 dim_in_0, dim_in_1 = vec_tilt_enu.shape[0], vec_tilt_enu.shape[1]
 terrain.initialise(vert_grid, dem_dim_0, dem_dim_1,
                    offset_0, offset_1, vec_tilt_enu, vec_norm_enu,
-                   surf_enl_fac, geom_type="grid")
+                   surf_enl_fac, geom_type="grid", mask=mask)
 
 # Load Skyfield data
 planets = load("de421.bsp")
@@ -172,7 +173,8 @@ nc_lon[:] = lon[slice_in[1]]
 nc_lon.units = "degree"
 nc_data = ncfile.createVariable(varname="shadow", datatype="u2",
                                 dimensions=("time", "lat", "lon"))
-nc_data.long_name = "0: illuminated, 1: self-shaded, 2: terrain-shaded"
+nc_data.long_name = "0: illuminated, 1: self-shaded, 2: terrain-shaded, " \
+                    + "3: not considered"
 nc_data.units = "-"
 ncfile.close()
 comp_time_shadow = []

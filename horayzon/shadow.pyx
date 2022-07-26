@@ -9,7 +9,7 @@ cdef extern from "shadow_comp.h" namespace "shapes":
     cdef cppclass CppTerrain:
         CppTerrain()
         void initialise(float*, int, int, int, int, float*, float*,
-                        int, int, float*, char*)
+                        int, int, float*, char*, unsigned char*, float, float)
         void shadow(float*, unsigned char*)
         void sw_dir_cor(float*, float*)
 
@@ -29,7 +29,10 @@ cdef class Terrain:
                    np.ndarray[np.float32_t, ndim = 3] vec_tilt,
                    np.ndarray[np.float32_t, ndim = 3] vec_norm,
                    np.ndarray[np.float32_t, ndim = 2] surf_enl_fac,
-                   str geom_type):
+                   str geom_type,
+                   np.ndarray[np.uint8_t, ndim = 2] mask,
+                   float sw_dir_cor_fill=np.nan,
+                   float ang_max=89.0):
         """Initialise Terrain class with Digital Elevation Model (DEM) data.
 
         Initialise Terrain class with Digital Elevation Model (DEM) data and
@@ -58,7 +61,17 @@ cdef class Terrain:
             Array (three-dimensional) with surface enlargement factor
             (y, x) [-]
         geom_type : str
-            Embree geometry type (triangle, quad, grid)"""
+            Embree geometry type (triangle, quad, grid)
+        mask : ndarray of uint8
+            Array (two-dimensional) with grid cell mask (0: ignored,
+            1: considered)
+        sw_dir_cor_fill : float
+            Shortwave correction factor fill value for masked grid cells
+        ang_max: float
+            Maximal angle between sun vector and tilted surface normal
+            for which correction is computed. For larger angles, 'sw_dir_cor'
+            is set to 0.0. 'ang_max' is also applied to restrict the maximal
+            angle between the sun vector and the horizontal surface normal."""
 
         # Check consistency and validity of input arguments
         if len(vert_grid) < (dem_dim_0 * dem_dim_1 * 3):
@@ -83,8 +96,19 @@ cdef class Terrain:
                 or (not vec_norm.flags["C_CONTIGUOUS"])
                 or (not surf_enl_fac.flags["C_CONTIGUOUS"])):
             raise ValueError("not all input arrays are C-contiguous")
+        if ((np.abs((vec_tilt ** 2).sum(axis=2) - 1.0).max() > 1.0e-5)
+                or (np.abs((vec_norm ** 2).sum(axis=2) - 1.0).max() > 1.0e-5)):
+            raise ValueError("Vectors in 'vec_tilt' and/or 'vec_norm' are "
+                             + "not normalised")
         if geom_type not in ("triangle", "quad", "grid"):
             raise ValueError("invalid input argument for geom_type")
+        if ((mask.shape[0] != vec_tilt.shape[0])
+                or (mask.shape[1] != vec_tilt.shape[1])):
+            raise ValueError("shape of mask is inconsistent with other input")
+        if mask.dtype != "uint8":
+            raise TypeError("data type of mask must be 'uint8'")
+        if (ang_max < 85.0) or (ang_max > 89.99):
+            raise TypeError("'ang_max' must be in the range [85.0, 89.99]")
 
         # Check size of input geometries
         if (dem_dim_0 > 32767) or (dem_dim_1 > 32767):
@@ -98,7 +122,10 @@ cdef class Terrain:
                                 &vec_norm[0,0,0],
                                 vec_tilt.shape[0], vec_tilt.shape[1],
                                 &surf_enl_fac[0,0],
-                                geom_type.encode("utf-8"))
+                                geom_type.encode("utf-8"),
+                                &mask[0,0],
+                                sw_dir_cor_fill,
+                                ang_max)
 
     def shadow(self, np.ndarray[np.float32_t, ndim = 1] sun_position,
                  np.ndarray[np.uint8_t, ndim = 2] shadow_buffer):

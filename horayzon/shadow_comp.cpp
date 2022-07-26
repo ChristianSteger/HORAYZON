@@ -205,7 +205,10 @@ void CppTerrain::initialise(float* vert_grid,
 	float* vec_norm,
 	int dim_in_0, int dim_in_1,
 	float* surf_enl_fac,
-	char* geom_type) {
+	char* geom_type,
+	unsigned char* mask,
+	float sw_dir_cor_fill,
+	float ang_max) {
 
 	dem_dim_0_cl = dem_dim_0;
 	dem_dim_1_cl = dem_dim_1;
@@ -217,6 +220,9 @@ void CppTerrain::initialise(float* vert_grid,
 	dim_in_0_cl = dim_in_0;
 	dim_in_1_cl = dim_in_1;
 	surf_enl_fac_cl = surf_enl_fac;
+	mask_cl = mask;
+	sw_dir_cor_fill_cl = sw_dir_cor_fill;
+	ang_max_cl = ang_max;
 
 	auto start_ini = std::chrono::high_resolution_clock::now();
 
@@ -225,6 +231,17 @@ void CppTerrain::initialise(float* vert_grid,
 	auto end_ini = std::chrono::high_resolution_clock::now();
   	std::chrono::duration<double> time = end_ini - start_ini;
   	cout << "Total initialisation time: " << time.count() << " s" << endl;
+  	
+  	int num_gc_tot = (dim_in_0 * dim_in_1);
+  	int num_gc = 0;
+  	for (size_t i = 0; i < (size_t)(dim_in_0 * dim_in_1); i++) {
+  		if (mask[i] == 1) {
+  			num_gc += 1;
+  		}
+  	}  	
+  	printf("Considered grid cells (number): %d \n", num_gc);
+  	cout << "Considered grid cells (fraction from total): " << ((float)num_gc 
+  		/ (float)num_gc_tot * 100.0) << " %" << endl;
 
 }
 
@@ -242,72 +259,80 @@ void CppTerrain::shadow(float* sun_position, unsigned char* shadow_buffer) {
 	// for (size_t i = 0; i < (size_t)dim_in_0_cl; i++) {  // serial
 	for (size_t i=r.begin(); i<r.end(); ++i) {  // parallel
   		for (size_t j = 0; j < (size_t)dim_in_1_cl; j++) {
-
-    		// Get components of terrain surface and ellipsoid normal vectors
-    		size_t ind_vec = lin_ind_2d(dim_in_1_cl, i, j) * 3;
-  			float tilt_x = vec_tilt_cl[ind_vec];
-  			float norm_x = vec_norm_cl[ind_vec];
-  			ind_vec += 1;
-  			float tilt_y = vec_tilt_cl[ind_vec];
-  			float norm_y = vec_norm_cl[ind_vec];
-  			ind_vec += 1;
-  			float tilt_z = vec_tilt_cl[ind_vec];
-  			float norm_z = vec_norm_cl[ind_vec];
-  
-  			// Ray origin
-  			size_t ind_2d = lin_ind_2d(dem_dim_1_cl, i + offset_0_cl,
-  				j + offset_1_cl);
-  			float ray_org_x = (vert_grid_cl[ind_2d * 3 + 0] 
-  				+ norm_x * ray_org_elev);
-  			float ray_org_y = (vert_grid_cl[ind_2d * 3 + 1] 
-  				+ norm_y * ray_org_elev);
-  			float ray_org_z = (vert_grid_cl[ind_2d * 3 + 2] 
-  				+ norm_z * ray_org_elev);
-
-  			// Compute sun unit vector
-  			float sun_x = (sun_position[0] - ray_org_x);
-  			float sun_y = (sun_position[1] - ray_org_y);
-  			float sun_z = (sun_position[2] - ray_org_z);
-  			float mag = sqrt(sun_x * sun_x + sun_y * sun_y + sun_z * sun_z);
-  			sun_x = sun_x / mag;
-  			sun_y = sun_y / mag;
-  			sun_z = sun_z / mag;
-  			
-  			// Check for self-shadowing
-  			float dot_prod = tilt_x * sun_x + tilt_y * sun_y + tilt_z * sun_z;
+  		
   			size_t ind_arr = lin_ind_2d(dim_in_1_cl, i, j);
-  			if (dot_prod > 0.0) {
+  			if (mask_cl[ind_arr] == 1) {
+
+    			// Get components of terrain surface and ellipsoid normal vectors
+    			size_t ind_vec = lin_ind_2d(dim_in_1_cl, i, j) * 3;
+  				float tilt_x = vec_tilt_cl[ind_vec];
+  				float norm_x = vec_norm_cl[ind_vec];
+  				ind_vec += 1;
+  				float tilt_y = vec_tilt_cl[ind_vec];
+  				float norm_y = vec_norm_cl[ind_vec];
+  				ind_vec += 1;
+  				float tilt_z = vec_tilt_cl[ind_vec];
+  				float norm_z = vec_norm_cl[ind_vec];
+  
+  				// Ray origin
+  				size_t ind_2d = lin_ind_2d(dem_dim_1_cl, i + offset_0_cl,
+  					j + offset_1_cl);
+  				float ray_org_x = (vert_grid_cl[ind_2d * 3 + 0] 
+  					+ norm_x * ray_org_elev);
+  				float ray_org_y = (vert_grid_cl[ind_2d * 3 + 1] 
+  					+ norm_y * ray_org_elev);
+  				float ray_org_z = (vert_grid_cl[ind_2d * 3 + 2] 
+  					+ norm_z * ray_org_elev);
+
+  				// Compute sun unit vector
+  				float sun_x = (sun_position[0] - ray_org_x);
+  				float sun_y = (sun_position[1] - ray_org_y);
+  				float sun_z = (sun_position[2] - ray_org_z);
+  				float mag = sqrt(sun_x * sun_x + sun_y * sun_y + sun_z * sun_z);
+  				sun_x = sun_x / mag;
+  				sun_y = sun_y / mag;
+  				sun_z = sun_z / mag;
   			
-				// Intersect context
-  				struct RTCIntersectContext context;
-  				rtcInitIntersectContext(&context);
+  				// Check for self-shadowing
+  				float dot_prod = tilt_x * sun_x + tilt_y * sun_y + tilt_z * sun_z;
+  				if (dot_prod > 0.0) {
+  			
+					// Intersect context
+  					struct RTCIntersectContext context;
+  					rtcInitIntersectContext(&context);
 
-  				// Ray structure
-  				struct RTCRay ray;
-  				ray.org_x = ray_org_x;
-  				ray.org_y = ray_org_y;
-  				ray.org_z = ray_org_z;
-  				ray.dir_x = sun_x;
-  				ray.dir_y = sun_y;
-  				ray.dir_z = sun_z;
-  				ray.tnear = 0.0;
-  				ray.tfar = std::numeric_limits<float>::infinity();
+  					// Ray structure
+  					struct RTCRay ray;
+  					ray.org_x = ray_org_x;
+  					ray.org_y = ray_org_y;
+  					ray.org_z = ray_org_z;
+  					ray.dir_x = sun_x;
+  					ray.dir_y = sun_y;
+  					ray.dir_z = sun_z;
+  					ray.tnear = 0.0;
+  					ray.tfar = std::numeric_limits<float>::infinity();
 
-  				// Intersect ray with scene
-  				rtcOccluded1(scene, &context, &ray);
+  					// Intersect ray with scene
+  					rtcOccluded1(scene, &context, &ray);
 
-				if (ray.tfar < 0.0) {
-					shadow_buffer[ind_arr] = 2;
+					if (ray.tfar < 0.0) {
+						shadow_buffer[ind_arr] = 2;
+					} else {
+						shadow_buffer[ind_arr] = 0;
+					}
+			
 				} else {
-					shadow_buffer[ind_arr] = 0;
+			
+					shadow_buffer[ind_arr] = 1;
+			
 				}
-			
+				
 			} else {
-			
-				shadow_buffer[ind_arr] = 1;
-			
+
+				shadow_buffer[ind_arr] = 3;
+				
 			}
-	
+
 		}
 	}
 	
@@ -320,7 +345,7 @@ void CppTerrain::shadow(float* sun_position, unsigned char* shadow_buffer) {
 void CppTerrain::sw_dir_cor(float* sun_position, float* sw_dir_cor_buffer) {
 
 	float ray_org_elev=0.05;
-	float dot_prod_min = cos(deg2rad(89.0));
+	float dot_prod_min = cos(deg2rad(ang_max_cl));
 
 	tbb::parallel_for(tbb::blocked_range<size_t>(0,dim_in_0_cl),
 		[&](tbb::blocked_range<size_t> r) {  // parallel
@@ -328,77 +353,85 @@ void CppTerrain::sw_dir_cor(float* sun_position, float* sw_dir_cor_buffer) {
 	//for (size_t i = 0; i < (size_t)dim_in_0_cl; i++) {  // serial
 	for (size_t i=r.begin(); i<r.end(); ++i) {  // parallel
   		for (size_t j = 0; j < (size_t)dim_in_1_cl; j++) {
-
-    		// Get components of terrain surface and ellipsoid normal vectors
-    		size_t ind_vec = lin_ind_2d(dim_in_1_cl, i, j) * 3;
-  			float tilt_x = vec_tilt_cl[ind_vec];
-  			float norm_x = vec_norm_cl[ind_vec];
-  			ind_vec += 1;
-  			float tilt_y = vec_tilt_cl[ind_vec];
-  			float norm_y = vec_norm_cl[ind_vec];
-  			ind_vec += 1;
-  			float tilt_z = vec_tilt_cl[ind_vec];
-  			float norm_z = vec_norm_cl[ind_vec];
-  
-  			// Ray origin
-  			size_t ind_2d = lin_ind_2d(dem_dim_1_cl, i + offset_0_cl,
-  				j + offset_1_cl);
-  			float ray_org_x = (vert_grid_cl[ind_2d * 3 + 0] 
-  				+ norm_x * ray_org_elev);
-  			float ray_org_y = (vert_grid_cl[ind_2d * 3 + 1] 
-  				+ norm_y * ray_org_elev);
-  			float ray_org_z = (vert_grid_cl[ind_2d * 3 + 2] 
-  				+ norm_z * ray_org_elev);
-
-  			// Compute sun unit vector
-  			float sun_x = (sun_position[0] - ray_org_x);
-  			float sun_y = (sun_position[1] - ray_org_y);
-  			float sun_z = (sun_position[2] - ray_org_z);
-  			float mag = sqrt(sun_x * sun_x + sun_y * sun_y + sun_z * sun_z);
-  			sun_x = sun_x / mag;
-  			sun_y = sun_y / mag;
-  			sun_z = sun_z / mag;
-  			
-  			// Check for self-shadowing
-  			float dot_prod_ts = tilt_x * sun_x + tilt_y * sun_y 
-  				+ tilt_z * sun_z;
+  		
   			size_t ind_arr = lin_ind_2d(dim_in_1_cl, i, j);
-  			if (dot_prod_ts > dot_prod_min) {
+  			if (mask_cl[ind_arr] == 1) {
+
+    			// Get components of terrain surface and ellipsoid normal vectors
+    			size_t ind_vec = lin_ind_2d(dim_in_1_cl, i, j) * 3;
+  				float tilt_x = vec_tilt_cl[ind_vec];
+  				float norm_x = vec_norm_cl[ind_vec];
+  				ind_vec += 1;
+  				float tilt_y = vec_tilt_cl[ind_vec];
+  				float norm_y = vec_norm_cl[ind_vec];
+  				ind_vec += 1;
+  				float tilt_z = vec_tilt_cl[ind_vec];
+  				float norm_z = vec_norm_cl[ind_vec];
+  
+  				// Ray origin
+  				size_t ind_2d = lin_ind_2d(dem_dim_1_cl, i + offset_0_cl,
+  					j + offset_1_cl);
+  				float ray_org_x = (vert_grid_cl[ind_2d * 3 + 0] 
+  					+ norm_x * ray_org_elev);
+  				float ray_org_y = (vert_grid_cl[ind_2d * 3 + 1] 
+  					+ norm_y * ray_org_elev);
+  				float ray_org_z = (vert_grid_cl[ind_2d * 3 + 2] 
+  					+ norm_z * ray_org_elev);
+
+  				// Compute sun unit vector
+  				float sun_x = (sun_position[0] - ray_org_x);
+  				float sun_y = (sun_position[1] - ray_org_y);
+  				float sun_z = (sun_position[2] - ray_org_z);
+  				float mag = sqrt(sun_x * sun_x + sun_y * sun_y + sun_z * sun_z);
+  				sun_x = sun_x / mag;
+  				sun_y = sun_y / mag;
+  				sun_z = sun_z / mag;
   			
-				// Intersect context
-  				struct RTCIntersectContext context;
-  				rtcInitIntersectContext(&context);
+  				// Check for self-shadowing
+  				float dot_prod_ts = tilt_x * sun_x + tilt_y * sun_y 
+  					+ tilt_z * sun_z;
+  				if (dot_prod_ts > dot_prod_min) {
+  			
+					// Intersect context
+  					struct RTCIntersectContext context;
+  					rtcInitIntersectContext(&context);
 
-  				// Ray structure
-  				struct RTCRay ray;
-  				ray.org_x = ray_org_x;
-  				ray.org_y = ray_org_y;
-  				ray.org_z = ray_org_z;
-  				ray.dir_x = sun_x;
-  				ray.dir_y = sun_y;
-  				ray.dir_z = sun_z;
-  				ray.tnear = 0.0;
-  				ray.tfar = std::numeric_limits<float>::infinity();
+  					// Ray structure
+  					struct RTCRay ray;
+  					ray.org_x = ray_org_x;
+  					ray.org_y = ray_org_y;
+  					ray.org_z = ray_org_z;
+  					ray.dir_x = sun_x;
+  					ray.dir_y = sun_y;
+  					ray.dir_z = sun_z;
+  					ray.tnear = 0.0;
+  					ray.tfar = std::numeric_limits<float>::infinity();
 
-  				// Intersect ray with scene
-  				rtcOccluded1(scene, &context, &ray);
+  					// Intersect ray with scene
+  					rtcOccluded1(scene, &context, &ray);
 
-				if (ray.tfar < 0.0) {
-					sw_dir_cor_buffer[ind_arr] = 0.0;
-				} else {
-					float dot_prod_ns = (norm_x * sun_x + norm_y * sun_y
-						+ norm_z * sun_z);
-					if (dot_prod_ns < dot_prod_min) {
-						dot_prod_ns = dot_prod_min;
+					if (ray.tfar < 0.0) {
+						sw_dir_cor_buffer[ind_arr] = 0.0;
+					} else {
+						float dot_prod_ns = (norm_x * sun_x + norm_y * sun_y
+							+ norm_z * sun_z);
+						if (dot_prod_ns < dot_prod_min) {
+							dot_prod_ns = dot_prod_min;
+						}
+						sw_dir_cor_buffer[ind_arr] = ((dot_prod_ts / dot_prod_ns)
+							* surf_enl_fac_cl[ind_arr]);	
 					}
-					sw_dir_cor_buffer[ind_arr] = ((dot_prod_ts / dot_prod_ns)
-						* surf_enl_fac_cl[ind_arr]);	
+			
+				} else {
+			
+					sw_dir_cor_buffer[ind_arr] = 0.0;
+			
 				}
-			
+				
 			} else {
-			
-				sw_dir_cor_buffer[ind_arr] = 0.0;
-			
+
+				sw_dir_cor_buffer[ind_arr] = sw_dir_cor_fill_cl;
+				
 			}
 	
 		}
