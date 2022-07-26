@@ -192,7 +192,7 @@ for i in list(loc_sel.keys()):
     vec_tilt \
         = hray.topo_param.slope_plane_meth(x_enu, y_enu, z_enu,
                                            rot_mat=rot_mat_glob2loc,
-                                           output_rot=False)[1:-1, 1:-1, :]
+                                           output_rot=True)[1:-1, 1:-1, :]
 
     # Bilinear interpolation of slope at location
     vec_tilt_ip = np.empty((1, 1, 3), dtype=np.float32)

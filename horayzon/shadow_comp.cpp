@@ -195,12 +195,12 @@ CppTerrain::~CppTerrain() {
 
 void CppTerrain::initialise(float* vert_grid,
 	int dem_dim_0, int dem_dim_1,
-	char* geom_type,
 	int offset_0, int offset_1,
 	float* vec_tilt,
 	float* vec_norm,
 	int dim_in_0, int dim_in_1,
-	float* surf_enl_fac) {
+	float* surf_enl_fac,
+	char* geom_type) {
 
 	dem_dim_0_cl = dem_dim_0;
 	dem_dim_1_cl = dem_dim_1;
@@ -227,7 +227,7 @@ void CppTerrain::initialise(float* vert_grid,
 // Compute shadow or correction factor for direct downward shortwave radiation
 //#############################################################################
 
-void CppTerrain::shadow(float* sun_position, unsigned char* shaddow_buffer) {
+void CppTerrain::shadow(float* sun_position, unsigned char* shadow_buffer) {
 
 	float ray_org_elev=0.05;
 
@@ -292,14 +292,14 @@ void CppTerrain::shadow(float* sun_position, unsigned char* shaddow_buffer) {
   				rtcOccluded1(scene, &context, &ray);
 
 				if (ray.tfar < 0.0) {
-					shaddow_buffer[ind_arr] = 2;
+					shadow_buffer[ind_arr] = 2;
 				} else {
-					shaddow_buffer[ind_arr] = 0;
+					shadow_buffer[ind_arr] = 0;
 				}
 			
 			} else {
 			
-				shaddow_buffer[ind_arr] = 1;
+				shadow_buffer[ind_arr] = 1;
 			
 			}
 	

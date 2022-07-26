@@ -123,7 +123,7 @@ def horizon_gridded(
 
 	# Check consistency and validity of input arguments
     if len(vert_grid) < (dem_dim_0 * dem_dim_1 * 3):
-        raise ValueError("inconsistency between input arguments verg_grid, "
+        raise ValueError("inconsistency between input arguments vert_grid, "
                          "dem_dim_0 and dem_dim_1")
     if ((offset_0 + vec_norm.shape[0] > dem_dim_0)
             or (offset_1 + vec_norm.shape[1] > dem_dim_1)):
@@ -321,7 +321,7 @@ def horizon_locations(
 
 	# Check consistency and validity of input arguments
     if len(vert_grid) < (dem_dim_0 * dem_dim_1 * 3):
-        raise ValueError("inconsistency between input arguments verg_grid, "
+        raise ValueError("inconsistency between input arguments vert_grid, "
                          "dem_dim_0 and dem_dim_1")
     if ((coords.ndim != 2) or (coords.shape[0] != vec_norm.shape[0])
             or (coords.shape[1] !=3)):

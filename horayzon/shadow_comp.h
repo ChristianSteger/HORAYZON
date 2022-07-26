@@ -16,13 +16,13 @@ public:
     ~CppTerrain();
     void initialise(float* vert_grid,
     	int dem_dim_0, int dem_dim_1,
-    	char* geom_type,
     	int offset_0, int offset_1,
     	float* vec_tilt,
     	float* vec_norm,
     	int dim_in_0, int dim_in_1,
-    	float* surf_enl_fac);
-    void shadow(float* sun_position, unsigned char* shaddow_buffer);
+    	float* surf_enl_fac,
+    	char* geom_type);
+    void shadow(float* sun_position, unsigned char* shadow_buffer);
     void sw_dir_cor(float* sun_position, float* sw_dir_cor_buffer);
 };
 }

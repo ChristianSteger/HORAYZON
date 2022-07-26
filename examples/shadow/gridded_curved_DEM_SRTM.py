@@ -118,11 +118,10 @@ del vec_north_enu
 # Compute slope
 slice_in_a1 = (slice(slice_in[0].start - 1, slice_in[0].stop + 1),
                slice(slice_in[1].start - 1, slice_in[1].stop + 1))
-vec_tilt_enu = np.ascontiguousarray(
-    hray.topo_param.slope_plane_meth(x_enu[slice_in_a1], y_enu[slice_in_a1],
-                                     z_enu[slice_in_a1],
-                                     rot_mat=rot_mat_glob2loc,
-                                     output_rot=False)[1:-1, 1:-1])
+vec_tilt_enu \
+    = np.ascontiguousarray(hray.topo_param.slope_plane_meth(
+        x_enu[slice_in_a1], y_enu[slice_in_a1], z_enu[slice_in_a1],
+        rot_mat=rot_mat_glob2loc, output_rot=False)[1:-1, 1:-1])
 
 # Compute surface enlargement factor
 surf_enl_fac = 1.0 / (vec_norm_enu * vec_tilt_enu).sum(axis=2)
@@ -130,23 +129,12 @@ surf_enl_fac = 1.0 / (vec_norm_enu * vec_tilt_enu).sum(axis=2)
 print("Surface enlargement factor (min/max): %.3f" % surf_enl_fac.min()
       + ", %.3f" % surf_enl_fac.max())
 
-# Ensure that all input arrays are C-contiguous
-if not all([vert_grid.flags["C_CONTIGUOUS"],
-            vec_tilt_enu.flags["C_CONTIGUOUS"],
-            vec_norm_enu.flags["C_CONTIGUOUS"],
-            surf_enl_fac.flags["C_CONTIGUOUS"]]):
-    raise ValueError("Not all input arrays are C-contiguous")
-
-# Check that all input vector arrays represent unit vectors
-print(np.abs((vec_norm_enu ** 2).sum(axis=2) - 1.0).max())
-print(np.abs((vec_tilt_enu ** 2).sum(axis=2) - 1.0).max())
-
 # Initialise terrain
 terrain = hray.shadow.Terrain()
 dim_in_0, dim_in_1 = vec_tilt_enu.shape[0], vec_tilt_enu.shape[1]
-terrain.initialise(vert_grid, dem_dim_0, dem_dim_1, "grid",
+terrain.initialise(vert_grid, dem_dim_0, dem_dim_1,
                    offset_0, offset_1, vec_tilt_enu, vec_norm_enu,
-                   dim_in_0, dim_in_1, surf_enl_fac)
+                   surf_enl_fac, geom_type="grid")
 
 # Load Skyfield data
 planets = load("de421.bsp")
@@ -188,7 +176,7 @@ nc_data.long_name = "0: illuminated, 1: self-shaded, 2: terrain-shaded"
 nc_data.units = "-"
 ncfile.close()
 comp_time_shadow = []
-shadow = np.zeros(vec_tilt_enu.shape[:2], dtype=np.uint8)
+shadow_buffer = np.zeros(vec_tilt_enu.shape[:2], dtype=np.uint8)
 for i in range(len(ta)):
 
     t_beg = time.time()
@@ -202,7 +190,7 @@ for i in range(len(ta)):
     z = d.m * np.sin(alt.radians)
     sun_position = np.array([x, y, z], dtype=np.float32)
 
-    terrain.shadow(sun_position, shadow)
+    terrain.shadow(sun_position, shadow_buffer)
 
     comp_time_shadow.append((time.time() - t_beg))
 
@@ -211,7 +199,7 @@ for i in range(len(ta)):
     nc_time[i] = date2num(ta[i], units=nc_time.units,
                           calendar=nc_time.calendar)
     nc_data = ncfile.variables["shadow"]
-    nc_data[i, :, :] = shadow
+    nc_data[i, :, :] = shadow_buffer
     ncfile.close()
 
 # -----------------------------------------------------------------------------
@@ -241,7 +229,7 @@ nc_data.long_name = "correction factor for direct downward shortwave radiation"
 nc_data.units = "-"
 ncfile.close()
 comp_time_sw_dir_cor = []
-sw_dir_cor = np.zeros(vec_tilt_enu.shape[:2], dtype=np.float32)
+sw_dir_cor_buffer = np.zeros(vec_tilt_enu.shape[:2], dtype=np.float32)
 for i in range(len(ta)):
 
     t_beg = time.time()
@@ -255,7 +243,7 @@ for i in range(len(ta)):
     z = d.m * np.sin(alt.radians)
     sun_position = np.array([x, y, z], dtype=np.float32)
 
-    terrain.sw_dir_cor(sun_position, sw_dir_cor)
+    terrain.sw_dir_cor(sun_position, sw_dir_cor_buffer)
 
     comp_time_sw_dir_cor.append((time.time() - t_beg))
 
@@ -264,7 +252,7 @@ for i in range(len(ta)):
     nc_time[i] = date2num(ta[i], units=nc_time.units,
                           calendar=nc_time.calendar)
     nc_data = ncfile.variables["sw_dir_cor"]
-    nc_data[i, :, :] = sw_dir_cor
+    nc_data[i, :, :] = sw_dir_cor_buffer
     ncfile.close()
 
 # Performance plot

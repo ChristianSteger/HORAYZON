@@ -119,7 +119,7 @@ def north_dir(x_ecef, y_ecef, z_ecef, vec_norm_ecef, ellps):
     shp = x_ecef.shape
     vec_north_ecef = _north_dir_1d(x_ecef.ravel(), y_ecef.ravel(),
                                    z_ecef.ravel(),
-                                   vec_norm_ecef.reshape(prod(shp), 3))
+                                   vec_norm_ecef.reshape(prod(shp), 3), ellps)
     return vec_north_ecef.reshape(shp + (3,))
 
 

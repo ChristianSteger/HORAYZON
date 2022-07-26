@@ -212,7 +212,7 @@ vec_tilt = hray.topo_param.slope_plane_meth(x_enu[slice_in_a1],
                                             y_enu[slice_in_a1],
                                             z_enu[slice_in_a1],
                                             rot_mat=rot_mat_glob2loc,
-                                            output_rot=False)[1:-1, 1:-1]
+                                            output_rot=True)[1:-1, 1:-1]
 del rot_mat_glob2loc
 del x_enu, y_enu, z_enu
 
