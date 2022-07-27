@@ -25,21 +25,138 @@ using namespace shapes;
 
 // Compute linear index from subscripts (2D-array)
 inline size_t lin_ind_2d(size_t dim_1, size_t ind_0, size_t ind_1) {
+	/* Parameters
+       ----------
+	   dim_1: second dimension length of two-dimensional array [-]
+	   ind_0: first array indices [-]
+	   ind_1: second array indices [-]
+	   
+	   Returns
+       ----------
+	   ind_lin: linear index of array [-]*/
 	return (ind_0 * dim_1 + ind_1);
 }
 
 // Convert degree to radian
 inline float deg2rad(float ang) {
+	/* Parameters
+       ----------
+	   ang: angle [degree]
+	   
+	   Returns
+       ----------
+	   ang: angle [radian]*/
 	return ((ang / 180.0) * M_PI);
 }
 
+// Convert radian to degree
+inline float rad2deg(float ang) {
+	/* Parameters
+       ----------
+	   ang: angle [radian]
+	   
+	   Returns
+       ----------
+	   ang: angle [degree]*/
+	return ((ang / M_PI) * 180.0);
+}
+
+// Convert from Kelvin to degree Celsius
+inline float K2degC(float temp) {
+	/* Parameters
+       ----------
+	   temp: temperature [Kelvin]
+	   
+	   Returns
+       ----------
+	   temp: temperature [degree Celsius]*/
+	return (temp - 273.15);
+}
+
 // Cross product
-// inline void cross_prod(float a_x, float a_y, float a_z, float b_x, float b_y,
-// 	float b_z, float &c_x, float &c_y, float &c_z) {
-// 	c_x = a_y * b_z - a_z * b_y;
-//     c_y = a_z * b_x - a_x * b_z;
-//     c_z = a_x * b_y - a_y * b_x;
-// }
+inline void cross_prod(float a_x, float a_y, float a_z, float b_x, float b_y,
+	float b_z, float &c_x, float &c_y, float &c_z) {
+	/* Parameters
+       ----------
+	   a_x: x-component of vector a [arbitrary]
+	   a_y: y-component of vector a [arbitrary]
+	   a_z: z-component of vector a [arbitrary]
+	   b_x: x-component of vector b [arbitrary]
+	   b_y: y-component of vector b [arbitrary]
+	   b_z: z-component of vector b [arbitrary]
+	   c_x: x-component of vector c [arbitrary]
+	   c_y: y-component of vector c [arbitrary]
+	   c_z: z-component of vector c [arbitrary]*/
+	c_x = a_y * b_z - a_z * b_y;
+    c_y = a_z * b_x - a_x * b_z;
+    c_z = a_x * b_y - a_y * b_x;
+}
+
+// Unit vector
+inline void vec_unit(float &v_x, float &v_y, float &v_z) {
+	/* Parameters
+       ----------
+	   v_x: x-component of vector [arbitrary]
+	   v_y: y-component of vector [arbitrary]
+	   v_z: z-component of vector [arbitrary]*/
+	   float mag = sqrt(v_x * v_x + v_y * v_y + v_z * v_z);
+	   v_x = v_x / mag;
+	   v_y = v_y / mag;
+	   v_z = v_z / mag;
+}
+
+// Vector rotation (according to Rodrigues' rotation formula)
+inline void vec_rot(float k_x, float k_y, float k_z, float theta,
+	float &v_x, float &v_y, float &v_z) {
+	/* Parameters
+       ----------
+	   k_x: x-component of unit vector perpendicular to rotation plane [-]
+	   k_y: y-component of unit vector perpendicular to rotation plane [-]
+	   k_z: z-component of unit vector perpendicular to rotation plane [-]
+	   theta: rotation angle [radian]
+	   v_x: x-component of rotated vector [-]
+	   v_y: y-component of rotated vector [-]
+	   v_z: z-component of rotated vector [-]*/
+	float cos_theta = cos(theta);
+	float sin_theta = sin(theta);
+	float part = (k_x * v_x + k_y * v_y + k_z * v_z) * (1.0 - cos_theta);
+	float v_x_rot = v_x * cos_theta + (k_y * v_z - k_z * v_y) * sin_theta 
+		+ k_x * part;
+	float v_y_rot = v_y * cos_theta + (k_z * v_x - k_x * v_z) * sin_theta
+		+ k_y * part;
+	float v_z_rot = v_z * cos_theta + (k_x * v_y - k_y * v_x) * sin_theta
+		+ k_z * part;
+	v_x = v_x_rot;
+	v_y = v_y_rot;
+	v_z = v_z_rot;
+}
+
+// Estimate atmospheric refraction
+inline float atmos_refrac(float elev_ang_true, float temp, float pressure) {
+	/* Parameters
+       ----------
+	   elev_ang_true: true solar elevation angle [degree]
+	   temp: temperature [degree Celsius]
+	   pressure: atmospheric pressure [kPa]
+	   
+	   Returns
+       ----------
+	   refrac_cor: refraction correction [degree]
+
+	   Reference
+       ----------
+	   - Saemundsson, P. (1986). "Astronomical Refraction". Sky and Telescope.
+	   	 72: 70
+	   - Meeus, J. (1998): Astronomical Algorithm - Second edition, p. 106*/
+	float lower = -1.0;
+	float upper = 90.0;
+	elev_ang_true = std::max(lower, std::min(elev_ang_true, upper));
+	float refrac_cor = (1.02 / tan(deg2rad(elev_ang_true + 10.3 
+		/ (elev_ang_true + 5.11))));
+	refrac_cor += 0.0019279;  // set R = 0.0 for h = 90.0 degree
+	refrac_cor *= (pressure / 101.0) * (283.0 / (273.0 + temp));
+	return refrac_cor * (1.0 / 60.0);
+}
 
 //#############################################################################
 // Miscellaneous
@@ -205,10 +322,12 @@ void CppTerrain::initialise(float* vert_grid,
 	float* vec_norm,
 	int dim_in_0, int dim_in_1,
 	float* surf_enl_fac,
-	char* geom_type,
+	float* elevation,
 	unsigned char* mask,
+	char* geom_type,
 	float sw_dir_cor_fill,
-	float ang_max) {
+	float ang_max,
+	int refrac_cor) {
 
 	dem_dim_0_cl = dem_dim_0;
 	dem_dim_1_cl = dem_dim_1;
@@ -220,13 +339,24 @@ void CppTerrain::initialise(float* vert_grid,
 	dim_in_0_cl = dim_in_0;
 	dim_in_1_cl = dim_in_1;
 	surf_enl_fac_cl = surf_enl_fac;
+	elevation_cl = elevation;
 	mask_cl = mask;
 	sw_dir_cor_fill_cl = sw_dir_cor_fill;
 	ang_max_cl = ang_max;
+	refrac_cor_cl = refrac_cor;
+	
+	// Parameters for reference atmosphere
+	temperature_ref_cl = 283.15;  // reference temperature at sea level [K]
+	pressure_ref_cl = 101.0;  // reference pressure at sea level [kPa]
+	lapse_rate_cl = 0.0065;  // temperature lapse rate [K m-1]
+	float g = 9.81;  // acceleration due to gravity at sea level [m s-2]
+	float R_d = 287.0;  // gas constant for dry air [J K􏰅-1 kg􏰅-1]
+	exp_cl = (g / (R_d * lapse_rate_cl));  // exponent for barometric formula 
 
 	auto start_ini = std::chrono::high_resolution_clock::now();
 
-	scene = initializeScene(device, vert_grid, dem_dim_0, dem_dim_1, geom_type);
+	scene = initializeScene(device, vert_grid, dem_dim_0, dem_dim_1,
+		geom_type);
 	
 	auto end_ini = std::chrono::high_resolution_clock::now();
   	std::chrono::duration<double> time = end_ini - start_ini;
@@ -242,6 +372,10 @@ void CppTerrain::initialise(float* vert_grid,
   	printf("Considered grid cells (number): %d \n", num_gc);
   	cout << "Considered grid cells (fraction from total): " << ((float)num_gc 
   		/ (float)num_gc_tot * 100.0) << " %" << endl;
+  		
+  	if (refrac_cor_cl == 1) {
+  		cout << "Account for atmospheric refraction" << endl;
+  	}
 
 }
 
@@ -256,14 +390,14 @@ void CppTerrain::shadow(float* sun_position, unsigned char* shadow_buffer) {
 	tbb::parallel_for(tbb::blocked_range<size_t>(0,dim_in_0_cl),
 		[&](tbb::blocked_range<size_t> r) {  // parallel
 
-	// for (size_t i = 0; i < (size_t)dim_in_0_cl; i++) {  // serial
+	//for (size_t i = 0; i < (size_t)dim_in_0_cl; i++) {  // serial
 	for (size_t i=r.begin(); i<r.end(); ++i) {  // parallel
   		for (size_t j = 0; j < (size_t)dim_in_1_cl; j++) {
   		
   			size_t ind_arr = lin_ind_2d(dim_in_1_cl, i, j);
   			if (mask_cl[ind_arr] == 1) {
 
-    			// Get components of terrain surface and ellipsoid normal vectors
+    			// Get components of terrain surface / ellipsoid normal vectors
     			size_t ind_vec = lin_ind_2d(dim_in_1_cl, i, j) * 3;
   				float tilt_x = vec_tilt_cl[ind_vec];
   				float norm_x = vec_norm_cl[ind_vec];
@@ -288,15 +422,34 @@ void CppTerrain::shadow(float* sun_position, unsigned char* shadow_buffer) {
   				float sun_x = (sun_position[0] - ray_org_x);
   				float sun_y = (sun_position[1] - ray_org_y);
   				float sun_z = (sun_position[2] - ray_org_z);
-  				float mag = sqrt(sun_x * sun_x + sun_y * sun_y + sun_z * sun_z);
-  				sun_x = sun_x / mag;
-  				sun_y = sun_y / mag;
-  				sun_z = sun_z / mag;
-  			
+  				vec_unit(sun_x, sun_y, sun_z);
+
+  				// Consider atmospheric refraction
+  				float dot_prod_ns = (norm_x * sun_x + norm_y * sun_y
+  					+ norm_z * sun_z);
+  				if (refrac_cor_cl == 1) {
+  					float elev_ang_true = 90.0 - rad2deg(acos(dot_prod_ns));
+  					float temperature = temperature_ref_cl - (lapse_rate_cl 
+  						* elevation_cl[ind_arr]);
+  					float pressure = pressure_ref_cl 
+  						* pow((temperature / temperature_ref_cl), exp_cl);
+  					float refrac_cor = atmos_refrac(elev_ang_true,
+  						K2degC(temperature), pressure);
+  					float k_x, k_y, k_z;
+  					cross_prod(sun_x, sun_y, sun_z, norm_x, norm_y, norm_z,
+  						k_x, k_y, k_z);
+  					vec_unit(k_x, k_y, k_z);
+  					vec_rot(k_x, k_y, k_z, deg2rad(refrac_cor),
+  						sun_x, sun_y, sun_z);
+  					dot_prod_ns = (norm_x * sun_x + norm_y * sun_y
+  						+ norm_z * sun_z);
+  				}
+
   				// Check for self-shadowing
-  				float dot_prod = tilt_x * sun_x + tilt_y * sun_y + tilt_z * sun_z;
-  				if (dot_prod > 0.0) {
-  			
+  				float dot_prod_ts = tilt_x * sun_x + tilt_y * sun_y
+  					+ tilt_z * sun_z;
+  				if (dot_prod_ts > 0.0) {
+
 					// Intersect context
   					struct RTCIntersectContext context;
   					rtcInitIntersectContext(&context);
@@ -357,7 +510,7 @@ void CppTerrain::sw_dir_cor(float* sun_position, float* sw_dir_cor_buffer) {
   			size_t ind_arr = lin_ind_2d(dim_in_1_cl, i, j);
   			if (mask_cl[ind_arr] == 1) {
 
-    			// Get components of terrain surface and ellipsoid normal vectors
+    			// Get components of terrain surface / ellipsoid normal vectors
     			size_t ind_vec = lin_ind_2d(dim_in_1_cl, i, j) * 3;
   				float tilt_x = vec_tilt_cl[ind_vec];
   				float norm_x = vec_norm_cl[ind_vec];
@@ -382,10 +535,28 @@ void CppTerrain::sw_dir_cor(float* sun_position, float* sw_dir_cor_buffer) {
   				float sun_x = (sun_position[0] - ray_org_x);
   				float sun_y = (sun_position[1] - ray_org_y);
   				float sun_z = (sun_position[2] - ray_org_z);
-  				float mag = sqrt(sun_x * sun_x + sun_y * sun_y + sun_z * sun_z);
-  				sun_x = sun_x / mag;
-  				sun_y = sun_y / mag;
-  				sun_z = sun_z / mag;
+  				vec_unit(sun_x, sun_y, sun_z);
+  				
+  				// Consider atmospheric refraction
+  				float dot_prod_ns = (norm_x * sun_x + norm_y * sun_y
+  					+ norm_z * sun_z);
+  				if (refrac_cor_cl == 1) {
+  					float elev_ang_true = 90.0 - rad2deg(acos(dot_prod_ns));
+  					float temperature = temperature_ref_cl - (lapse_rate_cl 
+  						* elevation_cl[ind_arr]);
+  					float pressure = pressure_ref_cl 
+  						* pow((temperature / temperature_ref_cl), exp_cl);
+  					float refrac_cor = atmos_refrac(elev_ang_true,
+  						K2degC(temperature), pressure);
+  					float k_x, k_y, k_z;
+  					cross_prod(sun_x, sun_y, sun_z, norm_x, norm_y, norm_z,
+  						k_x, k_y, k_z);
+  					vec_unit(k_x, k_y, k_z);
+  					vec_rot(k_x, k_y, k_z, deg2rad(refrac_cor),
+  						sun_x, sun_y, sun_z);
+  					dot_prod_ns = (norm_x * sun_x + norm_y * sun_y
+  						+ norm_z * sun_z);
+  				}
   			
   				// Check for self-shadowing
   				float dot_prod_ts = tilt_x * sun_x + tilt_y * sun_y 
@@ -413,13 +584,11 @@ void CppTerrain::sw_dir_cor(float* sun_position, float* sw_dir_cor_buffer) {
 					if (ray.tfar < 0.0) {
 						sw_dir_cor_buffer[ind_arr] = 0.0;
 					} else {
-						float dot_prod_ns = (norm_x * sun_x + norm_y * sun_y
-							+ norm_z * sun_z);
 						if (dot_prod_ns < dot_prod_min) {
 							dot_prod_ns = dot_prod_min;
 						}
-						sw_dir_cor_buffer[ind_arr] = ((dot_prod_ts / dot_prod_ns)
-							* surf_enl_fac_cl[ind_arr]);	
+						sw_dir_cor_buffer[ind_arr] = ((dot_prod_ts 
+							/ dot_prod_ns) * surf_enl_fac_cl[ind_arr]);	
 					}
 			
 				} else {

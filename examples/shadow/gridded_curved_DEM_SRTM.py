@@ -73,9 +73,6 @@ file_dem = path_out + "srtm_38_03/srtm_38_03.tif"
 lon, lat, elevation = hray.load_dem.srtm(file_dem, domain_outer, engine="gdal")
 # -> GeoTIFF can also be read with Pillow in case GDAL is not available!
 
-# Compute ellipsoidal heights
-elevation += hray.geoid.undulation(lon, lat, geoid="EGM96")  # [m]
-
 # Compute indices of inner domain
 slice_in = (slice(np.where(lat >= domain["lat_max"])[0][-1],
                   np.where(lat <= domain["lat_min"])[0][0] + 1),
@@ -84,6 +81,11 @@ slice_in = (slice(np.where(lat >= domain["lat_max"])[0][-1],
 offset_0 = slice_in[0].start
 offset_1 = slice_in[1].start
 print("Inner domain size: " + str(elevation[slice_in].shape))
+elevation_ortho = np.ascontiguousarray(elevation[slice_in])
+# orthometric height (-> height above mean sea level)
+
+# Compute ellipsoidal heights
+elevation += hray.geoid.undulation(lon, lat, geoid="EGM96")  # [m]
 
 # Compute ECEF coordinates
 x_ecef, y_ecef, z_ecef = hray.transform.lonlat2ecef(*np.meshgrid(lon, lat),
@@ -135,7 +137,8 @@ terrain = hray.shadow.Terrain()
 dim_in_0, dim_in_1 = vec_tilt_enu.shape[0], vec_tilt_enu.shape[1]
 terrain.initialise(vert_grid, dem_dim_0, dem_dim_1,
                    offset_0, offset_1, vec_tilt_enu, vec_norm_enu,
-                   surf_enl_fac, geom_type="grid", mask=mask)
+                   surf_enl_fac, mask=mask, elevation=elevation_ortho,
+                   refrac_cor=True)
 
 # Load Skyfield data
 planets = load("de421.bsp")
@@ -146,7 +149,7 @@ loc_or = earth + wgs84.latlon(trans_ecef2enu.lat_or, trans_ecef2enu.lon_or)
 # Create time axis
 time_dt_beg = dt.datetime(2022, 1, 6, 0, 0, tzinfo=dt.timezone.utc)
 time_dt_end = dt.datetime(2022, 1, 7, 0, 0, tzinfo=dt.timezone.utc)
-dt_step = dt.timedelta(hours=0.25)
+dt_step = dt.timedelta(hours=0.125)  # 0.25
 num_ts = int((time_dt_end - time_dt_beg) / dt_step)
 ta = [time_dt_beg + dt_step * i for i in range(num_ts)]
 
@@ -285,3 +288,5 @@ plt.ylabel("Spatial mean of correction factor [-]")
 fig.savefig(path_out + "SW_dir_cor_spatial_mean.png", dpi=300,
             bbox_inches="tight")
 plt.close(fig)
+
+del sw_dir_cor
