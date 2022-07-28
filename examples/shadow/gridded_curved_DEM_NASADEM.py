@@ -1,9 +1,14 @@
-# Description: Compute gridded shadow map and correction factor for downward
-#              direct shortwave radiation from SRTM data (~90 m) for South
-#              Georgia in the South Atlantic Ocean. Consider Earth's surface
+# Description: Compute gridded shadow correction factor for downward direct
+#              shortwave radiation from NASADEM data (~100 m) for an example
+#              region in Karakoram (mask all non-glacier grid cells according
+#              to GAMDAM glacier inventory). Consider Earth's surface
 #              curvature.
 #
-# Source of applied DEM data: https://srtm.csi.cgiar.org
+# Important note: An Earthdata account is required and 'wget' has to be set
+#                 (https://disc.gsfc.nasa.gov/data-access#windows_wget) to
+#                 download NASADEM data successfully.
+#
+# Source of applied DEM data: https://lpdaac.usgs.gov/products/nasadem_hgtv001/
 #
 # Copyright (c) 2022 ETH Zurich, Christian R. Steger
 # MIT License
@@ -12,37 +17,39 @@
 import os
 import sys  # ------------------------------------------------------- temporary
 import numpy as np
-import xarray as xr
+import subprocess
 from netCDF4 import Dataset, date2num
-import matplotlib as mpl
-import matplotlib.pyplot as plt
 import zipfile
 from skyfield.api import load, wgs84
 import time
+import fiona
+from rasterio.features import rasterize
+from rasterio.transform import Affine
+from shapely.geometry import shape
 import datetime as dt
 sys.path.append("/Users/csteger/Downloads/HORAYZON/")  # ------------ temporary
 from horayzon import auxiliary, direction, domain, geoid, horizon, load_dem, topo_param, transform, shadow  # temporary
 import horayzon as hray
-
-mpl.style.use("classic")
 
 # -----------------------------------------------------------------------------
 # Settings
 # -----------------------------------------------------------------------------
 
 # Domain size and computation settings
-domain = {"lon_min": -38.45, "lon_max": -35.65,
-          "lat_min": -55.10, "lat_max": -53.90}
+domain = {"lon_min": 76.00, "lon_max": 77.64,
+          "lat_min": 35.17, "lat_max": 36.20}
 # domain boundaries [degree]
-dist_search = 75.0  # search distance for terrain shading [kilometre]
+dist_search = 65.0  # search distance for terrain shading [kilometre]
 ellps = "WGS84"  # Earth's surface approximation (sphere, GRS80 or WGS84)
 
 # Paths and file names
-dem_file_url = "https://srtm.csi.cgiar.org/wp-content/uploads/files/" \
-               + "srtm_30x30/TIFF/S60W060.zip"
+dem_files_url = "https://e4ftl01.cr.usgs.gov//DP132/MEASURES/" \
+                + "NASADEM_NC.001/2000.02.11/NASADEM_NC_nNNeEEE.nc"
+dem_files_extent = {"lat": (34, 36 + 1), "lon": (75, 78 + 1)}
 path_out = "/Users/csteger/Desktop/Output/"
-file_shadow = "shadow_SRTM_South_Georgia.nc"
-file_sw_dir_cor = "sw_dir_cor_SRTM_South_Georgia.nc"
+file_sw_dir_cor = "sw_dir_cor_NASADEM_Karakoram.nc"
+gamdam_file_url = "https://store.pangaea.de/Publications/Sakai_2018/" \
+                  + "gamdam20180404_001_SouthAsiaWest.zip"
 
 # -----------------------------------------------------------------------------
 # Prepare data and initialise Terrain class
@@ -51,23 +58,32 @@ file_sw_dir_cor = "sw_dir_cor_SRTM_South_Georgia.nc"
 # Check if output directory exists
 if not os.path.isdir(path_out):
     raise FileNotFoundError("Output directory does not exist")
-path_out += "shadow/gridded_SRTM_South_Georgia/"
+path_out += "shadow/gridded_NASADEM_Karakoram/"
 if not os.path.isdir(path_out):
     os.makedirs(path_out)
 
-# Download and unzip SRTM tile (30 x 30 degree)
-print("Download SRTM tile (30 x 30 degree):")
-hray.download.file(dem_file_url, path_out)
-with zipfile.ZipFile(path_out + "S60W060.zip", "r") as zip_ref:
-    zip_ref.extractall(path_out + "S60W060")
-os.remove(path_out + "S60W060.zip")
+# Download NASADEM tiles for Karakoram
+print("Download NASADEM tiles for Karakoram:")
+path_out_tiles = path_out + "NASADEM_tiles/"
+if not os.path.isdir(path_out_tiles):
+    os.mkdir(path_out_tiles)
+for i in range(*dem_files_extent["lon"]):
+    for j in range(*dem_files_extent["lat"]):
+        tile = dem_files_url.replace("NN", str(j)) \
+            .replace("EEE", str(i).zfill(3))
+        subprocess.call("wget -P " + path_out_tiles + " " + tile, shell=True)
+
+# Download GAMDAM shapefile for South Asia West
+hray.download.file(gamdam_file_url, path_out)
+with zipfile.ZipFile(path_out + "gamdam20180404_001_SouthAsiaWest.zip", "r") \
+        as zip_ref:
+    zip_ref.extractall(path_out + "gamdam20180404_001_SouthAsiaWest")
+os.remove(path_out + "gamdam20180404_001_SouthAsiaWest.zip")
 
 # Load required DEM data (including outer boundary zone)
-domain_outer = hray.domain.curved_grid(domain, dist_search, ellps)
-file_dem = path_out + "S60W060/cut_s60w060.tif"
-lon, lat, elevation = hray.load_dem.srtm(file_dem, domain_outer, engine="gdal")
-# -> GeoTIFF can also be read with Pillow in case GDAL is not available!
-elevation[elevation == -32768.0] = 0.0
+domain_outer = hray.domain.curved_grid(domain, dist_search)
+files_dem = path_out_tiles + "NASADEM_NC_n??e???.nc"
+lon, lat, elevation = hray.load_dem.nasadem(files_dem, domain_outer)
 
 # Compute indices of inner domain
 slice_in = (slice(np.where(lat >= domain["lat_max"])[0][-1],
@@ -82,6 +98,18 @@ elevation_ortho = np.ascontiguousarray(elevation[slice_in])
 
 # Compute ellipsoidal heights
 elevation += hray.geoid.undulation(lon, lat, geoid="EGM96")  # [m]
+
+# Compute glacier mask
+ds = fiona.open(path_out + "gamdam20180404_001_SouthAsiaWest/"
+                + "gamdam20180404_001_SouthAsiaWest.shp")
+poly_glaciers = [shape(ds[i]["geometry"]) for i in range(len(ds))]
+ds.close()
+d_lon = np.diff(lon[slice_in[1]]).mean()
+d_lat = np.diff(lat[slice_in[0]]).mean()
+transform = Affine(d_lon, 0.0, lon[slice_in[1]][0] - d_lon / 2.0,
+                   0.0, d_lat, lat[slice_in[0]][0] - d_lat / 2.0)
+mask_glacier = rasterize(poly_glaciers, elevation[slice_in].shape,
+                         transform=transform).astype(bool)
 
 # Compute ECEF coordinates
 x_ecef, y_ecef, z_ecef = hray.transform.lonlat2ecef(*np.meshgrid(lon, lat),
@@ -116,25 +144,27 @@ del vec_north_enu
 # Compute slope (in global ENU coordinates!)
 slice_in_a1 = (slice(slice_in[0].start - 1, slice_in[0].stop + 1),
                slice(slice_in[1].start - 1, slice_in[1].stop + 1))
-vec_tilt_enu \
-    = np.ascontiguousarray(hray.topo_param.slope_plane_meth(
+vec_tilt_enu = \
+    np.ascontiguousarray(hray.topo_param.slope_vector_meth(
         x_enu[slice_in_a1], y_enu[slice_in_a1], z_enu[slice_in_a1],
         rot_mat=rot_mat_glob2loc, output_rot=False)[1:-1, 1:-1])
 
 # Compute surface enlargement factor
 surf_enl_fac = 1.0 / (vec_norm_enu * vec_tilt_enu).sum(axis=2)
-# surf_enl_fac[:] = 1.0
 print("Surface enlargement factor (min/max): %.3f" % surf_enl_fac.min()
       + ", %.3f" % surf_enl_fac.max())
 
 # Initialise terrain
 mask = np.ones(vec_tilt_enu.shape[:2], dtype=np.uint8)
+mask[~mask_glacier] = 0  # mask non-glacier grid cells
 terrain = hray.shadow.Terrain()
 dim_in_0, dim_in_1 = vec_tilt_enu.shape[0], vec_tilt_enu.shape[1]
 terrain.initialise(vert_grid, dem_dim_0, dem_dim_1,
                    offset_0, offset_1, vec_tilt_enu, vec_norm_enu,
                    surf_enl_fac, mask=mask, elevation=elevation_ortho,
-                   refrac_cor=True)
+                   refrac_cor=False)
+# -> neglect atmospheric refraction -> effect is weak due to high
+#    surface elevation and thus low atmospheric surface pressure
 
 # Load Skyfield data
 load.directory = path_out
@@ -145,65 +175,11 @@ loc_or = earth + wgs84.latlon(trans_ecef2enu.lat_or, trans_ecef2enu.lon_or)
 # -> position lies on the surface of the ellipsoid by default
 
 # Create time axis
-time_dt_beg = dt.datetime(2022, 6, 21, 10, 30, tzinfo=dt.timezone.utc)
-time_dt_end = dt.datetime(2022, 6, 21, 18, 45, tzinfo=dt.timezone.utc)
-dt_step = dt.timedelta(hours=0.125)
+time_dt_beg = dt.datetime(2020, 12, 21, 1, 30, tzinfo=dt.timezone.utc)
+time_dt_end = dt.datetime(2020, 12, 21, 12, 30, tzinfo=dt.timezone.utc)
+dt_step = dt.timedelta(hours=0.25)
 num_ts = int((time_dt_end - time_dt_beg) / dt_step)
 ta = [time_dt_beg + dt_step * i for i in range(num_ts)]
-
-# -----------------------------------------------------------------------------
-# Compute shadow map
-# -----------------------------------------------------------------------------
-
-# Loop through time steps and save data to NetCDF file
-ncfile = Dataset(filename=path_out + file_shadow, mode="w")
-ncfile.createDimension(dimname="time", size=None)
-ncfile.createDimension(dimname="lat", size=dim_in_0)
-ncfile.createDimension(dimname="lon", size=dim_in_1)
-nc_time = ncfile.createVariable(varname="time", datatype="f",
-                                dimensions="time")
-nc_time.units = "hours since 2015-01-01 00:00:00"
-nc_time.calendar = "gregorian"
-nc_lat = ncfile.createVariable(varname="lat", datatype="f",
-                               dimensions="lat")
-nc_lat[:] = lat[slice_in[0]]
-nc_lat.units = "degree"
-nc_lon = ncfile.createVariable(varname="lon", datatype="f",
-                               dimensions="lon")
-nc_lon[:] = lon[slice_in[1]]
-nc_lon.units = "degree"
-nc_data = ncfile.createVariable(varname="shadow", datatype="u2",
-                                dimensions=("time", "lat", "lon"))
-nc_data.long_name = "0: illuminated, 1: self-shaded, 2: terrain-shaded, " \
-                    + "3: not considered"
-nc_data.units = "-"
-ncfile.close()
-comp_time_shadow = []
-shadow_buffer = np.zeros(vec_tilt_enu.shape[:2], dtype=np.uint8)
-for i in range(len(ta)):
-
-    t_beg = time.time()
-
-    ts = load.timescale()
-    t = ts.from_datetime(ta[i])
-    astrometric = loc_or.at(t).observe(sun)
-    alt, az, d = astrometric.apparent().altaz()
-    x = d.m * np.cos(alt.radians) * np.sin(az.radians)
-    y = d.m * np.cos(alt.radians) * np.cos(az.radians)
-    z = d.m * np.sin(alt.radians)
-    sun_position = np.array([x, y, z], dtype=np.float32)
-
-    terrain.shadow(sun_position, shadow_buffer)
-
-    comp_time_shadow.append((time.time() - t_beg))
-
-    ncfile = Dataset(filename=path_out + file_shadow, mode="a")
-    nc_time = ncfile.variables["time"]
-    nc_time[i] = date2num(ta[i], units=nc_time.units,
-                          calendar=nc_time.calendar)
-    nc_data = ncfile.variables["shadow"]
-    nc_data[i, :, :] = shadow_buffer
-    ncfile.close()
 
 # -----------------------------------------------------------------------------
 # Compute correction factor for direct downward shortwave radiation
@@ -218,12 +194,10 @@ nc_time = ncfile.createVariable(varname="time", datatype="f",
                                 dimensions="time")
 nc_time.units = "hours since 2015-01-01 00:00:00"
 nc_time.calendar = "gregorian"
-nc_lat = ncfile.createVariable(varname="lat", datatype="f",
-                               dimensions="lat")
+nc_lat = ncfile.createVariable(varname="lat", datatype="f", dimensions="lat")
 nc_lat[:] = lat[slice_in[0]]
 nc_lat.units = "degree"
-nc_lon = ncfile.createVariable(varname="lon", datatype="f",
-                               dimensions="lon")
+nc_lon = ncfile.createVariable(varname="lon", datatype="f", dimensions="lon")
 nc_lon[:] = lon[slice_in[1]]
 nc_lon.units = "degree"
 nc_data = ncfile.createVariable(varname="sw_dir_cor", datatype="f",
@@ -231,8 +205,8 @@ nc_data = ncfile.createVariable(varname="sw_dir_cor", datatype="f",
 nc_data.long_name = "correction factor for direct downward shortwave radiation"
 nc_data.units = "-"
 ncfile.close()
-comp_time_sw_dir_cor = []
-sw_dir_cor_buffer = np.zeros(vec_tilt_enu.shape[:2], dtype=np.float32)
+comp_time_shadow = []
+sw_dir_cor = np.zeros(vec_tilt_enu.shape[:2], dtype=np.float32)
 for i in range(len(ta)):
 
     t_beg = time.time()
@@ -241,54 +215,59 @@ for i in range(len(ta)):
     t = ts.from_datetime(ta[i])
     astrometric = loc_or.at(t).observe(sun)
     alt, az, d = astrometric.apparent().altaz()
-    x = d.m * np.cos(alt.radians) * np.sin(az.radians)
-    y = d.m * np.cos(alt.radians) * np.cos(az.radians)
-    z = d.m * np.sin(alt.radians)
-    sun_position = np.array([x, y, z], dtype=np.float32)
+    x_sun = d.m * np.cos(alt.radians) * np.sin(az.radians)
+    y_sun = d.m * np.cos(alt.radians) * np.cos(az.radians)
+    z_sun = d.m * np.sin(alt.radians)
+    sun_position = np.array([x_sun, y_sun, z_sun], dtype=np.float32)
 
-    terrain.sw_dir_cor(sun_position, sw_dir_cor_buffer)
+    terrain.sw_dir_cor(sun_position, sw_dir_cor)
 
-    comp_time_sw_dir_cor.append((time.time() - t_beg))
+    comp_time_shadow.append((time.time() - t_beg))
 
     ncfile = Dataset(filename=path_out + file_sw_dir_cor, mode="a")
     nc_time = ncfile.variables["time"]
     nc_time[i] = date2num(ta[i], units=nc_time.units,
                           calendar=nc_time.calendar)
     nc_data = ncfile.variables["sw_dir_cor"]
-    nc_data[i, :, :] = sw_dir_cor_buffer
+    nc_data[i, :, :] = sw_dir_cor
     ncfile.close()
 
+time_tot = np.array(comp_time_shadow).sum()
+print("Elapsed time (total / per time step): " + "%.2f" % time_tot
+      + " , %.2f" % (time_tot / len(ta)) + " s")
+
 # -----------------------------------------------------------------------------
-# Analyse performance and spatial mean of correction factor
+# Append further fields to NetCDF file
 # -----------------------------------------------------------------------------
 
-# Performance plot
-fig = plt.figure(figsize=(10, 6))
-plt.plot(ta, comp_time_shadow, lw=1.5, color="blue",
-         label="Shadow (mean: %.2f" % np.array(comp_time_shadow).mean() + ")")
-plt.plot(ta, comp_time_sw_dir_cor, lw=1.5, color="red",
-         label="SW_dir_cor (mean: %.2f"
-               % np.array(comp_time_sw_dir_cor).mean() + ")")
-plt.ylabel("Computing time [seconds]")
-plt.legend(loc="upper right", frameon=False, fontsize=11)
-plt.title("Terrain size (" + str(dim_in_0) + " x " + str(dim_in_1) + ")",
-          fontweight="bold", fontsize=12)
-fig.savefig(path_out + "Performance.png", dpi=300, bbox_inches="tight")
-plt.close(fig)
+# Compute slope (in local ENU coordinates!)
+vec_tilt_enu_loc = \
+    np.ascontiguousarray(hray.topo_param.slope_vector_meth(
+        x_enu[slice_in_a1], y_enu[slice_in_a1], z_enu[slice_in_a1],
+        rot_mat=rot_mat_glob2loc, output_rot=True)[1:-1, 1:-1])
 
-# Check spatial mean of correction factor
-ds = xr.open_dataset(path_out + file_sw_dir_cor)
-sw_dir_cor = ds["sw_dir_cor"].values
-ds.close()
+# Compute slope angle and aspect (in local ENU coordinates)
+slope = np.arccos(vec_tilt_enu_loc[:, :, 2].clip(max=1.0))
+aspect = np.pi / 2.0 - np.arctan2(vec_tilt_enu_loc[:, :, 1],
+                                  vec_tilt_enu_loc[:, :, 0])
+aspect[aspect < 0.0] += np.pi * 2.0  # [0.0, 2.0 * np.pi]
 
-fig = plt.figure(figsize=(10, 6))
-for i in (0.0, 1.0):
-    plt.hlines(i, ta[0], ta[-1], lw=1.5, ls="--", color="black")
-plt.plot(ta, sw_dir_cor.mean(axis=(1, 2)), lw=1.5, color="blue")
-plt.ylim([-0.1, 1.1])
-plt.ylabel("Spatial mean of correction factor [-]")
-fig.savefig(path_out + "SW_dir_cor_spatial_mean.png", dpi=300,
-            bbox_inches="tight")
-plt.close(fig)
-
-del sw_dir_cor
+# Append further fields to NetCDF file
+fields = {"elevation": {"array": elevation_ortho, "datatype": "f",
+                        "long_name": "orthometric height", "units": "m"},
+          "slope": {"array": np.rad2deg(slope), "datatype": "f",
+                    "long_name": "slope", "units": "degree"},
+          "aspect": {"array": np.rad2deg(aspect), "datatype": "f",
+                     "long_name": "aspect (measured clockwise from North)",
+                     "units": "degree"},
+          "surf_enl_fac": {"array": surf_enl_fac, "datatype": "f",
+                           "long_name": "surface enlargement factor",
+                           "units": "-"}}
+ncfile = Dataset(filename=path_out + file_sw_dir_cor, mode="a")
+for i in fields:
+    nc_data = ncfile.createVariable(varname=i, datatype=fields[i]["datatype"],
+                                    dimensions=("lat", "lon"))
+    nc_data[:] = fields[i]["array"]
+    nc_data.long_name = fields[i]["long_name"]
+    nc_data.units = fields[i]["units"]
+ncfile.close()
