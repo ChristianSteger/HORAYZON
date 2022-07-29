@@ -1,6 +1,7 @@
 # Description: Compute topographic parameters (slope angle and aspect,
 #              horizon and sky view factor) from SRTM data (~90 m) for some
-#              arbitrary locations in Switzerland
+#              arbitrary locations in Switzerland. Consider Earth's surface
+#              curvature.
 #
 # Source of applied DEM data: https://srtm.csi.cgiar.org
 #

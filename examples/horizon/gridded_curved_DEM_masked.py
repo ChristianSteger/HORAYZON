@@ -158,7 +158,7 @@ mask_type[mask_buffer] = -1
 cmap = mpl.colors.ListedColormap(["gray", "deepskyblue", "sienna"])
 bounds = [-1.5, -0.5, 0.5, 1.5]
 norm = mpl.colors.BoundaryNorm(bounds, cmap.N)
-plt.figure(figsize=(11, 6))
+fig = plt.figure(figsize=(11, 6))
 plt.pcolormesh(lon[slice_in[1]], lat[slice_in[0]], mask_type, shading="auto",
                cmap=cmap, norm=norm)
 plt.axis([lon[slice_in[1]].min(), lon[slice_in[1]].max(),
@@ -170,6 +170,8 @@ cbar.ax.set_yticks([-1.0, 0.0, 1.0])
 cbar.ax.set_yticklabels(["outside buffer", "buffer", "land"])
 cbar.ax.tick_params(rotation=90)
 cbar.ax.yaxis.set_tick_params(pad=10)
+fig.savefig(path_out + "Grid_cell_types.png", dpi=300, bbox_inches="tight")
+plt.close(fig)
 
 # Binary mask
 mask = np.ones(vec_norm_enu.shape[:2], dtype=np.uint8)

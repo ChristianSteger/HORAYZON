@@ -1,5 +1,5 @@
-# Description: Compute gridded shadow correction factor for downward direct
-#              shortwave radiation from artifical topography.
+# Description: Compute gridded correction factor for downward direct shortwave
+#              radiation from artifical topography.
 #
 # Copyright (c) 2022 ETH Zurich, Christian R. Steger
 # MIT License
@@ -196,9 +196,12 @@ sw_dir_cor = ds["sw_dir_cor"].values.mean(axis=(1, 2))
 ds.close()
 
 # Plot
-plt.figure()
+fig = plt.figure()
 plt.plot(azim, sw_dir_cor)
 plt.axis([azim[0] - 5.0, azim[-1] + 5.0, 0.85, 1.05])
 plt.xlabel("Azimuth angle (measured clockwise from North) [degree]")
 plt.ylabel("Spatial mean of correction factor [-]")
 plt.title("Average: %.3f" % sw_dir_cor.mean(), fontsize=12)
+fig.savefig(path_out + "SW_dir_cor_spatial_mean.png", dpi=300,
+            bbox_inches="tight")
+plt.close(fig)

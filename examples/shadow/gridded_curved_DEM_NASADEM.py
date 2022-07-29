@@ -1,12 +1,11 @@
-# Description: Compute gridded shadow correction factor for downward direct
-#              shortwave radiation from NASADEM data (~100 m) for an example
-#              region in Karakoram (mask all non-glacier grid cells according
-#              to GAMDAM glacier inventory). Consider Earth's surface
-#              curvature.
+# Description: Compute gridded correction factor for downward direct shortwave
+#              radiation from NASADEM data (~30 m) for an example region in the
+#              Karakoram (mask all non-glacier grid cells according to GAMDAM
+#              glacier inventory). Consider Earth's surface curvature.
 #
 # Important note: An Earthdata account is required and 'wget' has to be set
-#                 (https://disc.gsfc.nasa.gov/data-access#windows_wget) to
-#                 download NASADEM data successfully.
+#                 (https://disc.gsfc.nasa.gov/data-access) to download NASADEM
+#                 data successfully.
 #
 # Source of applied DEM data: https://lpdaac.usgs.gov/products/nasadem_hgtv001/
 #

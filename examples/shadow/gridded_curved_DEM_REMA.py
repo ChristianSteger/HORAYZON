@@ -1,7 +1,6 @@
-# Description: Compute gridded shadow correction factor for downward direct
-#              shortwave radiation from REMA data (~100 m) for an example
-#              region in Antarctica (mask ocean). Consider Earth's surface
-#              curvature.
+# Description: Compute gridded correction factor for downward direct shortwave
+#              radiation from REMA data (~100 m) for an example region in
+#              Antarctica (mask ocean). Consider Earth's surface  curvature.
 #
 # Source of applied DEM data: https://www.pgc.umn.edu/data/rema/
 #
