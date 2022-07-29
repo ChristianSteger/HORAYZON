@@ -1,6 +1,10 @@
 # HORAYZON
 
 Package to efficiently compute terrain parameters **horizon**, **sky view factor** and slope angle/aspect from high-resolution elevation data. Horizon computation is based on the high-performance ray-tracing library Intel&copy; Embree. Calculations are parallelised with OpenMP (Cython code) or Threading Building Blocks (C++ code). A description of the algorithm is published in the journal of Geoscientific Model Development (Steger et al., 2022).
+- General information, brief overview of packages
+- Computation of terrain horizon, topographic parameters
+- Computation of shadow map and correction of SW direct downward radiation
+
 
 # Installation
 
@@ -42,7 +46,7 @@ The term sky view factor (SVF) is defined ambiguously in literature. In Zakšek 
 
 ## Examples: Shadow map and correction factor for downward direct shortwave radiation
 
-# Digital elevation model (DEM) and auxiliary data
+# Digital elevation model and auxiliary data
 
 Digital elevation model (DEM) data is available from various sources, e.g.:
 - [NASADEM](https://search.earthdata.nasa.gov/)
@@ -50,16 +54,19 @@ Digital elevation model (DEM) data is available from various sources, e.g.:
 - [MERIT](http://hydro.iis.u-tokyo.ac.jp/~yamadai/MERIT_DEM/)
 - [USGS 1/3rd arc-second DEM](https://www.sciencebase.gov/catalog/item/4f70aa9fe4b058caae3f8de5)
 - [swissALTI3D](https://www.swisstopo.admin.ch/en/geodata/height/alti3d.html)
-Auxiliary data, like geoid undulation data (EGM96 and GEOID12A) and coastline polygons (GSHHG) are available here:
+
+Auxiliary data, like geoid undulation data (EGM96 and GEOID12A), coastline polygons (GSHHG) or glacier outlines (GAMDAM) are for instance available here:
 - [EGM96](https://earth-info.nga.mil)
 - [GEOID12A](https://geodesy.noaa.gov/GEOID/GEOID12A/GEOID12A_AK.shtml)
 - [GSHHG](https://www.soest.hawaii.edu/pwessel/gshhg/)
+- [GAMDAM](https://doi.pangaea.de/10.1594/PANGAEA.891423)
 
 # References
 - Steger, C. R., Steger, B. and Schär, C (2022): HORAYZON v1.0: An efficient and flexible ray-tracing algorithm to compute horizon and sky view factor, Geoscientific Model Development, https://doi.org/10.5194/gmd-2022-58
 - Helbig, N., Löwe, H. and Lehning, M. (2009): Radiosity Approach for the Shortwave Surface Radiation Balance in Complex Terrain, Journal of the Atmospheric Sciences, 66(9), 2900-2912, https://doi.org/10.1175/2009JAS2940.1
 - Yokoyama, R., Shirasawa, M. and Pike, R. J. (2002): Visualizing Topography by Openness: A New Application of Image Processing to Digital Elevation Models, Photogrammetric Engineering and Remote Sensing, 68, 257-265.
 - Zakšek, K., Oštir, K. and Kokalj, Ž. (2011): Sky-View Factor as a Relief Visualization Technique, Remote Sensing, 3(2):398-415, https://doi.org/10.3390/rs3020398
+- Müller, M. D., and Scherer, D. (2005): A Grid- and Subgrid-Scale Radiation Parameterization of Topographic Effects for Mesoscale Weather Forecast Models, Monthly Weather Review, 133(6), 1431-1442, https://journals.ametsoc.org/view/journals/mwre/133/6/mwr2927.1.xml
 
 # Support 
 In case of issues or questions, please contact Christian Steger (christian.steger@env.ethz.ch).
