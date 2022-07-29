@@ -19,27 +19,9 @@ Installation was not yet tested.
 - Heightmap meshing utility (hmm). Optional &ndash; only required if remote terrain simplification should be applied in case of elevation data with very high (<5 m) resolution. Source code and compilation instructions can be found here: https://github.com/fogleman/hmm
 - Python packages
 
-# Input data
-
-## Digital elevation model (DEM) data
-
-Digital elevation model data is available from various sources, e.g.:
-- [NASADEM](https://search.earthdata.nasa.gov/)
-- [SRTM](https://srtm.csi.cgiar.org)
-- [MERIT](http://hydro.iis.u-tokyo.ac.jp/~yamadai/MERIT_DEM/)
-- [USGS 1/3rd arc-second DEM](https://www.sciencebase.gov/catalog/item/4f70aa9fe4b058caae3f8de5)
-- [swissALTI3D](https://www.swisstopo.admin.ch/en/geodata/height/alti3d.html)
-
-## Auxiliary data
-
-Auxiliary data, like geoid undulation data (EGM96 and GEOID12A) and coastline polygons (GSHHG) are available here:
-- [EGM96](https://earth-info.nga.mil)
-- [GEOID12A](https://geodesy.noaa.gov/GEOID/GEOID12A/GEOID12A_AK.shtml)
-- [GSHHG](https://www.soest.hawaii.edu/pwessel/gshhg/)
-
 # Usage
 
-## Examples
+## Examples: Terrain horizon and other terrain parameters
 
 The usage of the packages is best illustrated by means of five examples. To successfully run them, the paths to the input data and the folder **lib**, which are defined at the beginning of the example files, must be adapted. Three terrain horizon functions are available, which cover different application cases. The function **horizon_gridded()** allows to computed gridded terrain horizon from DEM data and its application is illustrated in the following three examples:
 - **examples/gridded_NASADEM_Alps.py**: Compute topographic parameters (slope angle and aspect, horizon and sky view factor) from NASADEM (~30 m) for a ~30x30 km region in the European Alps. Output from this script is shown below.
@@ -50,10 +32,24 @@ The additional functions **horizon_gridcells()** and **horizon_locations()** are
 - **examples/gridcells_NASADEM_Himalayas.py**: Compute topographic parameters (slope angle and aspect, horizon and sky view factor) from NASADEM (~30 m) for four grid cells in the Himalayas (Mount Everest region). The horizon's elevation angle and distance is visualised in a plot.
 - **examples/locations_NASADEM_Switzerland.py**: Compute topographic parameters (slope angle and aspect, horizon and sky view factor) from NASADEM (~30 m) for 10 arbitrary locations in Switzerland. The horizon's elevation angle and distance is visualised in a plot.
 
+Sky view factor and related parameters
+The term sky view factor (SVF) is defined ambiguously in literature. In Zakšek et al. (2011), it referes to the solid angle of the (celestial) hemisphere. We call this parameter *visible sky fraction* and its computation is performed with the function **functions_cy.visskyfrac()**. In applications related to radiation, the SVF is typically defined as the fraction of sky radiation received at a certain location in case of isotropic sky radiation (see e.g. Helbig et al., 2009). This parameter is called *sky view factor* in our application and its computation is performed with the function **functions_cy.skyviewfactor()**. Additionally, the positive topographic openness (Yokoyama et al., 2002) can be computed with the function **functions_cy.topoopen()**. 
+
+
 ![Alt text](https://github.com/ChristianSteger/Images/blob/master/Topo_slope_SVF.png?raw=true "Output from examples/NASADEM_Alps.py")
 
-## Sky view factor and related parameters
-The term sky view factor (SVF) is defined ambiguously in literature. In Zakšek et al. (2011), it referes to the solid angle of the (celestial) hemisphere. We call this parameter *visible sky fraction* and its computation is performed with the function **functions_cy.visskyfrac()**. In applications related to radiation, the SVF is typically defined as the fraction of sky radiation received at a certain location in case of isotropic sky radiation (see e.g. Helbig et al., 2009). This parameter is called *sky view factor* in our application and its computation is performed with the function **functions_cy.skyviewfactor()**. Additionally, the positive topographic openness (Yokoyama et al., 2002) can be computed with the function **functions_cy.topoopen()**. 
+Digital elevation model (DEM) data is available from various sources, e.g.:
+- [NASADEM](https://search.earthdata.nasa.gov/)
+- [SRTM](https://srtm.csi.cgiar.org)
+- [MERIT](http://hydro.iis.u-tokyo.ac.jp/~yamadai/MERIT_DEM/)
+- [USGS 1/3rd arc-second DEM](https://www.sciencebase.gov/catalog/item/4f70aa9fe4b058caae3f8de5)
+- [swissALTI3D](https://www.swisstopo.admin.ch/en/geodata/height/alti3d.html)
+Auxiliary data, like geoid undulation data (EGM96 and GEOID12A) and coastline polygons (GSHHG) are available here:
+- [EGM96](https://earth-info.nga.mil)
+- [GEOID12A](https://geodesy.noaa.gov/GEOID/GEOID12A/GEOID12A_AK.shtml)
+- [GSHHG](https://www.soest.hawaii.edu/pwessel/gshhg/)
+
+## Examples: Shadow map and correction factor for downward direct shortwave radiation
 
 # References
 - Steger, C. R., Steger, B. and Schär, C (2022): HORAYZON v1.0: An efficient and flexible ray-tracing algorithm to compute horizon and sky view factor, Geoscientific Model Development, https://doi.org/10.5194/gmd-2022-58
