@@ -21,9 +21,11 @@ Installation was not yet tested.
 
 # Usage
 
+The usage of the packages is best illustrated by means of examples, which can either be run in a Python IDE (like PyCharm or Spyder) or in the terminal. To run an examples, the path *path_out* must be adapted to a location that provides enough disk space. All input data (DEM or auxiliary data; see section below) required for the example is downloaded automatically.
+
 ## Examples: Terrain horizon and other terrain parameters
 
-The usage of the packages is best illustrated by means of five examples. To successfully run them, the paths to the input data and the folder **lib**, which are defined at the beginning of the example files, must be adapted. Three terrain horizon functions are available, which cover different application cases. The function **horizon_gridded()** allows to computed gridded terrain horizon from DEM data and its application is illustrated in the following three examples:
+. To successfully run them, the paths to the input data and the folder **lib**, which are defined at the beginning of the example files, must be adapted. Three terrain horizon functions are available, which cover different application cases. The function **horizon_gridded()** allows to computed gridded terrain horizon from DEM data and its application is illustrated in the following three examples:
 - **examples/gridded_NASADEM_Alps.py**: Compute topographic parameters (slope angle and aspect, horizon and sky view factor) from NASADEM (~30 m) for a ~30x30 km region in the European Alps. Output from this script is shown below.
 - **examples/gridded_NASADEM_HIMI.py**: Compute topographic parameters (slope angle and aspect, horizon and sky view factor) from NASADEM (~30 m) for a ~100x100 km region centred at Heard Island and McDonald Islands. DEM grid cells, which are at least 20 km apart from land, are masked to speed-up the horizon computation.
 - **examples/gridded_SwissALTI3D_Alps.py**: Compute topographic parameters (slope angle and aspect, horizon and sky view factor) from swissALTI3D (~2 m) for an a 3x3 km region in the European Alps. The outer DEM domain is simplified and represented by a triangulated irregular network (TIN) to reduce the large memory footprint of the DEM data.
@@ -38,6 +40,10 @@ The term sky view factor (SVF) is defined ambiguously in literature. In Zakšek 
 
 ![Alt text](https://github.com/ChristianSteger/Images/blob/master/Topo_slope_SVF.png?raw=true "Output from examples/NASADEM_Alps.py")
 
+## Examples: Shadow map and correction factor for downward direct shortwave radiation
+
+# Digital elevation model (DEM) and auxiliary data
+
 Digital elevation model (DEM) data is available from various sources, e.g.:
 - [NASADEM](https://search.earthdata.nasa.gov/)
 - [SRTM](https://srtm.csi.cgiar.org)
@@ -48,8 +54,6 @@ Auxiliary data, like geoid undulation data (EGM96 and GEOID12A) and coastline po
 - [EGM96](https://earth-info.nga.mil)
 - [GEOID12A](https://geodesy.noaa.gov/GEOID/GEOID12A/GEOID12A_AK.shtml)
 - [GSHHG](https://www.soest.hawaii.edu/pwessel/gshhg/)
-
-## Examples: Shadow map and correction factor for downward direct shortwave radiation
 
 # References
 - Steger, C. R., Steger, B. and Schär, C (2022): HORAYZON v1.0: An efficient and flexible ray-tracing algorithm to compute horizon and sky view factor, Geoscientific Model Development, https://doi.org/10.5194/gmd-2022-58
