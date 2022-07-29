@@ -1,42 +1,23 @@
 # HORAYZON
 
-# General Information
 Package to efficiently compute terrain parameters **horizon**, **sky view factor** and slope angle/aspect from high-resolution elevation data. Horizon computation is based on the high-performance ray-tracing library Intel&copy; Embree. Calculations are parallelised with OpenMP (Cython code) or Threading Building Blocks (C++ code). A description of the algorithm is published in the journal of Geoscientific Model Development (Steger et al., 2022).
 
-# Dependencies
+# Installation
 
-## Python packages
+## Linux
+Placeholder
 
-Source code:
-- numpy
-- cython
-- scipy
-- geographiclib
-- pyproj
-- gdal
-- shapely
-- fiona
-- pygeos
-- scikit-image
+## MacOS
+Placeholder
 
-Application:
-- xarray
-- matplotlib
-- cartopy
-- cmcrameri
-- netcdf4
-- rasterio
+## Windows
+Installation was not yet tested.
 
-Optional for remote terrain simplification:
-- trimesh
-
-## Further dependencies
+## Package dependencies
 - Intel&copy; Embree with Intel Threading Building Blocks (TBB) and GLFW. Source code and compilation instructions can be found here: https://github.com/embree/embree
 - NetCDF4 C++ library. Source code and compilation instructions can be found here: https://github.com/Unidata/netcdf-cxx4
 - Heightmap meshing utility (hmm). Optional &ndash; only required if remote terrain simplification should be applied in case of elevation data with very high (<5 m) resolution. Source code and compilation instructions can be found here: https://github.com/fogleman/hmm
-
-# Installation
-The source code can be compiled in the following way: First, the Cython functions have to be compiled by calling `python setup_cython.py build_ext --build-lib lib/` in the main directory. Subsequently, the correct paths to the NetCDF4-C++ and the Embree library have to be set in the file **setup_cpp.py**. The C++ code can then be compiled by calling `python setup_cpp.py build_ext --build-lib lib/`. Finally, the Python code can be compiled with `python setup_python.py`. All libraries are placed in the directory **lib** in the main folder.
+- Python packages
 
 # Input data
 
