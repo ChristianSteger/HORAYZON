@@ -1,10 +1,15 @@
 # HORAYZON
 
+**Short description of package**
+
 Package to efficiently compute terrain parameters **horizon**, **sky view factor** and slope angle/aspect from high-resolution elevation data. Horizon computation is based on the high-performance ray-tracing library Intel&copy; Embree. Calculations are parallelised with OpenMP (Cython code) or Threading Building Blocks (C++ code). A description of the algorithm is published in the journal of Geoscientific Model Development (Steger et al., 2022).
 - General information, brief overview of packages
 - Computation of terrain horizon, topographic parameters
 - Computation of shadow map and correction of SW direct downward radiation
 
+When you use HORAYZON, please cite:
+
+**Steger, C. R., Steger, B. and Schär, C (2022): HORAYZON v1.0: An efficient and flexible ray-tracing algorithm to compute horizon and sky view factor, Geoscientific Model Development, https://doi.org/10.5194/gmd-2022-58**
 
 # Installation
 
@@ -62,7 +67,6 @@ Auxiliary data, like geoid undulation data (EGM96 and GEOID12A), coastline polyg
 - [GAMDAM](https://doi.pangaea.de/10.1594/PANGAEA.891423)
 
 # References
-- Steger, C. R., Steger, B. and Schär, C (2022): HORAYZON v1.0: An efficient and flexible ray-tracing algorithm to compute horizon and sky view factor, Geoscientific Model Development, https://doi.org/10.5194/gmd-2022-58
 - Helbig, N., Löwe, H. and Lehning, M. (2009): Radiosity Approach for the Shortwave Surface Radiation Balance in Complex Terrain, Journal of the Atmospheric Sciences, 66(9), 2900-2912, https://doi.org/10.1175/2009JAS2940.1
 - Yokoyama, R., Shirasawa, M. and Pike, R. J. (2002): Visualizing Topography by Openness: A New Application of Image Processing to Digital Elevation Models, Photogrammetric Engineering and Remote Sensing, 68, 257-265.
 - Zakšek, K., Oštir, K. and Kokalj, Ž. (2011): Sky-View Factor as a Relief Visualization Technique, Remote Sensing, 3(2):398-415, https://doi.org/10.3390/rs3020398
