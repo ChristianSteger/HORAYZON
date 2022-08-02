@@ -29,7 +29,22 @@ def file(file_url, path_local):
         raise ValueError("Local path does not exist")
 
     # Try to download file
-    response = requests.get(file_url, stream=True)
+    try:
+        response = requests.get(file_url, stream=True)
+    except requests.exceptions.SSLError:
+        print("SSL certificate verification failed - continue download "
+              + "(yes/no)?")
+        cont = ""
+        flag = False
+        while cont not in ("yes", "no"):
+            if flag:
+                print("Please enter 'yes' or 'no'")
+            cont = input()
+            flag = True
+        if cont == "yes":
+            response = requests.get(file_url, stream=True, verify=False)
+        else:
+            return
     if response.ok:
         total_size_in_bytes = int(response.headers.get("content-length", 0))
         block_size = 1024 * 10
