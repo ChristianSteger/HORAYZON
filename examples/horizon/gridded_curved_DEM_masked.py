@@ -11,7 +11,6 @@
 
 # Load modules
 import os
-import sys  # ------------------------------------------------------- temporary
 import numpy as np
 import xarray as xr
 from netCDF4 import Dataset
@@ -21,8 +20,6 @@ import zipfile
 from shapely.ops import unary_union
 from rasterio.features import rasterize
 from rasterio.transform import Affine
-sys.path.append("/Users/csteger/Downloads/HORAYZON/")  # ------------ temporary
-from horayzon import auxiliary, direction, domain, geoid, horizon, load_dem, topo_param, transform, ocean_masking  # temporary
 import horayzon as hray
 
 mpl.style.use("classic")

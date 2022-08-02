@@ -10,7 +10,6 @@
 
 # Load modules
 import os
-import sys  # ------------------------------------------------------- temporary
 import numpy as np
 import xarray as xr
 from netCDF4 import Dataset
@@ -21,8 +20,6 @@ from matplotlib.ticker import MaxNLocator
 import cartopy.crs as ccrs
 from cmcrameri import cm
 import zipfile
-sys.path.append("/Users/csteger/Downloads/HORAYZON/")  # ------------ temporary
-from horayzon import auxiliary, direction, domain, geoid, horizon, load_dem, topo_param, transform  # temporary
 import horayzon as hray
 
 mpl.style.use("classic")

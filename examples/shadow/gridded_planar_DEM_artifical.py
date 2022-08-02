@@ -6,14 +6,11 @@
 
 # Load modules
 import os
-import sys  # ------------------------------------------------------- temporary
 import numpy as np
 import xarray as xr
 from netCDF4 import Dataset
 import matplotlib as mpl
 import matplotlib.pyplot as plt
-sys.path.append("/Users/csteger/Downloads/HORAYZON/")  # ------------ temporary
-from horayzon import auxiliary, direction, domain, geoid, horizon, load_dem, topo_param, transform, shadow  # temporary
 import horayzon as hray
 
 mpl.style.use("classic")

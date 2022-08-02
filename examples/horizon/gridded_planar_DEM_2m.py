@@ -11,7 +11,6 @@
 
 # Load modules
 import os
-import sys  # ------------------------------------------------------- temporary
 import numpy as np
 import xarray as xr
 from skimage.io import imsave
@@ -20,8 +19,6 @@ import time
 import trimesh
 import glob
 from netCDF4 import Dataset
-sys.path.append("/Users/csteger/Downloads/HORAYZON/")  # ------------ temporary
-from horayzon import auxiliary, domain, horizon, load_dem, topo_param, download  # temporary
 import horayzon as hray
 
 # -----------------------------------------------------------------------------

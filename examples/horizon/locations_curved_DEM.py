@@ -10,15 +10,12 @@
 
 # Load modules
 import os
-import sys  # ------------------------------------------------------- temporary
 import numpy as np
 import xarray as xr
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 from scipy import interpolate
 import zipfile
-sys.path.append("/Users/csteger/Downloads/HORAYZON/")  # ------------ temporary
-from horayzon import auxiliary, direction, domain, geoid, horizon, load_dem, topo_param, transform  # temporary
 import horayzon as hray
 
 mpl.style.use("classic")

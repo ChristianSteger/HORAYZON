@@ -9,15 +9,12 @@
 
 # Load modules
 import os
-import sys  # ------------------------------------------------------- temporary
 import numpy as np
 from netCDF4 import Dataset, date2num
 from skyfield.api import load, wgs84
 import time
 import datetime as dt
 from pyproj import CRS, Transformer
-sys.path.append("/Users/csteger/Downloads/HORAYZON/")  # ------------ temporary
-from horayzon import auxiliary, direction, domain, geoid, horizon, load_dem, topo_param, transform, shadow  # temporary
 import horayzon as hray
 
 # -----------------------------------------------------------------------------

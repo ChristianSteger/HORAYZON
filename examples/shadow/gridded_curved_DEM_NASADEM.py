@@ -14,7 +14,6 @@
 
 # Load modules
 import os
-import sys  # ------------------------------------------------------- temporary
 import numpy as np
 import subprocess
 from netCDF4 import Dataset, date2num
@@ -26,8 +25,6 @@ from rasterio.features import rasterize
 from rasterio.transform import Affine
 from shapely.geometry import shape
 import datetime as dt
-sys.path.append("/Users/csteger/Downloads/HORAYZON/")  # ------------ temporary
-from horayzon import auxiliary, direction, domain, geoid, horizon, load_dem, topo_param, transform, shadow  # temporary
 import horayzon as hray
 
 # -----------------------------------------------------------------------------
