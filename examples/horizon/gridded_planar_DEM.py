@@ -55,8 +55,8 @@ os.remove(path_out + "DHM25_MM_ASCII_GRID.zip")
 # Load required DEM data (including outer boundary zone)
 domain_outer = hray.domain.planar_grid(domain, dist_search)
 file_dem = path_out + "ASCII_GRID_1part/dhm25_grid_raster.asc"
-x, y, elevation = hray.load_dem.dhm25(file_dem, domain_outer, engine="gdal")
-# -> ESRI ASCII GRID file can alternatively be read with NumPy!
+x, y, elevation = hray.load_dem.dhm25(file_dem, domain_outer, engine="numpy")
+# -> ESRI ASCII GRID file can also be read with GDAL if available (-> faster)
 
 # Compute indices of inner domain
 slice_in = (slice(np.where(y >= domain["y_max"])[0][-1],

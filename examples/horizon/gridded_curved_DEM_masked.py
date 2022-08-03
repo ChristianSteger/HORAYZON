@@ -21,6 +21,7 @@ from shapely.ops import unary_union
 from rasterio.features import rasterize
 from rasterio.transform import Affine
 import horayzon as hray
+import horayzon.ocean_masking as ocean_masking
 
 mpl.style.use("classic")
 
@@ -66,7 +67,6 @@ os.remove(path_out + "S60W060.zip")
 domain_outer = hray.domain.curved_grid(domain, dist_search, ellps)
 file_dem = path_out + "S60W060/cut_s60w060.tif"
 lon, lat, elevation = hray.load_dem.srtm(file_dem, domain_outer, engine="gdal")
-# -> GeoTIFF can also be read with Pillow in case GDAL is not available!
 mask_land_dem = (elevation != -32768.0)
 
 # Set ocean grid cells to 0.0 m
@@ -117,7 +117,7 @@ vert_grid = hray.auxiliary.rearrange_pad_buffer(x_enu, y_enu, z_enu)
 # can influence terrain horizon of inner domain
 
 # Get and rasterise GSHHS data
-poly_coastlines = hray.ocean_masking.get_gshhs_coastlines(domain_outer)
+poly_coastlines = ocean_masking.get_gshhs_coastlines(domain_outer)
 coastline_GSHHS = unary_union([i for i in poly_coastlines])
 d_lon = np.diff(lon).mean()
 d_lat = np.diff(lat).mean()
@@ -128,8 +128,8 @@ mask_land_gshhs = rasterize(coastline_GSHHS, (len(lat), len(lon)),
 
 # Compute common land-sea-mask, contours and transform coordinates
 mask_land = (mask_land_dem | mask_land_gshhs)
-contours_latlon = hray.ocean_masking.coastline_contours(lon, lat, mask_land
-                                                        .astype(np.uint8))
+contours_latlon = ocean_masking.coastline_contours(lon, lat, mask_land
+                                                   .astype(np.uint8))
 print("Number of vertices (DEM): " + str(sum([i.shape[0]
                                               for i in contours_latlon])))
 pts_latlon = np.vstack(([i for i in contours_latlon]))
@@ -140,7 +140,7 @@ pts_ecef = np.hstack((coords[0], coords[1], coords[2]))
 
 # Compute coastline buffer (only for inner domain)
 block_size = 5 * 2 + 1
-mask_buffer = hray.ocean_masking.coastline_buffer(
+mask_buffer = ocean_masking.coastline_buffer(
     x_ecef[slice_in], y_ecef[slice_in], z_ecef[slice_in], mask_land[slice_in],
     pts_ecef, lat[slice_in[0]], (dist_search * 1000.0), dem_res, ellps,
     block_size)

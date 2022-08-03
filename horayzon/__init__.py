@@ -1,11 +1,12 @@
-from . import auxiliary
 from . import direction
-from . import domain
 from . import download
-from . import geoid
-from . import horizon
-from . import load_dem
-from . import ocean_masking
-from . import shadow
 from . import topo_param
 from . import transform
+
+from . import horizon
+from . import shadow
+
+from . import auxiliary
+from . import domain
+from . import geoid
+from . import load_dem

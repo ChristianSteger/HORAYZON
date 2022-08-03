@@ -74,8 +74,9 @@ domain = {"lon_min": lon_loc.min(), "lon_max": lon_loc.max(),
 # domain boundaries [degree]
 domain_outer = hray.domain.curved_grid(domain, dist_search, ellps)
 file_dem = path_out + "srtm_38_03/srtm_38_03.tif"
-lon, lat, elevation = hray.load_dem.srtm(file_dem, domain_outer, engine="gdal")
-# -> GeoTIFF can also be read with Pillow in case GDAL is not available!
+lon, lat, elevation = hray.load_dem.srtm(file_dem, domain_outer,
+                                         engine="pillow")
+# -> GeoTIFF can also be read with GDAL if available (-> faster)
 
 # Compute ellipsoidal heights
 elevation += hray.geoid.undulation(lon, lat, geoid="EGM96")  # [m]

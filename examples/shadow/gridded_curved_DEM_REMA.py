@@ -52,8 +52,8 @@ hray.download.file(dem_file_url, path_out)
 # Load required DEM data (including outer boundary zone)
 domain_outer = hray.domain.planar_grid(domain, dist_search)
 file_dem = path_out + "REMA_100m_peninsula_dem_filled.tif"
-x, y, elevation = hray.load_dem.rema(file_dem, domain_outer, engine="gdal")
-# -> GeoTIFF can also be read with Pillow in case GDAL is not available!
+x, y, elevation = hray.load_dem.rema(file_dem, domain_outer, engine="pillow")
+# -> GeoTIFF can also be read with GDAL if available (-> faster)
 # -> elevation is referenced to WGS84 ellipsoid
 
 # Set ocean grid cells to 0.0 m

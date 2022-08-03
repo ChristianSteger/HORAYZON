@@ -17,8 +17,7 @@ import matplotlib as mpl
 import matplotlib.pyplot as plt
 import matplotlib.gridspec as gridspec
 from matplotlib.ticker import MaxNLocator
-import cartopy.crs as ccrs
-from cmcrameri import cm
+from matplotlib.ticker import FormatStrFormatter
 import zipfile
 import horayzon as hray
 
@@ -63,8 +62,9 @@ os.remove(path_out + "srtm_38_03.zip")
 # Load required DEM data (including outer boundary zone)
 domain_outer = hray.domain.curved_grid(domain, dist_search, ellps)
 file_dem = path_out + "srtm_38_03/srtm_38_03.tif"
-lon, lat, elevation = hray.load_dem.srtm(file_dem, domain_outer, engine="gdal")
-# -> GeoTIFF can also be read with Pillow in case GDAL is not available!
+lon, lat, elevation = hray.load_dem.srtm(file_dem, domain_outer,
+                                         engine="pillow")
+# -> GeoTIFF can also be read with GDAL if available (-> faster)
 
 # Compute ellipsoidal heights
 elevation += hray.geoid.undulation(lon, lat, geoid="EGM96")  # [m]
@@ -192,8 +192,10 @@ data_plot = {"elevation": elevation[slice_in],
              "slope": np.rad2deg(slope),
              "aspect": np.rad2deg(aspect),
              "svf": svf}
-cmaps = {"elevation": cm.batlowW, "slope": cm.lajolla,
-         "aspect": cm.romaO, "svf": cm.davos}
+cmaps = {"elevation": plt.get_cmap("gist_earth"),
+         "slope": plt.get_cmap("YlOrBr"),
+         "aspect": plt.get_cmap("twilight"),
+         "svf": plt.get_cmap("YlGnBu_r")}
 pos = {"elevation": [0, 0], "slope": [0, 1],
        "aspect":    [3, 0], "svf":   [3, 1]}
 titles = {"elevation": "Elevation [m]", "slope": "Slope [degree]",
@@ -201,7 +203,6 @@ titles = {"elevation": "Elevation [m]", "slope": "Slope [degree]",
           "svf": "Sky View Factor [-]"}
 
 # Plot
-geo_crs = ccrs.PlateCarree()
 fig = plt.figure(figsize=(14.0, 16.0))
 gs = gridspec.GridSpec(5, 2, left=0.1, bottom=0.1, right=0.9, top=0.9,
                        hspace=0.05, wspace=0.05,
@@ -220,16 +221,17 @@ for i in list(data_plot.keys()):
         cmap = cmaps[i]
         norm = mpl.colors.BoundaryNorm(levels, ncolors=cmap.N)
         ticks = np.arange(20.0, 360.0, 40.0)
-    ax = plt.subplot(gs[pos[i][0], pos[i][1]], projection=geo_crs)
+    ax = plt.subplot(gs[pos[i][0], pos[i][1]])
     plt.pcolormesh(lon[slice_in[1]], lat[slice_in[0]], data_plot[i], cmap=cmap,
                    norm=norm, shading="auto")
     ax.set_aspect("auto")
     if i == "elevation":
-        gl = ax.gridlines(draw_labels=True)
-        gl.top_labels = True
-        gl.left_labels = True
-        gl.bottom_labels = False
-        gl.right_labels = False
+        ax.xaxis.tick_top()
+        plt.grid(True, ls=":")
+        x_ticks = np.arange(7.7, 8.3, 0.1)
+        plt.xticks(x_ticks, ["%.1f" % i + r"$^{\circ}$E" for i in x_ticks])
+        y_ticks = np.arange(46.3, 46.8, 0.1)
+        plt.yticks(y_ticks, ["%.1f" % i + r"$^{\circ}$N" for i in y_ticks])
         t = plt.text(0.17, 0.95, titles[i], fontsize=12, fontweight="bold",
                      horizontalalignment="center", verticalalignment="center",
                      transform=ax.transAxes)

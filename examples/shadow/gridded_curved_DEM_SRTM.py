@@ -62,8 +62,9 @@ os.remove(path_out + "S60W060.zip")
 # Load required DEM data (including outer boundary zone)
 domain_outer = hray.domain.curved_grid(domain, dist_search, ellps)
 file_dem = path_out + "S60W060/cut_s60w060.tif"
-lon, lat, elevation = hray.load_dem.srtm(file_dem, domain_outer, engine="gdal")
-# -> GeoTIFF can also be read with Pillow in case GDAL is not available!
+lon, lat, elevation = hray.load_dem.srtm(file_dem, domain_outer,
+                                         engine="pillow")
+# -> GeoTIFF can also be read with GDAL if available (-> faster)
 elevation[elevation == -32768.0] = 0.0
 
 # Compute indices of inner domain

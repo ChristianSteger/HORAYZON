@@ -23,7 +23,7 @@ def get_path_aux_data():
     # Create text file with path to auxiliary data
     file_name = "path_aux_data.txt"
     path_horayzon = os.path.join(os.path.split(
-        os.path.dirname(horayzon.__file__))[0], "")
+        os.path.dirname(horayzon.__file__))[0], "horayzon/")
     if not os.path.isfile(path_horayzon + "/" + file_name):
         valid_path = False
         print("Provide path for auxiliary data:")
