@@ -183,7 +183,7 @@ def dhm25(file_dem, domain, engine="gdal"):
 
     # Load digital elevation model data
     if engine == "gdal":
-        print("Read GeoTIFF with GDAL")
+        print("Read ESRI ASCII GRID file with GDAL")
         gdal = import_module("osgeo.gdal")
         ds = gdal.Open(file_dem)
         elevation = ds.GetRasterBand(1).ReadAsArray()  # 32-bit float
@@ -191,7 +191,7 @@ def dhm25(file_dem, domain, engine="gdal"):
         x_ulc, y_ulc = ds.GetGeoTransform()[0], ds.GetGeoTransform()[3]
         d_x, d_y = ds.GetGeoTransform()[1], ds.GetGeoTransform()[5]
     else:
-        print("Read GeoTIFF with NumPy")
+        print("Read ESRI ASCII GRID file with NumPy")
         if (os.path.getsize(file_dem) / (1024 ** 2)) > 500.0:
             print("Warning: reading of large ESRI ASCII GRID file with NumPy"
                   " is slow")

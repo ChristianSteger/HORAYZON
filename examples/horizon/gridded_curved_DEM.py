@@ -35,7 +35,7 @@ ellps = "WGS84"  # Earth's surface approximation (sphere, GRS80 or WGS84)
 azim_num = 360  # number of azimuth sampling directions [-]
 
 # Paths and file names
-dem_file_url = "https://srtm.csi.cgiar.org/wp-content/uploads/files/"\
+dem_file_url = "https://srtm.csi.cgiar.org/wp-content/uploads/files/" \
                + "srtm_5x5/TIFF/srtm_38_03.zip"
 path_out = "/Users/csteger/Desktop/Output/"
 file_hori = "hori_SRTM_Alps.nc"
