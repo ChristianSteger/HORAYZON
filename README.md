@@ -34,7 +34,7 @@ Installation instruction for **hmm** can be found [here](https://github.com/fogl
 
 # Installation
 
-HORAYZON has been tested on **Python 3.10** under **Linux** and **Mac OS X**. Installation requires the GNU Compiler Collection (GCC)[https://gcc.gnu.org] and can be accomplished as follows:
+HORAYZON has been tested on **Python 3.10** under **Linux** and **Mac OS X**. Installation requires the [GNU Compiler Collection (GCC)](https://gcc.gnu.org) and can be accomplished as follows:
 
 ## Linux
 
