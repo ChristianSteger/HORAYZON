@@ -85,7 +85,7 @@ The term sky view factor (SVF) is defined ambiguously in literature. In Zakšek 
 The module **shadow** allows to compute shadow maps and correction factors for downwelling direct shortwave radiation for terrains and specific sun positions. A class **shadow.Terrain** can be created and initialised for this purpose, which can then be used for arbitrary sun positions. The output of the method **Terrain.shadow()** is encoded as follows: 0: illuminated, 1: self-shaded, 2: terrain-shaded, 3: not considered (respectively masked).
 The correction factors for downwelling direct shortwave radiation is computed with the method **Terrain.sw_dir_cor()** according to Müller and Scherer (2005). This factor can for instance be applied to radiation output from a regional climate or general circulation model, in which radiation is only simulated along the vertical dimension and all grid cells are assumed to have a horizontal surface. The correction factor accounts for all terrain-induced modifications in radiation, like self-shading, terrain-shading, changes in angles between the sun and the surface's normal vector and the surface enlargement of grid cells due to sloping surfaces. According to Müller and Scherer (2005), it is computed as:
 
-$\dfrac{x}{y}$
+$f_{cor} = \dfrac{1.0}{\vec{a}}$
 
 Test
 
