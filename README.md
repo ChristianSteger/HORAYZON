@@ -8,16 +8,18 @@ When you use HORAYZON, please cite:
 
 # Package dependencies
 
+HORAYZON depends on various external libraries and packages. The essential ones are listed below under **Core dependencies**. Further listed dependencies are only needed to run the examples. The examples *horizon/gridded_curved_DEM_masked.py*, *horizon/gridded_planar_DEM_2m.py* and *shadow/gridded_curved_DEM_NASADEM.py* require more complex dependencies, which are listed under **Specific dependencies**.
+
 **Core dependencies**
 - Intel Embree (https://www.embree.org) and Threading Building Blocks (TBB) (https://github.com/oneapi-src/oneTBB)
 - NetCDF-4 C++ library (https://github.com/Unidata/netcdf-cxx4)
 - Python packages: *cython numpy scipy geographiclib tqdm requests xarray*
 
 **Major dependencies of examples**
-- Python packages: netcdf4 matplotlib pillow skyfield pyproj ipython
+- Python packages: *netcdf4 matplotlib pillow skyfield pyproj ipython*
 
 **Specific dependencies for examples (masking and high-resolution DEM examples; GDAL dependence)**
-- Python packages: shapely fiona pygeos scikit-image rasterio trimesh
+- Python packages: *shapely fiona pygeos scikit-image rasterio trimesh*
 - heightmap meshing utility (hmm) (https://github.com/fogleman/hmm)
 
 # Installation
