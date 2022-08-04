@@ -80,7 +80,7 @@ Two terrain horizon functions are available, **horizon_gridded()** and **horizon
 **A Note on Sky view factor and related parameters**<br/>
 The term sky view factor (SVF) is defined ambiguously in literature. In Zakšek et al. (2011), it referes to the solid angle of the (celestial) hemisphere. We call this parameter *visible sky fraction* and its computation is performed with the function **topo_param.visible_sky_fraction()**. In applications related to radiation, the SVF is typically defined as the fraction of sky radiation received at a certain location in case of isotropic sky radiation (see e.g. Helbig et al., 2009). This parameter is called *sky view factor* in our application and its computation is performed with the function **topo_param.sky_view_factor()**. Additionally, the positive topographic openness (Yokoyama et al., 2002) can be computed with the function **topo_param.topographic_openness()**. 
 
-## Examples: Shadow map and correction factor for downward direct shortwave radiation
+## Examples: Shadow map and shortwave correction factor
 
 - **shadow/gridded_curved_DEM_SRTM.py**:
 - **shadow/gridded_curved_DEM_REMA.py**:
