@@ -87,7 +87,7 @@ The correction factors for downwelling direct shortwave radiation is computed wi
 
 $f_{cor} = \left( \dfrac{1.0}{\vec{h} \times \vec{s}} \right) \left( \dfrac{1.0}{\vec{h} \times \vec{t}} \right) \ {mask}_{shadow} \ \left( \vec{t} \times \vec{s} \right)$
 
-where $\vec{h}$ is the normal of the horizontal surface, $\vec{t}$ the normal of the tilted surface and $\vec{s}$ the sun position.
+where $\vec{h}$ is the normal of the horizontal surface, $\vec{t}$ the normal of the tilted surface, $\vec{s}$ the sun position and ${mask}_{shadow}$ the terrain-shading mask (0: shadow, 1: illuminated).
 
 - **shadow/gridded_curved_DEM_SRTM.py**:
 - **shadow/gridded_curved_DEM_REMA.py**:
