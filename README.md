@@ -1,6 +1,6 @@
 # HORAYZON
 
-Package to efficiently compute terrain parameters (like **horizon**, **sky view factor**, **topographic openness**, slope angle/aspect) from high-resolution digital elevation model data. The package also allows to compute **shadow maps** (and **correction factors for downwelling direct shortwave radiation**) for specific sun positions. Horizon computation is based on the high-performance ray-tracing library Intel&copy; Embree. Calculations are parallelised with OpenMP (Cython code) or Threading Building Blocks (C++ code).
+Package to efficiently compute terrain parameters (like **horizon**, **sky view factor**, **topographic openness**, slope angle/aspect) from high-resolution digital elevation model (DEM) data. The package also allows to compute **shadow maps** (and **correction factors for downwelling direct shortwave radiation**) for specific sun positions. Horizon computation is based on the high-performance ray-tracing library Intel&copy; Embree. Calculations are parallelised with OpenMP (Cython code) or Threading Building Blocks (C++ code).
 
 When you use HORAYZON, please cite:
 
@@ -63,7 +63,7 @@ python -m pip install .
 
 # Usage
 
-The usage of the packages is best illustrated by means of examples, which can either be run in a Python IDE (like PyCharm or Spyder) or in the terminal. To run an examples, the path **path_out** must be adapted to a location that provides enough disk space. All input data (DEM or auxiliary data; see section below) required for the example is downloaded automatically.
+The usage of the packages is best illustrated by means of examples, which can either be run in a Python IDE (like PyCharm or Spyder) or in the terminal. To run an examples, the path **path_out** must be adapted to a location that provides enough disk space. All input data (DEM or auxiliary data; see section below) required for the examples is downloaded automatically.
 
 ## Examples: Terrain horizon and other terrain parameters
 
