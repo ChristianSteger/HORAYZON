@@ -17,7 +17,6 @@ import matplotlib as mpl
 import matplotlib.pyplot as plt
 import matplotlib.gridspec as gridspec
 from matplotlib.ticker import MaxNLocator
-from matplotlib.ticker import FormatStrFormatter
 import zipfile
 import horayzon as hray
 

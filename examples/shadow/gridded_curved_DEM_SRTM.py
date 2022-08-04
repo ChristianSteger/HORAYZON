@@ -15,6 +15,8 @@ import xarray as xr
 from netCDF4 import Dataset, date2num
 import matplotlib as mpl
 import matplotlib.pyplot as plt
+import matplotlib.gridspec as gridspec
+import matplotlib.colors as colors
 import zipfile
 from skyfield.api import load, wgs84
 import time
@@ -22,6 +24,12 @@ import datetime as dt
 import horayzon as hray
 
 mpl.style.use("classic")
+
+# Change latex fonts
+mpl.rcParams["mathtext.fontset"] = "custom"
+# custom mathtext font (set default to Bitstream Vera Sans)
+mpl.rcParams["mathtext.default"] = "rm"
+mpl.rcParams["mathtext.rm"] = "Bitstream Vera Sans"
 
 # -----------------------------------------------------------------------------
 # Settings
@@ -65,7 +73,8 @@ file_dem = path_out + "S60W060/cut_s60w060.tif"
 lon, lat, elevation = hray.load_dem.srtm(file_dem, domain_outer,
                                          engine="pillow")
 # -> GeoTIFF can also be read with GDAL if available (-> faster)
-elevation[elevation == -32768.0] = 0.0
+mask_ocean = (elevation == -32768.0)
+elevation[mask_ocean] = 0.0
 
 # Compute indices of inner domain
 slice_in = (slice(np.where(lat >= domain["lat_max"])[0][-1],
@@ -290,3 +299,67 @@ fig.savefig(path_out + "SW_dir_cor_spatial_mean.png", dpi=300,
 plt.close(fig)
 
 del sw_dir_cor
+
+# -----------------------------------------------------------------------------
+# Plot elevation and shortwave correction factor fo specific time step
+# -----------------------------------------------------------------------------
+
+# Load data
+ind = 10  # select time step
+ds = xr.open_dataset(path_out + file_sw_dir_cor)
+sw_dir_cor = ds["sw_dir_cor"][ind, :, :].values
+ds.close()
+
+# Plot
+ax_lim = (lon[slice_in[1]].min(), lon[slice_in[1]].max(),
+          lat[slice_in[0]].min(), lat[slice_in[0]].max())
+fig = plt.figure(figsize=(10, 12))
+gs = gridspec.GridSpec(2, 2, left=0.1, bottom=0.1, right=0.9, top=0.9,
+                       hspace=0.05, wspace=0.05, width_ratios=[1.0, 0.027])
+ax = plt.subplot(gs[0, 0])
+ax.set_facecolor(plt.get_cmap("terrain")(0.15)[:3] + (0.25,))
+levels = np.arange(0.0, 2600.0, 200.0)
+cmap = colors.LinearSegmentedColormap.from_list(
+    "terrain", plt.get_cmap("terrain")(np.linspace(0.25, 1.0, 100)))
+norm = mpl.colors.BoundaryNorm(levels, ncolors=cmap.N, extend="max")
+data_plot = np.ma.masked_where(mask_ocean[slice_in], elevation_ortho)
+plt.pcolormesh(lon[slice_in[1]], lat[slice_in[0]], data_plot,
+               cmap=cmap, norm=norm)
+x_ticks = np.arange(-38.0, -35.5, 0.5)
+plt.xticks(x_ticks, ["" for i in x_ticks])
+y_ticks = np.arange(-55.0, -53.9, 0.2)
+plt.yticks(y_ticks, ["%.1f" % np.abs(i) + r"$^{\circ}$S" for i in y_ticks])
+plt.axis(ax_lim)
+ax = plt.subplot(gs[0, 1])
+mpl.colorbar.ColorbarBase(ax, cmap=cmap, norm=norm, orientation="vertical")
+plt.ylabel("Elevation [m a.s.l.]", labelpad=10.0)
+ax = plt.subplot(gs[1, 0])
+levels = np.arange(0.0, 5.25, 0.25)
+ticks = np.arange(0.0, 5.5, 0.5)
+cmap = plt.get_cmap("viridis")
+norm = mpl.colors.BoundaryNorm(levels, ncolors=cmap.N, extend="max")
+plt.pcolormesh(lon[slice_in[1]], lat[slice_in[0]], sw_dir_cor,
+               cmap=cmap, norm=norm)
+plt.xticks(x_ticks, ["%.1f" % np.abs(i) + r"$^{\circ}$W" for i in x_ticks])
+plt.yticks(y_ticks, ["%.1f" % np.abs(i) + r"$^{\circ}$S" for i in y_ticks])
+plt.axis(ax_lim)
+txt = ta[ind].strftime("%Y-%m-%d %H:%M:%S") + " UTC"
+t = plt.text(0.835, 0.935, txt, fontsize=11, fontweight="bold",
+             horizontalalignment="center", verticalalignment="center",
+             transform=ax.transAxes)
+t.set_bbox(dict(facecolor="white", alpha=0.8, edgecolor="none"))
+ts = load.timescale()
+astrometric = loc_or.at(ts.from_datetime(ta[ind])).observe(sun)
+alt, az, d = astrometric.apparent().altaz()
+txt = "Mean solar elevation angle: %.1f" % alt.degrees + "$^{\circ}$"
+t = plt.text(0.21, 0.06, txt, fontsize=11, fontweight="bold",
+             horizontalalignment="center", verticalalignment="center",
+             transform=ax.transAxes)
+t.set_bbox(dict(facecolor="white", alpha=0.8, edgecolor="none"))
+ax = plt.subplot(gs[1, 1])
+mpl.colorbar.ColorbarBase(ax, cmap=cmap, norm=norm, ticks=ticks,
+                          orientation="vertical")
+plt.ylabel("${\downarrow}SW_{dir}$ correction factor [-]", labelpad=10.0)
+fig.savefig(path_out + "Elevation_sw_dir_cor.png", dpi=300,
+            bbox_inches="tight")
+plt.close(fig)
