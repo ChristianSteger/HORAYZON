@@ -13,19 +13,19 @@ HORAYZON depends on multiple external libraries and packages. The essential ones
 **Core dependencies**
 - [Intel Embree](https://www.embree.org) and [Threading Building Blocks (TBB)](https://github.com/oneapi-src/oneTBB)
 - [NetCDF-4 C++ library](https://github.com/Unidata/netcdf-cxx4)
-- Python packages: *cython numpy scipy geographiclib tqdm requests xarray*
+- Python packages: Cython, NumPy, SciPy, GeographicLib, tqdm, Requests, xarray
 ```bash
 conda create -n horayzon_core -c conda-forge embree3 tbb-devel netcdf-cxx4 cython numpy scipy geographiclib tqdm requests xarray
 ```
 
 **Base dependencies of examples**
-- Python packages: *netcdf4 matplotlib pillow skyfield pyproj ipython*
+- Python packages: netCDF4, Matplotlib, Pillow, Skyfield, pyproj, IPython
 ```bash
 conda create -n horayzon_base -c conda-forge embree3 tbb-devel netcdf-cxx4 cython numpy scipy geographiclib tqdm requests xarray netcdf4 matplotlib pillow skyfield pyproj ipython
 ```
 
 **Specific dependencies for examples (masking and high-resolution DEM examples; GDAL dependency)**
-- Python packages: *shapely fiona pygeos scikit-image rasterio trimesh*
+- Python packages: Shapely, fiona, PyGEOS, scikit-image, Rasterio, Trimesh
 - [heightmap meshing utility (hmm)](https://github.com/fogleman/hmm)
 ```bash
 conda create -n horayzon_all -c conda-forge embree3 tbb-devel netcdf-cxx4 cython numpy scipy geographiclib tqdm requests xarray netcdf4 matplotlib pillow skyfield pyproj ipython shapely fiona pygeos scikit-image rasterio trimesh
