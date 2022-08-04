@@ -28,7 +28,7 @@ conda create -n horayzon_part -c conda-forge embree3 tbb-devel netcdf-cxx4 cytho
 - Python packages: *shapely fiona pygeos scikit-image rasterio trimesh*
 - [heightmap meshing utility (hmm)](https://github.com/fogleman/hmm)
 ```bash
-conda create -n horayzon -c conda-forge embree3 tbb-devel netcdf-cxx4 cython numpy scipy geographiclib tqdm requests xarray netcdf4 matplotlib pillow skyfield pyproj ipython shapely fiona pygeos scikit-image rasterio trimesh
+conda create -n horayzon_all -c conda-forge embree3 tbb-devel netcdf-cxx4 cython numpy scipy geographiclib tqdm requests xarray netcdf4 matplotlib pillow skyfield pyproj ipython shapely fiona pygeos scikit-image rasterio trimesh
 ```
 
 
