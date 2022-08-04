@@ -104,7 +104,7 @@ Digital elevation model (DEM) data is available from various sources, e.g.:
 - [MERIT](http://hydro.iis.u-tokyo.ac.jp/~yamadai/MERIT_DEM/)
 - [USGS 1/3rd arc-second DEM](https://www.sciencebase.gov/catalog/item/4f70aa9fe4b058caae3f8de5)
 
-Auxiliary data, like geoid undulation data (EGM96 and GEOID12A), coastline polygons (GSHHG) or glacier outlines (GAMDAM) are for instance available here:
+Auxiliary data, like geoid undulation data (EGM96 and GEOID12A), coastline polygons (GSHHG) or glacier outlines (GAMDAM) are available from here:
 - [EGM96](https://earth-info.nga.mil)
 - [GEOID12A](https://geodesy.noaa.gov/GEOID/GEOID12A/GEOID12A_AK.shtml)
 - [GSHHG](https://www.soest.hawaii.edu/pwessel/gshhg/)
