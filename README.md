@@ -68,26 +68,24 @@ The usage of the packages is best illustrated by means of examples, which can ei
 ## Examples: Terrain parameters (slope, horizon and sky view factor)
 
 Two terrain horizon functions are available, **horizon_gridded()** and **horizon_locations()**. The former function allows to compute horizon for gridded input while the latter allows to compute horizon for arbitrary selected locations. The second function can optionally also output the distance to the horizon. The following five examples are provided:
-- **examples/gridded_curved_DEM.py**: Compute topographic parameters (slope angle/aspect, horizon and sky view factor) from SRTM (geodetic coordinates, ~90 m resolution) for a ~50x50 km example region in the European Alps. Earth's surface curvature is considered. Plot output of this script is shown below.
+- **horizon/gridded_curved_DEM.py**: Compute topographic parameters from SRTM (geodetic coordinates, ~90 m resolution) for a ~50x50 km example region in the European Alps. Earth's surface curvature is considered. Plot output of this script is shown below.
 ![Alt text](https://github.com/ChristianSteger/Images/blob/master/Topo_slope_SVF_new.png?raw=true "Output from examples/gridded_curved_DEM.py")
-- **examples/gridded_planar_DEM.py**: Compute topographic parameters (slope angle/aspect, horizon and sky view factor) from swisstopo DHM25 (map projection, 25 m resolution) for a ~25x40 km example region in Switzerland. Earth's surface curvature is neglected.
-- **examples/locations_curved_DEM.py**: Compute topographic parameters (slope angle/aspect, horizon, distance to horizon and sky view factor) from SRTM (geodetic coordinates, ~90 m resolution) for 11 locations in Switzerland. Earth's surface curvature is considered. Plot output of this script for one location is shown below.
+- **horizon/gridded_planar_DEM.py**: Compute topographic parameters from swisstopo DHM25 (map projection, 25 m resolution) for a ~25x40 km example region in Switzerland. Earth's surface curvature is neglected.
+- **horizon/locations_curved_DEM.py**: Compute topographic parameters (additionally distance to horizon) from SRTM (geodetic coordinates, ~90 m resolution) for 11 locations in Switzerland. Earth's surface curvature is considered. Plot output of this script for one location is shown below.
 ![Alt text](https://github.com/ChristianSteger/Images/blob/master/Wengen.png?raw=true "Output from examples/locations_curved_DEM.py")
-- **examples/gridded_curved_DEM_masked.py**:
-- **examples/gridded_planar_DEM_2m.py**:
+- **horizon/gridded_curved_DEM_masked.py**: Compute topographic parameters from SRTM (geodetic coordinates, ~90 m resolution) for South Georgia in the South Atlantic Ocean. Earth's surface curvature is considered. DEM grid cells, which are at least 20 km apart from land, are masked to speed-up the horizon computation.
+- **horizon/gridded_planar_DEM_2m.py**:  Compute gridded topographic parameters from swissALTI3D (map projection, 2 m resolution) for a 3x3 km example region in Switzerland. Earth's surface curvature is neglected. The outer DEM domain is simplified and represented by a triangulated irregular network (TIN) to reduce the large memory footprint of the DEM data.
 
-
-
-gridded_curved_DEM_masked.py  DEM data with latitude/longitude coordinates (e.g. SRTM, NASADEM, MERIT) and a rectangular gridded domain (mask ocean grid cells based on distance to coast)
-gridded_planar_DEM_2m.py	  DEM data with x/y coordinates (swissALTI3D); terrain simplification of outer domain
-- **examples/gridded_NASADEM_HIMI.py**: Compute topographic parameters (slope angle and aspect, horizon and sky view factor) from NASADEM (~30 m) for a ~100x100 km region centred at Heard Island and McDonald Islands. DEM grid cells, which are at least 20 km apart from land, are masked to speed-up the horizon computation.
-- **examples/gridded_SwissALTI3D_Alps.py**: Compute topographic parameters (slope angle and aspect, horizon and sky view factor) from swissALTI3D (~2 m) for an a 3x3 km region in the European Alps. The outer DEM domain is simplified and represented by a triangulated irregular network (TIN) to reduce the large memory footprint of the DEM data.
 
 Sky view factor and related parameters
 The term sky view factor (SVF) is defined ambiguously in literature. In Zakšek et al. (2011), it referes to the solid angle of the (celestial) hemisphere. We call this parameter *visible sky fraction* and its computation is performed with the function **functions_cy.visskyfrac()**. In applications related to radiation, the SVF is typically defined as the fraction of sky radiation received at a certain location in case of isotropic sky radiation (see e.g. Helbig et al., 2009). This parameter is called *sky view factor* in our application and its computation is performed with the function **functions_cy.skyviewfactor()**. Additionally, the positive topographic openness (Yokoyama et al., 2002) can be computed with the function **functions_cy.topoopen()**. 
 
-
 ## Examples: Shadow map and correction factor for downward direct shortwave radiation
+
+- **shadow/gridded_curved_DEM_SRTM.py**:
+- **shadow/gridded_curved_DEM_REMA.py**:
+- **shadow/gridded_planar_DEM_artifical.py**:
+- **shadow/gridded_curved_DEM_NASADEM.py**
 
 # Digital elevation model and auxiliary data
 
