@@ -63,7 +63,7 @@ python -m pip install .
 
 # Usage
 
-The usage of the packages is best illustrated by means of examples, which can either be run in a Python IDE (like PyCharm or Spyder) or in the terminal. To run an examples, the path **path_out** must be adapted to a location that provides enough disk space. All input data (DEM or auxiliary data; see section below) required for the examples is downloaded automatically.
+The usage of the packages is best illustrated by means of examples, which can either be run in a Python IDE (like PyCharm or Spyder) or in the terminal. To run an examples, the path **path_out** must be adapted to a location that provides enough disk space. All input data (DEM or auxiliary data; see section below) required for running the examples is downloaded automatically.
 
 ## Examples: Terrain horizon and other terrain parameters
 
