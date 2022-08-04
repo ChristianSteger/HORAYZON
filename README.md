@@ -8,7 +8,7 @@ When you use HORAYZON, please cite:
 
 # Package dependencies
 
-HORAYZON depends on various external libraries and packages. The essential ones are listed below under **Core dependencies**. Further listed dependencies are only needed to run the examples. The examples **horizon/gridded_curved_DEM_masked.py**, **horizon/gridded_planar_DEM_2m.py** and **shadow/gridded_curved_DEM_NASADEM.py** require more complex dependencies, which are listed under **Specific dependencies for examples**. It is recommended to handle dependencies via [Conda](https://docs.conda.io/en/latest/#), which covers all dependencies except hmm.
+HORAYZON depends on various external libraries and packages. The essential ones are listed below under **Core dependencies**. Further listed dependencies are only needed to run the examples. The examples **horizon/gridded_curved_DEM_masked.py**, **horizon/gridded_planar_DEM_2m.py** and **shadow/gridded_curved_DEM_NASADEM.py** require more complex dependencies, which are listed under **Specific dependencies for examples**. It is recommended to handle dependencies via [Conda](https://docs.conda.io/en/latest/#), which covers all dependencies except **hmm**.
 
 **Core dependencies**
 - [Intel Embree](https://www.embree.org) and [Threading Building Blocks (TBB)](https://github.com/oneapi-src/oneTBB)
@@ -30,7 +30,7 @@ conda create -n horayzon_part -c conda-forge embree3 tbb-devel netcdf-cxx4 cytho
 ```bash
 conda create -n horayzon_all -c conda-forge embree3 tbb-devel netcdf-cxx4 cython numpy scipy geographiclib tqdm requests xarray netcdf4 matplotlib pillow skyfield pyproj ipython shapely fiona pygeos scikit-image rasterio trimesh
 ```
-Installation instruction for hmm can be found [here](https://github.com/fogleman/hmm). hmm's dependency glm can be installed via a package manager (e.g. APT, Homebrew, MacPorts) or via manual building from [source code](https://glm.g-truc.net/0.9.9/index.html).
+Installation instruction for **hmm** can be found [here](https://github.com/fogleman/hmm). **hmm**'s dependency **glm** can be installed via a package manager (e.g. APT, Homebrew, MacPorts) or via manual building from [source code](https://glm.g-truc.net/0.9.9/index.html).
 
 # Installation
 
