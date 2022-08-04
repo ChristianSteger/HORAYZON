@@ -10,14 +10,16 @@ from scipy.spatial import cKDTree
 import pygeos
 import time
 from skimage.measure import find_contours
+import horayzon.transform as transform
+from horayzon.auxiliary import get_path_aux_data
+from horayzon.download import file as download_file
+import zipfile
+import shutil
 
-# Load required functions
-import functions_cy
 
+# -----------------------------------------------------------------------------
 
-###############################################################################
-
-def get_GSHHS_coastlines(dom, path_GSHHG, path_temp):
+def get_gshhs_coastlines(domain):
     """Get relevant GSHHS coastline data.
 
     Get relevant GSHHS coastline data for rectangular latitude/longitude
@@ -25,44 +27,47 @@ def get_GSHHS_coastlines(dom, path_GSHHG, path_temp):
 
     Parameters
     ----------
-    dom : dict
-        Specifications of rectangular latitude/longitude domain
-        ('lat_min', 'lat_max', 'lon_min', 'lon_max')
-    path_GSHHG: str
-        Path to folder of GSHHS data with shapefile 'GSHHS_f_L1.shp'
-    path_temp: str
-        Path to temporary directory in which bounding boxes for coastline
-        polygons are cached
+    domain : dict
+        Dictionary with domain boundaries (lon_min, lon_max, lat_min, lat_max)
+        [degree]
 
     Returns
     -------
     poly_coastlines : list
-        Relevant coastline polygons as Shapely polygons
-
-    Notes
-    -----
-    Source of GSHHS data: https://www.soest.hawaii.edu/pwessel/gshhg/"""
+        Relevant coastline polygons as Shapely polygons"""
 
     # Check arguments
     keys_req = ("lon_min", "lon_max", "lat_min", "lat_max")
-    if not set(keys_req).issubset(set(dom.keys())):
-        raise ValueError("one or multiple key(s) are missing in 'dom'")
-    if (dom["lon_min"] >= dom["lon_max"])\
-            or (dom["lat_min"] >= dom["lat_max"]):
+    if not set(keys_req).issubset(set(domain.keys())):
+        raise ValueError("one or multiple key(s) are missing in 'domain'")
+    if (domain["lon_min"] >= domain["lon_max"]) \
+            or (domain["lat_min"] >= domain["lat_max"]):
         raise ValueError("invalid domain extent")
-    if not os.path.isfile(path_GSHHG + "GSHHS_f_L1.shp"):
-        raise ValueError("file 'GSHHS_f_L1.shp' not found in provided "
-                         + "path for GSHHG data")
-    if not os.path.isdir(path_temp):
-        raise ValueError("temporary directory does not exist")
+
+    # Download data
+    path_aux_data = get_path_aux_data()
+    if not os.path.isdir(path_aux_data + "GSHHG"):
+        file_url = "http://www.soest.hawaii.edu/pwessel/gshhg/" \
+                   + "gshhg-shp-2.3.7.zip"
+        print("Download GSHHG data:")
+        download_file(file_url, path_aux_data)
+        file_zipped = path_aux_data + os.path.split(file_url)[-1]
+        with zipfile.ZipFile(file_zipped, "r") as zip_ref:
+            zip_ref.extractall(path_aux_data + "GSHHG")
+        os.remove(file_zipped)
+
+        # Remove superfluous data (larger files)
+        shutil.rmtree(path_aux_data + "GSHHG/WDBII_shp/", ignore_errors=True)
+        shutil.rmtree(path_aux_data + "GSHHG/GSHHS_shp/h/", ignore_errors=True)
+        shutil.rmtree(path_aux_data + "GSHHG/GSHHS_shp/i/", ignore_errors=True)
 
     t_beg_func = time.time()
 
     # Compute and save bounding boxes of coastlines polygons
-    file_bbc = path_temp + "Bounding_boxes_coastlines.npy"
+    file_bbc = path_aux_data + "GSHHG/Bounding_boxes_coastlines.npy"
     if not os.path.isfile(file_bbc):
         t_beg = time.time()
-        ds = fiona.open(path_GSHHG + "GSHHS_f_L1.shp")
+        ds = fiona.open(path_aux_data + "GSHHG/GSHHS_shp/f/GSHHS_f_L1.shp")
         bounds = np.empty((len(ds), 4), dtype=np.float32)
         for idx, var in enumerate(ds):
             bounds[idx, :] = shape(var["geometry"]).bounds
@@ -76,12 +81,12 @@ def get_GSHHS_coastlines(dom, path_GSHHG, path_temp):
     bounds = np.load(file_bbc)
     geoms = pygeos.box(bounds[:, 0], bounds[:, 1], bounds[:, 2], bounds[:, 3])
     tree = pygeos.STRtree(geoms)
-    quer_rang = [dom["lon_min"], dom["lat_min"],
-                 dom["lon_max"], dom["lat_max"]]
+    quer_rang = [domain["lon_min"], domain["lat_min"],
+                 domain["lon_max"], domain["lat_max"]]
     ind = tree.query(pygeos.box(*quer_rang))
 
     # Load relevant polygons
-    ds = fiona.open(path_GSHHG + "GSHHS_f_L1.shp")
+    ds = fiona.open(path_aux_data + "GSHHG/GSHHS_shp/f/GSHHS_f_L1.shp")
     poly_all = [shape(ds[int(i)]["geometry"]) for i in ind]
     ds.close()
     print("Number of polygons: " + str(len(poly_all)))
@@ -100,7 +105,7 @@ def get_GSHHS_coastlines(dom, path_GSHHG, path_temp):
     return poly_coastlines
 
 
-###############################################################################
+# -----------------------------------------------------------------------------
 
 def coastline_contours(lon, lat, mask_bin):
     """Compute coastline contours.
@@ -151,7 +156,7 @@ def coastline_contours(lon, lat, mask_bin):
     return contours_latlon
 
 
-###############################################################################
+# -----------------------------------------------------------------------------
 
 def coastline_distance(x_ecef, y_ecef, z_ecef, mask_land, pts_ecef):
     """Compute minimal chord distance.
@@ -205,7 +210,7 @@ def coastline_distance(x_ecef, y_ecef, z_ecef, mask_land, pts_ecef):
     return dist_chord
 
 
-###############################################################################
+# -----------------------------------------------------------------------------
 
 def coastline_buffer(x_ecef, y_ecef, z_ecef, mask_land, pts_ecef, lat,
                      dist_thr, dem_res, ellps, block_size=(5 * 2 + 1)):
@@ -266,7 +271,7 @@ def coastline_buffer(x_ecef, y_ecef, z_ecef, mask_land, pts_ecef, lat,
                          lat_ini + dem_res * int((block_size - 1) / 2)]],
                        dtype=np.float64).reshape(1, 2)
     h_max = np.zeros(lon_max.shape, dtype=np.float32)
-    coord_ecef = functions_cy.lonlat2ecef(lon_max, lat_max, h_max, ellps=ellps)
+    coord_ecef = transform.lonlat2ecef(lon_max, lat_max, h_max, ellps=ellps)
     chord_max = np.sqrt(np.diff(coord_ecef[0])[0][0] ** 2
                         + np.diff(coord_ecef[1])[0][0] ** 2
                         + np.diff(coord_ecef[2])[0][0] ** 2)
