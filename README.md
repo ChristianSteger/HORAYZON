@@ -82,6 +82,8 @@ The term sky view factor (SVF) is defined ambiguously in literature. In Zakšek 
 
 ## Examples: Shadow map and shortwave correction factor
 
+$\dfrac{x}{y}$
+
 - **shadow/gridded_curved_DEM_SRTM.py**:
 - **shadow/gridded_curved_DEM_REMA.py**:
 - **shadow/gridded_planar_DEM_artifical.py**:
