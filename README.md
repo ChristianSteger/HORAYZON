@@ -30,7 +30,7 @@ conda create -n horayzon_base -c conda-forge embree3 tbb-devel netcdf-cxx4 cytho
 ```bash
 conda create -n horayzon_all -c conda-forge embree3 tbb-devel netcdf-cxx4 cython numpy scipy geographiclib tqdm requests xarray netcdf4 matplotlib pillow skyfield pyproj ipython shapely fiona pygeos scikit-image rasterio trimesh
 ```
-Installation instruction for **hmm** can be found [here](https://github.com/fogleman/hmm). **hmm**'s dependency **glm** can be installed via a package manager (e.g. APT, Homebrew, MacPorts) or via manual building from [source code](https://glm.g-truc.net/0.9.9/index.html).
+Installation instruction for **hmm** can be found [here](https://github.com/fogleman/hmm). **hmm**'s dependency **glm** can be installed via a package manager (e.g. APT, MacPorts, Homebrew) or via manual building from [source code](https://glm.g-truc.net/0.9.9/index.html).
 
 # Installation
 
@@ -51,8 +51,12 @@ Create an appropriate Conda environment (see examples above) and activate this e
 git clone https://github.com/ChristianSteger/HORAYZON.git
 cd HORAYZON  
 ```
-Currently, the default method of installing HORAYZON under Mac OS X fails because the NetCDF-4 C++ library provided by Conda was build with the C++ Standard Library **libc++**, which causes an incompatibility when the source code is compiled with GCC. It is therefore necessary to build and install the NetCDF-4 C++ library with GCC. 
+Currently, the default method of installing HORAYZON under Mac OS X fails because the NetCDF-4 C++ library provided by Conda was build with the C++ Standard Library **libc++**, which causes an incompatibility when the source code is compiled with GCC. It is therefore necessary to build and install the NetCDF-4 C++ library with GCC as well. This is for instance possible via MacPorts or Homebrew. The appropriate command for MacPorts is:
 
+```bash
+sudo port install netcdf-cxx4 +gcc10 
+```
+Subsequently, the path to the newly installed NetCDF-4 C++ library has to be set in HORAYZON's setup file (**setup.py**) and the package can be installed with:
 ```bash 
 python -m pip install .
 ```
