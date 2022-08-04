@@ -8,7 +8,7 @@ When you use HORAYZON, please cite:
 
 # Package dependencies
 
-HORAYZON depends on various external libraries and packages. The essential ones are listed below under **Core dependencies**. Further listed dependencies are only needed to run the examples. The examples *horizon/gridded_curved_DEM_masked.py*, *horizon/gridded_planar_DEM_2m.py* and *shadow/gridded_curved_DEM_NASADEM.py* require more complex dependencies, which are listed under **Specific dependencies**.
+HORAYZON depends on various external libraries and packages. The essential ones are listed below under **Core dependencies**. Further listed dependencies are only needed to run the examples. The examples **horizon/gridded_curved_DEM_masked.py**, **horizon/gridded_planar_DEM_2m.py** and **shadow/gridded_curved_DEM_NASADEM.py** require more complex dependencies, which are listed under **Specific dependencies**.
 
 **Core dependencies**
 - Intel Embree (https://www.embree.org) and Threading Building Blocks (TBB) (https://github.com/oneapi-src/oneTBB)
