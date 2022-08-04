@@ -90,11 +90,12 @@ The term sky view factor (SVF) is defined ambiguously in literature. In Zakšek 
 # Digital elevation model and auxiliary data
 
 Digital elevation model (DEM) data is available from various sources, e.g.:
-- [NASADEM](https://search.earthdata.nasa.gov/)
 - [SRTM](https://srtm.csi.cgiar.org)
+- [DHM25](https://www.swisstopo.admin.ch/en/geodata/height/dhm25.html)
+- [swissALTI3D](https://www.swisstopo.admin.ch/en/geodata/height/alti3d.html)
+- [NASADEM](https://search.earthdata.nasa.gov/)
 - [MERIT](http://hydro.iis.u-tokyo.ac.jp/~yamadai/MERIT_DEM/)
 - [USGS 1/3rd arc-second DEM](https://www.sciencebase.gov/catalog/item/4f70aa9fe4b058caae3f8de5)
-- [swissALTI3D](https://www.swisstopo.admin.ch/en/geodata/height/alti3d.html)
 
 Auxiliary data, like geoid undulation data (EGM96 and GEOID12A), coastline polygons (GSHHG) or glacier outlines (GAMDAM) are for instance available here:
 - [EGM96](https://earth-info.nga.mil)
