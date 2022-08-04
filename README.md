@@ -117,4 +117,4 @@ Auxiliary data, like geoid undulation data (EGM96 and GEOID12A), coastline polyg
 - Müller, M. D., and Scherer, D. (2005): A Grid- and Subgrid-Scale Radiation Parameterization of Topographic Effects for Mesoscale Weather Forecast Models, Monthly Weather Review, 133(6), 1431-1442, https://journals.ametsoc.org/view/journals/mwre/133/6/mwr2927.1.xml
 
 # Support 
-In case of issues or questions, please contact Christian Steger (christian.steger@env.ethz.ch).
+In case of issues or questions, please contact Christian R. Steger (christian.steger@env.ethz.ch).
