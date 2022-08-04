@@ -91,8 +91,8 @@ where $\vec{h}$ is the normal of the horizontal surface, $\vec{t}$ the normal of
 
 - **shadow/gridded_curved_DEM_SRTM.py**: Compute shadow map and shortwave correction factor from SRTM (geodetic coordinates, ~90 m resolution) for South Georgia in the South Atlantic Ocean for a day in southern-hemisphere winter. Earth's surface curvature and atmospheric refraction is considered.
 - **shadow/gridded_curved_DEM_REMA.py**: Compute shortwave correction factor from REMA (map projection, ~100 m resolution) for an example region in Antarctica for a day in southern-hemisphere summer. Earth's surface curvature and atmospheric refraction is considered and ocean grid cells are ignored.
-- **shadow/gridded_planar_DEM_artifical.py**:
-- **shadow/gridded_curved_DEM_NASADEM.py**
+- **shadow/gridded_planar_DEM_artifical.py**: Compute shortwave correction factor from artifical topography (hemispherical mountain in the centre). The illumination source (sun) rotates once around the centre.
+- **shadow/gridded_curved_DEM_NASADEM.py** Compute shortwave correction factor from NASADEM (geodetic coordinates, ~30 m resolution) for an example region in the Karakoram for a day in northern-hemisphere winter. Earth's surface curvature is considered and atmospheric refraction ignored. All non-glacier grid cells are masked to speed-up the horizon computation.
 
 # Digital elevation model and auxiliary data
 
