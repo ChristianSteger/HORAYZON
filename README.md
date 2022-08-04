@@ -11,14 +11,14 @@ When you use HORAYZON, please cite:
 **Core dependencies**
 - Intel Embree (https://www.embree.org) and Threading Building Blocks (TBB) (https://github.com/oneapi-src/oneTBB)
 - NetCDF-4 C++ library (https://github.com/Unidata/netcdf-cxx4)
-- Python packages: cython numpy scipy geographiclib tqdm requests xarray
+- Python packages: *cython numpy scipy geographiclib tqdm requests xarray*
 
 **Major dependencies of examples**
 - Python packages: netcdf4 matplotlib pillow skyfield pyproj ipython
 
 **Specific dependencies for examples (masking and high-resolution DEM examples; GDAL dependence)**
 - Python packages: shapely fiona pygeos scikit-image rasterio trimesh
-- heightmap meshing utility (hmm)
+- heightmap meshing utility (hmm) (https://github.com/fogleman/hmm)
 
 # Installation
 
