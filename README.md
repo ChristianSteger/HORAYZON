@@ -51,7 +51,7 @@ Create an appropriate Conda environment (see examples above) and activate this e
 git clone https://github.com/ChristianSteger/HORAYZON.git
 cd HORAYZON  
 ```
-Currently, the default method of installing HORAYZON under Mac OS X fails because the NetCDF-4 C++ library provided by Conda was build with the C++ Standard Library **libc++**, which causes an incompatibility when the source code is compiled with GCC. It is therefore necessary to build and install the NetCDF-4 C++ library with GCC as well. This is for instance possible via MacPorts or Homebrew. The appropriate command for MacPorts is:
+Currently, the default method of installing HORAYZON under Mac OS X fails because the NetCDF-4 C++ library provided by Conda was built with the C++ Standard Library **libc++**, which causes an incompatibility when the source code is compiled with GCC. It is therefore necessary to build and install the NetCDF-4 C++ library with GCC as well. This is for instance possible via MacPorts or Homebrew. The appropriate command for MacPorts is:
 
 ```bash
 sudo port install netcdf-cxx4 +gcc10 
@@ -78,7 +78,7 @@ Two terrain horizon functions are available, **horizon_gridded()** and **horizon
 
 
 **A remark on sky view factor and related parameters**<br/>
-The term sky view factor (SVF) is defined ambiguously in literature. In Zakšek et al. (2011), it referes to the solid angle of the (celestial) hemisphere. We call this parameter *visible sky fraction* and its computation is performed with the function **topo_param.visible_sky_fraction()**. In applications related to radiation, the SVF is typically defined as the fraction of sky radiation received at a certain location in case of isotropic sky radiation (see e.g. Helbig et al., 2009). This parameter is called *sky view factor* in our application and its computation is performed with the function **topo_param.sky_view_factor()**. Additionally, the positive topographic openness (Yokoyama et al., 2002) can be computed with the function **topo_param.topographic_openness()**. 
+The term sky view factor (SVF) is defined ambiguously in literature. In Zakšek et al. (2011), it refers to the solid angle of the (celestial) hemisphere. We call this parameter *visible sky fraction* and its computation is performed with the function **topo_param.visible_sky_fraction()**. In applications related to radiation, the SVF is typically defined as the fraction of sky radiation received at a certain location in case of isotropic sky radiation (see e.g. Helbig et al., 2009). This parameter is called *sky view factor* in our application and its computation is performed with the function **topo_param.sky_view_factor()**. Additionally, the positive topographic openness (Yokoyama et al., 2002) can be computed with the function **topo_param.topographic_openness()**. 
 
 ## Examples: Shadow map and shortwave correction factor
 
@@ -92,7 +92,7 @@ where $\vec{h}$ is the normal of the horizontal surface, $\vec{t}$ the normal of
 - **shadow/gridded_curved_DEM_SRTM.py**: Compute shadow map and shortwave correction factor from SRTM (geodetic coordinates, ~90 m resolution) for South Georgia in the South Atlantic Ocean for a day in southern-hemisphere winter. Earth's surface curvature and atmospheric refraction are considered. Plot output of this script is shown below.
 ![Alt text](https://github.com/ChristianSteger/Images/blob/master/Elevation_sw_dir_cor.png?raw=true "Output from shadow/gridded_curved_DEM_SRTM.py")
 - **shadow/gridded_curved_DEM_REMA.py**: Compute shortwave correction factor from REMA (map projection, ~100 m resolution) for an example region in Antarctica for a day in southern-hemisphere summer. Earth's surface curvature and atmospheric refraction are considered and ocean grid cells are ignored.
-- **shadow/gridded_planar_DEM_artifical.py**: Compute shortwave correction factor from artifical topography (hemispherical mountain in the centre). The illumination source (sun) rotates once around the centre.
+- **shadow/gridded_planar_DEM_artificial.py**: Compute shortwave correction factor from artificial topography (hemispherical mountain in the centre). The illumination source (sun) rotates once around the centre.
 - **shadow/gridded_curved_DEM_NASADEM.py** Compute shortwave correction factor from NASADEM (geodetic coordinates, ~30 m resolution) for an example region in the Karakoram for a day in northern-hemisphere winter. Earth's surface curvature is considered and atmospheric refraction ignored. All non-glacier grid cells are masked to speed-up computation.
 
 # Digital elevation model and auxiliary data
