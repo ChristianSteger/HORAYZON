@@ -6,6 +6,15 @@ When you use HORAYZON, please cite:
 
 **Steger, C. R., Steger, B. and Schär, C (2022): HORAYZON v1.0: An efficient and flexible ray-tracing algorithm to compute horizon and sky view factor, Geosci. Model Dev., https://doi.org/10.5194/gmd-2022-58**
 
+# Dependencies
+
+**Core dependencies**
+- Intel&copy and Embree (https://www.embree.org) and Threading Building Blocks (TBB) (https://github.com/oneapi-src/oneTBB)
+- NetCDF4 C++ library. Source code and compilation instructions can be found here: https://github.com/Unidata/netcdf-cxx4
+- Heightmap meshing utility (hmm). Optional &ndash; only required if remote terrain simplification should be applied in case of elevation data with very high (<5 m) resolution. Source code and compilation instructions can be found here: https://github.com/fogleman/hmm
+- Python packages
+
+
 # Installation
 
 ## Linux
@@ -16,12 +25,6 @@ Placeholder
 
 ## Windows
 Installation was not yet tested.
-
-## Package dependencies
-- Intel&copy; Embree with Intel Threading Building Blocks (TBB) and GLFW. Source code and compilation instructions can be found here: https://github.com/embree/embree
-- NetCDF4 C++ library. Source code and compilation instructions can be found here: https://github.com/Unidata/netcdf-cxx4
-- Heightmap meshing utility (hmm). Optional &ndash; only required if remote terrain simplification should be applied in case of elevation data with very high (<5 m) resolution. Source code and compilation instructions can be found here: https://github.com/fogleman/hmm
-- Python packages
 
 # Usage
 
