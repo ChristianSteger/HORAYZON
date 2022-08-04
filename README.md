@@ -89,7 +89,7 @@ $f_{cor} = \left( \dfrac{1.0}{\vec{h} \times \vec{s}} \right) \left( \dfrac{1.0}
 
 where $\vec{h}$ is the normal of the horizontal surface, $\vec{t}$ the normal of the tilted surface, $\vec{s}$ the sun position vector and ${mask}_{shadow}$ the terrain-shading mask (0: shadow, 1: illuminated). All above vectors represent unit vectors.
 
-- **shadow/gridded_curved_DEM_SRTM.py**:
+- **shadow/gridded_curved_DEM_SRTM.py**: Compute shadow map and shortwave correction factor from SRTM (geodetic coordinates, ~90 m resolution) for South Georgia in the South Atlantic Ocean for a day in southern-hemisphere winter (2022.06.21). Earth's surface curvature and atmospheric refraction is considered.
 - **shadow/gridded_curved_DEM_REMA.py**:
 - **shadow/gridded_planar_DEM_artifical.py**:
 - **shadow/gridded_curved_DEM_NASADEM.py**
