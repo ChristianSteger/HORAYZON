@@ -82,6 +82,8 @@ The term sky view factor (SVF) is defined ambiguously in literature. In Zakšek 
 
 ## Examples: Shadow map and shortwave correction factor
 
+The module **shadow** allows to compute shadow maps and correction factors for downwelling direct shortwave radiation for terrains and specific sun positions. A class **shadow.Terrain** can be created and initialised for this purpose, which can then be used for arbitrary sun positions. The output of the method **Terrain.shadow()** is encoded as follows: 0: illuminated, 1: self-shaded, 2: terrain-shaded, 3: not considered (respectively masked).
+
 $\dfrac{x}{y}$
 
 - **shadow/gridded_curved_DEM_SRTM.py**:
