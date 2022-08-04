@@ -65,7 +65,7 @@ python -m pip install .
 
 The usage of the packages is best illustrated by means of examples, which can either be run in a Python IDE (like PyCharm or Spyder) or in the terminal. To run an examples, the path **path_out** must be adapted to a location that provides enough disk space. All input data (DEM or auxiliary data; see section below) required for running the examples is downloaded automatically.
 
-## Examples: Terrain parameters (slope angle/aspect, horizon and sky view factor)
+## Examples: Terrain parameters (slope, horizon and sky view factor)
 
 Two terrain horizon functions are available, **horizon_gridded()** and **horizon_locations()**. The former function allows to compute horizon for gridded input while the latter allows to compute horizon for arbitrary selected locations. The second function can optionally also output the distance to the horizon. The following five examples are provided:
 - **examples/gridded_curved_DEM.py**: Compute topographic parameters (slope angle/aspect, horizon and sky view factor) from SRTM (geodetic coordinates, ~90 m resolution) for a ~50x50 km example region in the European Alps. Earth's surface curvature is considered. Plot output of this script is shown below.
