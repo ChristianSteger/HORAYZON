@@ -1,6 +1,6 @@
 # HORAYZON
 
-**Short description of package**
+**Package to efficiently compute terrain parameters (like horizon, sky view factor, topographic openness, slope angle/aspect) from high-resolution digital elevation model data. The package also allows to compute shadow maps (and correction factors for downwelling direct shortwave radiation) for specific sun positions.**
 
 Package to efficiently compute terrain parameters **horizon**, **sky view factor** and slope angle/aspect from high-resolution elevation data. Horizon computation is based on the high-performance ray-tracing library Intel&copy; Embree. Calculations are parallelised with OpenMP (Cython code) or Threading Building Blocks (C++ code). A description of the algorithm is published in the journal of Geoscientific Model Development (Steger et al., 2022).
 - General information, brief overview of packages
