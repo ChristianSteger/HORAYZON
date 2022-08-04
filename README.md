@@ -94,7 +94,7 @@ where $\vec{h}$ is the normal of the horizontal surface, $\vec{t}$ the normal of
 - **shadow/gridded_planar_DEM_artifical.py**: Compute shortwave correction factor from artifical topography (hemispherical mountain in the centre). The illumination source (sun) rotates once around the centre.
 - **shadow/gridded_curved_DEM_NASADEM.py** Compute shortwave correction factor from NASADEM (geodetic coordinates, ~30 m resolution) for an example region in the Karakoram for a day in northern-hemisphere winter. Earth's surface curvature is considered and atmospheric refraction ignored. All non-glacier grid cells are masked to speed-up computation.
 
-![Alt text](https://github.com/ChristianSteger/Images/blob/master/giphy.gif?raw=true "Output from horizon/locations_curved_DEM.py")
+
 
 # Digital elevation model and auxiliary data
 
