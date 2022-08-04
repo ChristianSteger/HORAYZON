@@ -37,7 +37,8 @@ Installation instruction for **hmm** can be found [here](https://github.com/fogl
 HORAYZON has been tested on **Python 3.10** under **Linux** and **Mac OS X**. Installation can be accomplished as follows:
 
 ## Linux
-- Create an appropriate Conda environment (see examples above)
+
+Create an appropriate Conda environment (see examples above) and activate this environment. The HORAYZON package can then be installed with:
 ```bash
 git clone https://github.com/ChristianSteger/HORAYZON.git
 cd HORAYZON  
@@ -45,7 +46,7 @@ python -m pip install .
 ```
 
 ## MacOS
-- Create an appropriate Conda environment (see examples above)
+- Create an appropriate Conda environment (see examples above) and activate environment
 ```bash
 git clone https://github.com/ChristianSteger/HORAYZON.git
 cd HORAYZON  
