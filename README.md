@@ -13,7 +13,7 @@ HORAYZON depends on multiple external libraries and packages. The essential ones
 **Core dependencies**
 - [Intel Embree](https://www.embree.org) and [Threading Building Blocks (TBB)](https://github.com/oneapi-src/oneTBB)
 - [NetCDF-4 C++ library](https://github.com/Unidata/netcdf-cxx4)
-- Python packages: Cython, NumPy, SciPy, GeographicLib, tqdm, Requests, xarray
+- Python packages: Cython, NumPy, SciPy, GeographicLib, tqdm, requests, xarray
 ```bash
 conda create -n horayzon_core -c conda-forge embree3 tbb-devel netcdf-cxx4 cython numpy scipy geographiclib tqdm requests xarray
 ```
@@ -37,10 +37,23 @@ Installation instruction for **hmm** can be found [here](https://github.com/fogl
 HORAYZON has been tested on **Python 3.10** under **Linux** and **Mac OS X**. Installation can be accomplished as follows:
 
 ## Linux
-Placeholder
+- Create an appropriate Conda environment (see examples above)
+```bash
+git clone https://github.com/ChristianSteger/HORAYZON.git
+cd HORAYZON  
+python -m pip install .
+```
 
 ## MacOS
-Placeholder
+- Create an appropriate Conda environment (see examples above)
+```bash
+git clone https://github.com/ChristianSteger/HORAYZON.git
+cd HORAYZON  
+```
+
+```bash 
+python -m pip install .
+```
 
 # Usage
 
