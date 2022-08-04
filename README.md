@@ -30,7 +30,7 @@ conda create -n horayzon_part -c conda-forge embree3 tbb-devel netcdf-cxx4 cytho
 ```bash
 conda create -n horayzon_all -c conda-forge embree3 tbb-devel netcdf-cxx4 cython numpy scipy geographiclib tqdm requests xarray netcdf4 matplotlib pillow skyfield pyproj ipython shapely fiona pygeos scikit-image rasterio trimesh
 ```
-
+Installation instruction for hmm can be found [here](https://github.com/fogleman/hmm). hmm's dependency glm can be installed via a package manager (e.g. APT, Homebrew, MacPorts) or via manual building from [source code](https://glm.g-truc.net/0.9.9/index.html).
 
 # Installation
 
