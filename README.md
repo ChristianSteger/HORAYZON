@@ -15,13 +15,13 @@ HORAYZON depends on various external libraries and packages. The essential ones 
 - [NetCDF-4 C++ library](https://github.com/Unidata/netcdf-cxx4)
 - Python packages: *cython numpy scipy geographiclib tqdm requests xarray*
 ```bash
-conda create -n horayzon_base -c conda-forge embree3 tbb-devel netcdf-cxx4 cython numpy scipy geographiclib tqdm requests xarray
+conda create -n horayzon_core -c conda-forge embree3 tbb-devel netcdf-cxx4 cython numpy scipy geographiclib tqdm requests xarray
 ```
 
-**Major dependencies of examples**
+**Base dependencies of examples**
 - Python packages: *netcdf4 matplotlib pillow skyfield pyproj ipython*
 ```bash
-conda create -n horayzon_part -c conda-forge embree3 tbb-devel netcdf-cxx4 cython numpy scipy geographiclib tqdm requests xarray netcdf4 matplotlib pillow skyfield pyproj ipython
+conda create -n horayzon_base -c conda-forge embree3 tbb-devel netcdf-cxx4 cython numpy scipy geographiclib tqdm requests xarray netcdf4 matplotlib pillow skyfield pyproj ipython
 ```
 
 **Specific dependencies for examples (masking and high-resolution DEM examples; GDAL dependency)**
