@@ -10,7 +10,7 @@ When you use HORAYZON, please cite:
 
 HORAYZON depends on various external libraries and packages. The essential ones are listed below under **Core dependencies**. Further listed dependencies are only needed to run the examples. The examples **horizon/gridded_curved_DEM_masked.py**, **horizon/gridded_planar_DEM_2m.py** and **shadow/gridded_curved_DEM_NASADEM.py** require more complex dependencies, which are listed under **Specific dependencies for examples**. It is recommended to handle dependencies via [Conda](https://docs.conda.io/en/latest/#), which covers all dependencies except **hmm**.
 
-## Core dependencies
+**Core dependencies**
 - [Intel Embree](https://www.embree.org) and [Threading Building Blocks (TBB)](https://github.com/oneapi-src/oneTBB)
 - [NetCDF-4 C++ library](https://github.com/Unidata/netcdf-cxx4)
 - Python packages: *cython numpy scipy geographiclib tqdm requests xarray*
@@ -18,13 +18,13 @@ HORAYZON depends on various external libraries and packages. The essential ones 
 conda create -n horayzon_core -c conda-forge embree3 tbb-devel netcdf-cxx4 cython numpy scipy geographiclib tqdm requests xarray
 ```
 
-## Base dependencies of examples
+**Base dependencies of examples**
 - Python packages: *netcdf4 matplotlib pillow skyfield pyproj ipython*
 ```bash
 conda create -n horayzon_base -c conda-forge embree3 tbb-devel netcdf-cxx4 cython numpy scipy geographiclib tqdm requests xarray netcdf4 matplotlib pillow skyfield pyproj ipython
 ```
 
-## Specific dependencies for examples (masking and high-resolution DEM examples; GDAL dependency)
+**Specific dependencies for examples (masking and high-resolution DEM examples; GDAL dependency)**
 - Python packages: *shapely fiona pygeos scikit-image rasterio trimesh*
 - [heightmap meshing utility (hmm)](https://github.com/fogleman/hmm)
 ```bash
