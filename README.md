@@ -8,7 +8,7 @@ When you use HORAYZON, please cite:
 
 # Package dependencies
 
-HORAYZON depends on various external libraries and packages. The essential ones are listed below under **Core dependencies**. Further listed dependencies are only needed to run the examples. The examples **horizon/gridded_curved_DEM_masked.py**, **horizon/gridded_planar_DEM_2m.py** and **shadow/gridded_curved_DEM_NASADEM.py** require more complex dependencies, which are listed under **Specific dependencies for examples**. It is recommended to handle dependencies via [Conda](https://docs.conda.io/en/latest/#), which covers all dependencies except **hmm**.
+HORAYZON depends on various external libraries and packages. The essential ones are listed below under **Core dependencies**. Further listed dependencies are only needed to run the examples. The examples **horizon/gridded_curved_DEM_masked.py**, **horizon/gridded_planar_DEM_2m.py** and **shadow/gridded_curved_DEM_NASADEM.py** require more complex dependencies, which are listed under **Specific dependencies for examples**. It is recommended to handle dependencies via [Conda](https://docs.conda.io/en/latest/#), which covers all dependencies except **hmm**. It is recommended to create a new Conda environment for HORAYZON according to the following three examples.
 
 **Core dependencies**
 - [Intel Embree](https://www.embree.org) and [Threading Building Blocks (TBB)](https://github.com/oneapi-src/oneTBB)
@@ -34,7 +34,7 @@ Installation instruction for **hmm** can be found [here](https://github.com/fogl
 
 # Installation
 
-HORAYZON has been tested on Python 3.10 under Linux and Mac OS X. Installation can be accomplished as follows:
+HORAYZON has been tested on **Python 3.10** under **Linux** and **Mac OS X**. Installation can be accomplished as follows:
 
 ## Linux
 Placeholder
