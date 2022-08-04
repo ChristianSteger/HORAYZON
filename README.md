@@ -34,7 +34,7 @@ Installation instruction for **hmm** can be found [here](https://github.com/fogl
 
 # Installation
 
-HORAYZON has been tested on **Python 3.10** under **Linux** and **Mac OS X**. Installation can be accomplished as follows:
+HORAYZON has been tested on **Python 3.10** under **Linux** and **Mac OS X**. Installation requires the GNU Compiler Collection (GCC)[https://gcc.gnu.org] and can be accomplished as follows:
 
 ## Linux
 
@@ -45,12 +45,13 @@ cd HORAYZON
 python -m pip install .
 ```
 
-## MacOS
-- Create an appropriate Conda environment (see examples above) and activate environment
+## Mac OS X
+Create an appropriate Conda environment (see examples above) and activate this environment. Download the HORAYZON package and change to the main directory:
 ```bash
 git clone https://github.com/ChristianSteger/HORAYZON.git
 cd HORAYZON  
 ```
+Currently, the default method of installing HORAYZON under Mac OS X fails because the NetCDF-4 C++ library provided by Conda was build with the C++ Standard Library **libc++**, which causes an incompatibility when the source code is compiled with GCC. It is therefore necessary to build and install the NetCDF-4 C++ library with GCC. 
 
 ```bash 
 python -m pip install .
