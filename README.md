@@ -69,7 +69,7 @@ The usage of the packages is best illustrated by means of examples, which can ei
 
 Two terrain horizon functions are available, **horizon_gridded()** and **horizon_locations()**. The former function allows to compute horizon for gridded input while the latter allows to compute horizon for arbitrary selected locations. The second function can optionally also output the distance to the horizon. The following five examples are provided:
 - **examples/gridded_curved_DEM.py**: Compute topographic parameters (slope angle/aspect, horizon and sky view factor) from SRTM (geodetic coordinates, ~90 m resolution) for a ~50x50 km example region in the European Alps. Earth's surface curvature is considered. Plot output of this script is shown below.
-![Alt text](https://github.com/ChristianSteger/Images/blob/master/Topo_slope_SVF.png?raw=true "Output from examples/NASADEM_Alps.py")
+![Alt text](https://github.com/ChristianSteger/Images/blob/master/Topo_slope_SVF_new.png?raw=true "Output from examples/gridded_curved_DEM.py")
 - **examples/gridded_planar_DEM.py**: Compute topographic parameters (slope angle/aspect, horizon and sky view factor) from swisstopo DHM25 (map projection, 25 m resolution) for a ~25x40 km example region in Switzerland. Earth's surface curvature is neglected.
 - **examples/locations_curved_DEM.py**: Compute topographic parameters (slope angle/aspect, horizon, distance to horizon and sky view factor) from SRTM (geodetic coordinates, ~90 m resolution) for 11 locations in Switzerland. Earth's surface curvature is considered. Some plot output of this script is shown below.
 - **examples/gridded_curved_DEM_masked.py**:
