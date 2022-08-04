@@ -16,7 +16,7 @@ When you use HORAYZON, please cite:
 **Major dependencies of examples**
 - Python packages: netcdf4 matplotlib pillow skyfield pyproj ipython
 
-**Specific dependencies for examples (used in masking and high-resolution DEM examples; depending on GDAL)**
+**Specific dependencies for examples (masking and high-resolution DEM examples; GDAL dependence)**
 - Python packages: shapely fiona pygeos scikit-image rasterio trimesh
 - heightmap meshing utility (hmm)
 
