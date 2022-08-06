@@ -34,11 +34,11 @@ Installation instruction for **hmm** can be found [here](https://github.com/fogl
 
 # Installation
 
-HORAYZON has been tested on **Python 3.10** under **Linux** and **Mac OS X**. Installation requires the [GNU Compiler Collection (GCC)](https://gcc.gnu.org) and can be accomplished as follows:
+HORAYZON has been tested on **Python 3.10** under **Linux** and **Mac OS X**. Installation can be accomplished as follows:
 
 ## Linux
 
-Create an appropriate Conda environment (see examples above) and activate this environment. The HORAYZON package can then be installed with:
+Installation requires the [GNU Compiler Collection (GCC)](https://gcc.gnu.org). Create an appropriate Conda environment (see examples above) and activate this environment. The HORAYZON package can then be installed with:
 ```bash
 git clone https://github.com/ChristianSteger/HORAYZON.git
 cd HORAYZON  
@@ -46,18 +46,15 @@ python -m pip install .
 ```
 
 ## Mac OS X
-Create an appropriate Conda environment (see examples above) and activate this environment. Download the HORAYZON package and change to the main directory:
+
+Create an appropriate Conda environment (see examples above) and activate this environment. HORAYZON is compiled with **Clang** under Mac OS X. As the apple-provided **Clang** does not support OpenMP, an alternative **Clang** with OpenMP support has to be installed. This can be done via Conda:
+```bash
+conda install -c conda-forge c-compiler openmp
+```
+The HORAYZON package can then be installed with:
 ```bash
 git clone https://github.com/ChristianSteger/HORAYZON.git
-cd HORAYZON  
-```
-Currently, the default method of installing HORAYZON under Mac OS X fails because the NetCDF-4 C++ library provided by Conda was built with the C++ Standard Library **libc++**, which causes an incompatibility when the source code is compiled with GCC. It is therefore necessary to build and install the NetCDF-4 C++ library with GCC as well. This is for instance possible via MacPorts or Homebrew. The appropriate command for MacPorts is:
-
-```bash
-sudo port install netcdf-cxx4 +gcc10 
-```
-Subsequently, the path to the newly installed NetCDF-4 C++ library has to be set in HORAYZON's setup file (**setup.py**) and the package can be installed with:
-```bash 
+cd HORAYZON
 python -m pip install .
 ```
 
