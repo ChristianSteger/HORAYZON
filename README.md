@@ -47,7 +47,7 @@ python -m pip install .
 
 ## Mac OS X
 
-Create an appropriate Conda environment (see examples above) and **activate this environment**. HORAYZON is compiled with **Clang** under Mac OS X. As the apple-provided **Clang** does not support OpenMP, an alternative **Clang** with OpenMP support has to be installed. This can be done via Conda:
+Create an appropriate Conda environment (see examples above) and **activate this environment**. HORAYZON is compiled with **Clang** under Mac OS X. As the Apple-provided **Clang** does not support OpenMP, an alternative **Clang** with OpenMP support has to be installed. This can be done via Conda:
 ```bash
 conda install -c conda-forge c-compiler openmp
 ```
