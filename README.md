@@ -38,22 +38,22 @@ HORAYZON has been tested on **Python 3.10** under **Linux** and **Mac OS X**. In
 
 ## Linux
 
-Installation requires the [GNU Compiler Collection (GCC)](https://gcc.gnu.org). Create an appropriate Conda environment (see examples above) and activate this environment. The HORAYZON package can then be installed with:
+Installation requires the [GNU Compiler Collection (GCC)](https://gcc.gnu.org). Create an appropriate Conda environment (see examples above) and **activate this environment**. The HORAYZON package can then be installed with:
 ```bash
-git clone https://github.com/ChristianSteger/HORAYZON.git
+git clone --branch installation https://github.com/ChristianSteger/HORAYZON.git
 cd HORAYZON  
 python -m pip install .
 ```
 
 ## Mac OS X
 
-Create an appropriate Conda environment (see examples above) and activate this environment. HORAYZON is compiled with **Clang** under Mac OS X. As the apple-provided **Clang** does not support OpenMP, an alternative **Clang** with OpenMP support has to be installed. This can be done via Conda:
+Create an appropriate Conda environment (see examples above) and **activate this environment**. HORAYZON is compiled with **Clang** under Mac OS X. As the apple-provided **Clang** does not support OpenMP, an alternative **Clang** with OpenMP support has to be installed. This can be done via Conda:
 ```bash
 conda install -c conda-forge c-compiler openmp
 ```
 The HORAYZON package can then be installed with:
 ```bash
-git clone https://github.com/ChristianSteger/HORAYZON.git
+git clone --branch installation https://github.com/ChristianSteger/HORAYZON.git
 cd HORAYZON
 python -m pip install .
 ```
