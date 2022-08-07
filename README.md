@@ -31,12 +31,11 @@ conda create -n horayzon_base -c conda-forge embree3 tbb-devel netcdf-cxx4 cytho
 conda create -n horayzon_all -c conda-forge embree3 tbb-devel netcdf-cxx4 cython numpy scipy geographiclib tqdm requests xarray netcdf4 matplotlib pillow skyfield pyproj ipython shapely fiona pygeos scikit-image rasterio trimesh
 ```
 Installation instruction for **hmm** can be found [here](https://github.com/fogleman/hmm). **hmm** depends on **glm**, which can either be installed via a package manager (like Conda) or via manual building from [source code](https://glm.g-truc.net/0.9.9/index.html).
-It is likely that the following two lines of **hmm**'s Makefile have to be adapted to:
+In case **glm** is installed via Conda, the following two lines of **hmm**'s Makefile have to be adapted to:
 ```bash
 COMPILE_FLAGS = -std=c++11 -flto -O3 -Wall -Wextra -Wno-sign-compare -march=native -lGL -lglut -lGLEW -I<path to conda environment include directory>
 INSTALL_PREFIX = <binary install path>
 ```
-The include path in the first line above must point to the location in which **glm** was installed - the above example is valid for a **glm** installation via Conda.
 
 # Installation
 
