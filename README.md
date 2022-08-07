@@ -34,7 +34,7 @@ Installation instruction for **hmm** can be found [here](https://github.com/fogl
 It is likely that the following to lines of **hmm**'s Makefile have to be adapted to:
 ```bash
 COMPILE_FLAGS = -std=c++11 -flto -O3 -Wall -Wextra -Wno-sign-compare -march=native -lGL -lglut -lGLEW -I<path to conda environment include directory>
-INSTALL_PREFIX = <install path for binary>
+INSTALL_PREFIX = <binary install path>
 ```
 The include path in the first line above must point to the location in which **glm** was installed - the above example is valid for a **glm** installation via Conda.
 
