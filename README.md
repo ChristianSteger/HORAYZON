@@ -78,7 +78,7 @@ cd HORAYZON
 python -m pip install .
 ```
 
-## Installation of hmm
+## Optional installation of hmm
 Installation instruction for **hmm** can be found [here](https://github.com/fogleman/hmm). **hmm** depends on **glm**, which can either be installed via a package manager (like Conda) or via manual building from [source code](https://glm.g-truc.net/0.9.9/index.html).
 In case **glm** is installed via Conda, the following two lines of **hmm**'s Makefile have to be adapted to:
 ```bash
