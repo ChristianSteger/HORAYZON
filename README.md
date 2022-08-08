@@ -14,22 +14,14 @@ HORAYZON depends on multiple external libraries and packages. The essential ones
 - [Intel Embree](https://www.embree.org) and [Threading Building Blocks (TBB)](https://github.com/oneapi-src/oneTBB)
 - [NetCDF-4 C++ library](https://github.com/Unidata/netcdf-cxx4)
 - Python packages: Cython, NumPy, SciPy, GeographicLib, tqdm, requests, xarray
-```bash
-conda create -n horayzon_core -c conda-forge embree3 tbb-devel netcdf-cxx4 cython numpy scipy geographiclib tqdm requests xarray
-```
 
 **Base dependencies of examples**
 - Python packages: netCDF4, Matplotlib, Pillow, Skyfield, pyproj, IPython
-```bash
-conda create -n horayzon_base -c conda-forge embree3 tbb-devel netcdf-cxx4 cython numpy scipy geographiclib tqdm requests xarray netcdf4 matplotlib pillow skyfield pyproj ipython
-```
 
 **Specific dependencies for examples (masking and high-resolution DEM examples; GDAL dependency)**
 - Python packages: Shapely, fiona, PyGEOS, scikit-image, Rasterio, Trimesh
 - [heightmap meshing utility (hmm)](https://github.com/fogleman/hmm)
-```bash
-conda create -n horayzon_all -c conda-forge embree3 tbb-devel netcdf-cxx4 cython numpy scipy geographiclib tqdm requests xarray netcdf4 matplotlib pillow skyfield pyproj ipython shapely fiona pygeos scikit-image rasterio trimesh
-```
+
 Installation instruction for **hmm** can be found [here](https://github.com/fogleman/hmm). **hmm** depends on **glm**, which can either be installed via a package manager (like Conda) or via manual building from [source code](https://glm.g-truc.net/0.9.9/index.html).
 In case **glm** is installed via Conda, the following two lines of **hmm**'s Makefile have to be adapted to:
 ```bash
@@ -43,7 +35,24 @@ HORAYZON has been tested on **Python 3.10** under **Linux** and **Mac OS X**. In
 
 ## Linux
 
-Installation requires the [GNU Compiler Collection (GCC)](https://gcc.gnu.org). Create an appropriate Conda environment (see examples above) and **activate this environment**. The HORAYZON package can then be installed with:
+Installation requires the [GNU Compiler Collection (GCC)](https://gcc.gnu.org). Create an appropriate Conda environment and **activate this environment**:
+
+**Core dependencies**
+```bash
+conda create -n horayzon_core -c conda-forge embree3 tbb-devel netcdf-cxx4 cython numpy scipy geographiclib tqdm requests xarray
+```
+
+**Base dependencies of examples**
+```bash
+conda create -n horayzon_base -c conda-forge embree3 tbb-devel netcdf-cxx4 cython numpy scipy geographiclib tqdm requests xarray netcdf4 matplotlib pillow skyfield pyproj ipython
+```
+
+**Specific dependencies for examples (masking and high-resolution DEM examples; GDAL dependency)**
+```bash
+conda create -n horayzon_all -c conda-forge embree3 tbb-devel netcdf-cxx4 cython numpy scipy geographiclib tqdm requests xarray netcdf4 matplotlib pillow skyfield pyproj ipython shapely fiona pygeos scikit-image rasterio trimesh
+```
+
+ The HORAYZON package can then be installed with:
 ```bash
 git clone --branch installation https://github.com/ChristianSteger/HORAYZON.git
 cd HORAYZON  
