@@ -22,13 +22,6 @@ HORAYZON depends on multiple external libraries and packages. The essential ones
 - Python packages: Shapely, fiona, PyGEOS, scikit-image, Rasterio, Trimesh
 - [heightmap meshing utility (hmm)](https://github.com/fogleman/hmm)
 
-Installation instruction for **hmm** can be found [here](https://github.com/fogleman/hmm). **hmm** depends on **glm**, which can either be installed via a package manager (like Conda) or via manual building from [source code](https://glm.g-truc.net/0.9.9/index.html).
-In case **glm** is installed via Conda, the following two lines of **hmm**'s Makefile have to be adapted to:
-```bash
-COMPILE_FLAGS = -std=c++11 -flto -O3 -Wall -Wextra -Wno-sign-compare -march=native -lGL -lglut -lGLEW -I<path to include directory of conda environment>
-INSTALL_PREFIX = <binary install path>
-```
-
 # Installation
 
 HORAYZON has been tested on **Python 3.10** under **Linux** and **Mac OS X**. Installation can be accomplished as follows:
@@ -83,6 +76,14 @@ and **activate this environment**. The HORAYZON package can then be installed wi
 git clone --branch installation https://github.com/ChristianSteger/HORAYZON.git
 cd HORAYZON
 python -m pip install .
+```
+
+## Installation of hmm
+Installation instruction for **hmm** can be found [here](https://github.com/fogleman/hmm). **hmm** depends on **glm**, which can either be installed via a package manager (like Conda) or via manual building from [source code](https://glm.g-truc.net/0.9.9/index.html).
+In case **glm** is installed via Conda, the following two lines of **hmm**'s Makefile have to be adapted to:
+```bash
+COMPILE_FLAGS = -std=c++11 -flto -O3 -Wall -Wextra -Wno-sign-compare -march=native -lGL -lglut -lGLEW -I<path to include directory of conda environment>
+INSTALL_PREFIX = <binary install path>
 ```
 
 # Usage
