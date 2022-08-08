@@ -15,7 +15,7 @@ HORAYZON depends on multiple external libraries and packages. The essential ones
 - [NetCDF-4 C++ library](https://github.com/Unidata/netcdf-cxx4)
 - Python packages: Cython, NumPy, SciPy, GeographicLib, tqdm, requests, xarray
 
-**Base dependencies of examples**
+**Base dependencies for examples**
 - Python packages: netCDF4, Matplotlib, Pillow, Skyfield, pyproj, IPython
 
 **All dependencies for examples (masking and high-resolution DEM examples; GDAL dependency)**
@@ -35,7 +35,7 @@ Installation requires the [GNU Compiler Collection (GCC)](https://gcc.gnu.org). 
 conda create -n horayzon_core -c conda-forge embree3 tbb-devel netcdf-cxx4 cython numpy scipy geographiclib tqdm requests xarray
 ```
 
-**Base dependencies of examples**
+**Base dependencies for examples**
 ```bash
 conda create -n horayzon_base -c conda-forge embree3 tbb-devel netcdf-cxx4 cython numpy scipy geographiclib tqdm requests xarray netcdf4 matplotlib pillow skyfield pyproj ipython
 ```
@@ -61,7 +61,7 @@ HORAYZON is compiled with **Clang** under Mac OS X. As the Apple-provided **Clan
 conda create -n horayzon_core -c conda-forge embree3 tbb-devel netcdf-cxx4 cython numpy scipy geographiclib tqdm requests xarray c-compiler openmp python=3.9
 ```
 
-**Base dependencies of examples**
+**Base dependencies for examples**
 ```bash
 conda create -n horayzon_base -c conda-forge embree3 tbb-devel netcdf-cxx4 cython numpy scipy geographiclib tqdm requests xarray netcdf4 matplotlib pillow skyfield pyproj ipython c-compiler openmp python=3.9
 ```
