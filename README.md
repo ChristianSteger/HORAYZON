@@ -88,7 +88,7 @@ Alternatively, **glm** can also be built manually from [source](https://glm.g-tr
 git clone https://github.com/fogleman/hmm.git
 cd hmm
 ```
-In case **glm** was installed via Conda, the following two lines of **hmm**'s Makefile have to be adapted to:
+The following two lines in **hmm**'s Makefile might have to be adapted to (the include directory in the first line is valid if **glm**  was installed with Conda):
 ```bash
 COMPILE_FLAGS = -std=c++11 -flto -O3 -Wall -Wextra -Wno-sign-compare -march=native -lGL -lglut -lGLEW -I<path to include directory of conda environment>
 INSTALL_PREFIX = <binary install path>
