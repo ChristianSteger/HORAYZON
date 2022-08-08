@@ -8,7 +8,7 @@ When you use HORAYZON, please cite:
 
 # Package dependencies
 
-HORAYZON depends on multiple external libraries and packages. The essential ones are listed below under **Core dependencies**. Further listed dependencies are only needed to run the examples. The examples **horizon/gridded_curved_DEM_masked.py**, **horizon/gridded_planar_DEM_2m.py** and **shadow/gridded_curved_DEM_NASADEM.py** require more complex dependencies, which are listed under **Specific dependencies for examples**. It is recommended to handle dependencies via [Conda](https://docs.conda.io/en/latest/#), which covers all dependencies except **hmm**.
+HORAYZON depends on multiple external libraries and packages. The essential ones are listed below under **Core dependencies**. Further listed dependencies are only needed to run the examples. The examples **horizon/gridded_curved_DEM_masked.py**, **horizon/gridded_planar_DEM_2m.py** and **shadow/gridded_curved_DEM_NASADEM.py** require more complex dependencies, which are listed under **All dependencies for examples**. It is recommended to handle dependencies via [Conda](https://docs.conda.io/en/latest/#), which covers all dependencies except **hmm**.
 
 **Core dependencies**
 - [Intel Embree](https://www.embree.org) and [Threading Building Blocks (TBB)](https://github.com/oneapi-src/oneTBB)
@@ -18,7 +18,7 @@ HORAYZON depends on multiple external libraries and packages. The essential ones
 **Base dependencies of examples**
 - Python packages: netCDF4, Matplotlib, Pillow, Skyfield, pyproj, IPython
 
-**Specific dependencies for examples (masking and high-resolution DEM examples; GDAL dependency)**
+**All dependencies for examples (masking and high-resolution DEM examples; GDAL dependency)**
 - Python packages: Shapely, fiona, PyGEOS, scikit-image, Rasterio, Trimesh
 - [heightmap meshing utility (hmm)](https://github.com/fogleman/hmm)
 
@@ -40,7 +40,7 @@ conda create -n horayzon_core -c conda-forge embree3 tbb-devel netcdf-cxx4 cytho
 conda create -n horayzon_base -c conda-forge embree3 tbb-devel netcdf-cxx4 cython numpy scipy geographiclib tqdm requests xarray netcdf4 matplotlib pillow skyfield pyproj ipython
 ```
 
-**Specific dependencies for examples (masking and high-resolution DEM examples; GDAL dependency)**
+**All dependencies for examples (masking and high-resolution DEM examples; GDAL dependency)**
 ```bash
 conda create -n horayzon_all -c conda-forge embree3 tbb-devel netcdf-cxx4 cython numpy scipy geographiclib tqdm requests xarray netcdf4 matplotlib pillow skyfield pyproj ipython shapely fiona pygeos scikit-image rasterio trimesh
 ```
@@ -66,7 +66,7 @@ conda create -n horayzon_core -c conda-forge embree3 tbb-devel netcdf-cxx4 cytho
 conda create -n horayzon_base -c conda-forge embree3 tbb-devel netcdf-cxx4 cython numpy scipy geographiclib tqdm requests xarray netcdf4 matplotlib pillow skyfield pyproj ipython c-compiler openmp python=3.9
 ```
 
-**Specific dependencies for examples (masking and high-resolution DEM examples; GDAL dependency)**
+**All dependencies for examples (masking and high-resolution DEM examples; GDAL dependency)**
 ```bash
 conda create -n horayzon_all -c conda-forge embree3 tbb-devel netcdf-cxx4 cython numpy scipy geographiclib tqdm requests xarray netcdf4 matplotlib pillow skyfield pyproj ipython shapely fiona pygeos scikit-image rasterio trimesh c-compiler openmp python=3.9
 ```
