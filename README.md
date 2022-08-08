@@ -133,7 +133,7 @@ where $\vec{h}$ is the normal of the horizontal surface, $\vec{t}$ the normal of
 - **shadow/gridded_planar_DEM_artificial.py**: Compute shortwave correction factor from artificial topography (hemispherical mountain in the centre). The illumination source (sun) rotates once around the centre.
 - **shadow/gridded_curved_DEM_NASADEM.py** Compute shortwave correction factor from NASADEM (geodetic coordinates, ~30 m resolution) for an example region in the Karakoram for a day in northern-hemisphere winter. Earth's surface curvature is considered and atmospheric refraction ignored. All non-glacier grid cells are masked to speed-up computation.
 
-**A remark on atmospheric refraction**<br/>
+**Atmospheric refraction**<br/>
 Close to the unobstructed terrestrial horizon, the sun position is significantly influenced by [atmospheric refraction](https://en.wikipedia.org/wiki/Atmospheric_refraction).
 The solar elevation angle of the actual (true) position is thereby lower than the perceived (apparent) position.
 We included an option (**refrac_cor=True**) to account for this effect by applying the formula of Sæmundsson (1986). This formula is also presented in Meeus (1998).
