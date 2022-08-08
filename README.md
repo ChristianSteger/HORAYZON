@@ -83,12 +83,12 @@ python -m pip install .
 ```bash
 conda install -c conda-forge glm
 ```
-Alternatively, **glm** can also be built manually from [source](https://glm.g-truc.net/0.9.9/index.html). **hmm** can then be downloaded via
+Alternatively, **glm** can also be built manually from [source](https://glm.g-truc.net/0.9.9/index.html). **hmm** can then be downloaded with
 ```bash
 git clone https://github.com/fogleman/hmm.git
 cd hmm
 ```
-The following two lines in **hmm**'s Makefile might have to be adapted to (the include directory in the first line is valid if **glm**  was installed with Conda):
+The following two lines in **hmm**'s Makefile might have to be adapted to (the include directory in the first line is valid in case **glm**  was installed with Conda):
 ```bash
 COMPILE_FLAGS = -std=c++11 -flto -O3 -Wall -Wextra -Wno-sign-compare -march=native -lGL -lglut -lGLEW -I<path to include directory of conda environment>
 INSTALL_PREFIX = <binary install path>
