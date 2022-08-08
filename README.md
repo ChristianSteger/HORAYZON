@@ -37,7 +37,7 @@ HORAYZON has been tested on **Python 3.10** under **Linux** and **Mac OS X**. In
 
 Installation requires the [GNU Compiler Collection (GCC)](https://gcc.gnu.org). Create an appropriate Conda environment
 
-**Core dependencies**
+Core dependencies
 ```bash
 conda create -n horayzon_core -c conda-forge embree3 tbb-devel netcdf-cxx4 cython numpy scipy geographiclib tqdm requests xarray
 ```
