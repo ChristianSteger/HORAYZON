@@ -35,7 +35,7 @@ HORAYZON has been tested on **Python 3.10** under **Linux** and **Mac OS X**. In
 
 ## Linux
 
-Installation requires the [GNU Compiler Collection (GCC)](https://gcc.gnu.org). Create an appropriate Conda environment and **activate this environment**:
+Installation requires the [GNU Compiler Collection (GCC)](https://gcc.gnu.org). Create an appropriate Conda environment
 
 **Core dependencies**
 ```bash
@@ -52,7 +52,7 @@ conda create -n horayzon_base -c conda-forge embree3 tbb-devel netcdf-cxx4 cytho
 conda create -n horayzon_all -c conda-forge embree3 tbb-devel netcdf-cxx4 cython numpy scipy geographiclib tqdm requests xarray netcdf4 matplotlib pillow skyfield pyproj ipython shapely fiona pygeos scikit-image rasterio trimesh
 ```
 
- The HORAYZON package can then be installed with:
+and **activate this environment**. The HORAYZON package can then be installed with:
 ```bash
 git clone --branch installation https://github.com/ChristianSteger/HORAYZON.git
 cd HORAYZON  
@@ -61,11 +61,24 @@ python -m pip install .
 
 ## Mac OS X
 
-Create an appropriate Conda environment (see examples above) and **activate this environment**. HORAYZON is compiled with **Clang** under Mac OS X. As the Apple-provided **Clang** does not support OpenMP, an alternative **Clang** with OpenMP support has to be installed. This can be done via Conda:
+HORAYZON is compiled with **Clang** under Mac OS X. As the Apple-provided **Clang** does not support OpenMP, an alternative **Clang** with OpenMP support has to be installed. This can be done via Conda. Create an appropriate Conda environment
+
+**Core dependencies**
 ```bash
-conda install -c conda-forge c-compiler openmp
+conda create -n horayzon_core -c conda-forge embree3 tbb-devel netcdf-cxx4 cython numpy scipy geographiclib tqdm requests xarray c-compiler openmp python=3.9
 ```
-The HORAYZON package can then be installed with:
+
+**Base dependencies of examples**
+```bash
+conda create -n horayzon_base -c conda-forge embree3 tbb-devel netcdf-cxx4 cython numpy scipy geographiclib tqdm requests xarray netcdf4 matplotlib pillow skyfield pyproj ipython c-compiler openmp python=3.9
+```
+
+**Specific dependencies for examples (masking and high-resolution DEM examples; GDAL dependency)**
+```bash
+conda create -n horayzon_all -c conda-forge embree3 tbb-devel netcdf-cxx4 cython numpy scipy geographiclib tqdm requests xarray netcdf4 matplotlib pillow skyfield pyproj ipython shapely fiona pygeos scikit-image rasterio trimesh c-compiler openmp python=3.9
+```
+
+and **activate this environment**. The HORAYZON package can then be installed with:
 ```bash
 git clone --branch installation https://github.com/ChristianSteger/HORAYZON.git
 cd HORAYZON
