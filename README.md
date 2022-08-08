@@ -142,7 +142,7 @@ We assume an atmospheric pressure of 101.0 kPa and a temperature of 10° C at se
 Atmospheric refraction is only significant for very low solar elevation angles:
 ![Alt text](https://github.com/ChristianSteger/Images/blob/master/Atmos_refrac_Saemundsson.png?raw=true "Atmospheric refraction accoring to Sæmundsson (1986)")
 The dotted lines in the above figure represent the raw output according to Sæmundsson (1986). We keep the refraction correction constant for elevation angles smaller than -1.0°. A atmospheric pressure of 70 kPa corresponds to an elevation of ~3000 m a.s.l.
-For elevated areas like mountains, the effect is smaller due to the lower atmospheric pressure. 
+For elevated areas like mountains, the influence of atmospheric refraction is smaller due to the lower atmospheric pressure. 
 
 # Digital elevation model and auxiliary data
 
