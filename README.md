@@ -139,14 +139,10 @@ The solar elevation angle of the actual (true) position is thereby lower than th
 We included an option (**refrac_cor=True**) to account for this effect by applying the formula of Sæmundsson (1986). This formula is also presented in Meeus (1998).
 Atmospheric refraction increases with increasing air pressure and decreasing temperature.
 We assume an atmospheric pressure of 101.0 kPa and a temperature of 10° C at sea level and extrapolate these quantities with a constant linear temperature lapse rate of 6.5° C per km and the hydrostatic assumption to higher elevations.
-Atmospheric refraction is only significant for very low solar elevation angles. 
-
+Atmospheric refraction is only significant for very low solar elevation angles:
 ![Alt text](https://github.com/ChristianSteger/Images/blob/master/Atmos_refrac.png?raw=true "Atmospheric refraction accoring to Sæmundsson (1986)")
-
-
-For an elevation angle of 5°, the correction is for instance ~0.17° at sea level.
+The dotted lines in the above figure show the raw output according to Sæmundsson (1986). We keep the refraction correction constant for elevation angles smaller than -1.0°.
 For elevated areas like mountains, the effect is smaller due to the lower atmospheric pressure. 
-
 
 # Digital elevation model and auxiliary data
 
