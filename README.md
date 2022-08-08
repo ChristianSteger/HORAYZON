@@ -24,7 +24,7 @@ HORAYZON depends on multiple external libraries and packages. The essential ones
 
 # Installation
 
-HORAYZON has been tested on **Python 3.10** under **Linux** and **Mac OS X**. Installation can be accomplished as follows:
+HORAYZON has been tested with **Python 3.10** (Linux) and **Python 3.9** (Mac OS X). Installation can be accomplished as follows:
 
 ## Linux
 
@@ -88,7 +88,7 @@ Alternatively, **glm** can also be built manually from [source](https://glm.g-tr
 git clone https://github.com/fogleman/hmm.git
 cd hmm
 ```
-In case **glm** is installed via Conda, the following two lines of **hmm**'s Makefile have to be adapted to:
+In case **glm** was installed via Conda, the following two lines of **hmm**'s Makefile have to be adapted to:
 ```bash
 COMPILE_FLAGS = -std=c++11 -flto -O3 -Wall -Wextra -Wno-sign-compare -march=native -lGL -lglut -lGLEW -I<path to include directory of conda environment>
 INSTALL_PREFIX = <binary install path>
