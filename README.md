@@ -79,11 +79,24 @@ python -m pip install .
 ```
 
 ## Optional installation of hmm
-Installation instruction for **hmm** can be found [here](https://github.com/fogleman/hmm). **hmm** depends on **glm**, which can either be installed via a package manager (like Conda) or via manual building from [source code](https://glm.g-truc.net/0.9.9/index.html).
+**hmm** depends on **glm**, which can also be installed via Conda
+```bash
+conda install -c conda-forge glm
+```
+Alternatively, **glm** can also be built manually from [source](https://glm.g-truc.net/0.9.9/index.html). **hmm** can then be downloaded via
+```bash
+git clone https://github.com/fogleman/hmm.git
+cd hmm
+```
 In case **glm** is installed via Conda, the following two lines of **hmm**'s Makefile have to be adapted to:
 ```bash
 COMPILE_FLAGS = -std=c++11 -flto -O3 -Wall -Wextra -Wno-sign-compare -march=native -lGL -lglut -lGLEW -I<path to include directory of conda environment>
 INSTALL_PREFIX = <binary install path>
+```
+Finally, **hmm** can be installed with
+```bash
+make
+make install
 ```
 
 # Usage
