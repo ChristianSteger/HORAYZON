@@ -122,8 +122,15 @@ The term sky view factor (SVF) is defined ambiguously in literature. In Zakšek 
 
 The module **shadow** allows to compute shadow maps and correction factors for downwelling direct shortwave radiation for arbitrary terrains and sun positions. 
 This module was not part of the initial HORAYZON release and is thus not described in the [reference publication](https://doi.org/10.5194/gmd-2022-58). A more detailed description is therefore provided here.
-A class **shadow.Terrain** can be created and initialised for this purpose, which can then be used for varying sun positions. The output of the method **Terrain.shadow()** is encoded as follows: 0: illuminated, 1: self-shaded, 2: terrain-shaded, 3: not considered (respectively masked).
-The correction factors for downwelling direct shortwave radiation is computed with the method **Terrain.sw_dir_cor()** according to Müller and Scherer (2005). This factor can be applied to radiation output from a regional climate or general circulation model, in which radiation is only simulated along the vertical dimension and all grid cells are assumed to have a horizontal surface. The correction factor accounts for all terrain-induced modifications in radiation, like self/terrain-shading, changes in angles between the sun and the surface's normal vector and the geometric surface enlargement of grid cells due to sloping surfaces. According to Equation (2) in Müller and Scherer (2005), the correction factor $f_{cor}$ is computed as
+To compute gridded shadow maps or shortwave correction factors for varying sun positions, a class **shadow.Terrain** must first be created and initialised.
+In this step, the gridded terrain input is first converted to a triangle mesh and these triangles are then stored in a bounding volume hierarchy (BVH) to performe ray casting efficiently.
+During initialisation, and optional mask can be provided to ignore certain grid cells and a flag to consider atmospheric refraction (see below for detailed explanation) can be enabled.
+Two methods (**Terrain.shadow()** and **Terrain.sw_dir_cor()**) can then be called for various sun positions.
+The output of the method **Terrain.shadow()** is encoded as follows: 0: illuminated, 1: self-shaded, 2: terrain-shaded, 3: not considered (respectively masked).
+The correction factors for downwelling direct shortwave radiation is computed with the method **Terrain.sw_dir_cor()** according to Müller and Scherer (2005).
+This factor can be applied to radiation output from a regional climate or general circulation model, in which radiation is only simulated along the vertical dimension and all grid cells are assumed to have a horizontal surface. 
+The correction factor accounts for all terrain-induced modifications in radiation, like self/terrain-shading, changes in angles between the sun and the surface's normal vector and the geometric surface enlargement of grid cells due to sloping surfaces.
+According to Equation (2) in Müller and Scherer (2005), the correction factor $f_{cor}$ is computed as
 
 $f_{cor} = \left( \dfrac{1.0}{\vec{h} \times \vec{s}} \right) \left( \dfrac{1.0}{\vec{h} \times \vec{t}} \right) \ {mask}_{shadow} \ \left( \vec{t} \times \vec{s} \right)$
 
