@@ -121,7 +121,7 @@ The term sky view factor (SVF) is defined ambiguously in literature. In Zakšek 
 ## Examples: Shadow map and shortwave correction factor
 
 The module **shadow** allows to compute shadow maps and correction factors for downwelling direct shortwave radiation for arbitrary terrains and sun positions. A class **shadow.Terrain** can be created and initialised for this purpose, which can then be used for varying sun positions. The output of the method **Terrain.shadow()** is encoded as follows: 0: illuminated, 1: self-shaded, 2: terrain-shaded, 3: not considered (respectively masked).
-The correction factors for downwelling direct shortwave radiation is computed with the method **Terrain.sw_dir_cor()** according to Müller and Scherer (2005). This factor can be applied to radiation output from a regional climate or general circulation model, in which radiation is only simulated along the vertical dimension and all grid cells are assumed to have a horizontal surface. The correction factor accounts for all terrain-induced modifications in radiation, like self/terrain-shading, changes in angles between the sun and the surface's normal vector and the geometric surface enlargement of grid cells due to sloping surfaces. According to Equation (2) in Müller and Scherer (2005), the correction factor $f_{cor}$ is computed as:
+The correction factors for downwelling direct shortwave radiation is computed with the method **Terrain.sw_dir_cor()** according to Müller and Scherer (2005). This factor can be applied to radiation output from a regional climate or general circulation model, in which radiation is only simulated along the vertical dimension and all grid cells are assumed to have a horizontal surface. The correction factor accounts for all terrain-induced modifications in radiation, like self/terrain-shading, changes in angles between the sun and the surface's normal vector and the geometric surface enlargement of grid cells due to sloping surfaces. According to Equation (2) in Müller and Scherer (2005), the correction factor $f_{cor}$ is computed as
 
 $f_{cor} = \left( \dfrac{1.0}{\vec{h} \times \vec{s}} \right) \left( \dfrac{1.0}{\vec{h} \times \vec{t}} \right) \ {mask}_{shadow} \ \left( \vec{t} \times \vec{s} \right)$
 
@@ -141,10 +141,12 @@ Atmospheric refraction increases with increasing air pressure and decreasing tem
 The dotted lines represent the raw output according to Sæmundsson (1986). We keep refraction correction constant for elevation angles smaller than -1.0°.
 ![Alt text](https://github.com/ChristianSteger/Images/blob/master/Atmos_refrac_Saemundsson.png?raw=true "Atmospheric refraction accoring to Sæmundsson (1986)")
 At sea level, we assume an temperature of T<sub>0</sub> = 10° C and an atmospheric pressure of p<sub>0</sub> = 101.0 kPa. These quantities are extrapolated to higher elevation with a constant linear temperature
-lapse rate and the hydrostatic assumption cording to the following two equations:
+lapse rate and the hydrostatic assumption cording to the following two equations
 
 $T(z) = T_{0} - \Gamma \cdot z$<br/>
 $p(z) = p_{0} \cdot \left(\frac{T_{0} - \Gamma \cdot z}{T_{0}}\right)^{\frac{g}{R_{d} \cdot \Gamma}}$
+
+with g representing the acceleration due to gravity (9.81 m <sup>-2</sup>).
 
 
 We assume an atmospheric pressure of 101.0 kPa and a temperature of 10° C at sea level and extrapolate these quantities with a constant linear temperature lapse rate of 6.5° C per km and the hydrostatic assumption to higher elevations.
