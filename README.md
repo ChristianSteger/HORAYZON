@@ -148,7 +148,7 @@ $p(z) = p_{0} \cdot \left(\frac{T_{0} - \Gamma \cdot z}{T_{0}}\right)^{\frac{g}{
 
 with g representing the acceleration due to gravity (9.81 m <sup>-2</sup>), R<sub>d</sub> the gas constant for dry air (287.0 J K<sup>􏰅-1</sup> kg<sup>􏰅-1</sup>) and $\Gamma$ the lapse rate (0.0065° C m<sup>􏰅-1</sup>).
 These assumptions yield a temperature of -9.5° C and an atmospheric pressure of ~70 kPa for an elevation of 3000 m a.s.l. According to the above figure, changes in atmospheric pressure dominate the influence on atmospheric refraction,
-which results in a less significant refraction effect for elevated areas like mountains.
+which results in less significant refraction effects for elevated areas like mountains.
 
 # Digital elevation model and auxiliary data
 
