@@ -146,7 +146,7 @@ lapse rate and the hydrostatic assumption cording to the following two equations
 $T(z) = T_{0} - \Gamma \cdot z$<br/>
 $p(z) = p_{0} \cdot \left(\frac{T_{0} - \Gamma \cdot z}{T_{0}}\right)^{\frac{g}{R_{d} \cdot \Gamma}}$
 
-with g representing the acceleration due to gravity (9.81 m <sup>-2</sup>), R<sub>d</sub> the gas constant for dry air (287.0 J K<sup>􏰅-1</sup> kg<sup>􏰅-1</sup>).
+with g representing the acceleration due to gravity (9.81 m <sup>-2</sup>), R<sub>d</sub> the gas constant for dry air (287.0 J K<sup>􏰅-1</sup> kg<sup>􏰅-1</sup>). $\Gamma$
 
 
 We assume an atmospheric pressure of 101.0 kPa and a temperature of 10° C at sea level and extrapolate these quantities with a constant linear temperature lapse rate of 6.5° C per km and the hydrostatic assumption to higher elevations.
