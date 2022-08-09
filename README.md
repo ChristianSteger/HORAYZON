@@ -135,8 +135,12 @@ where $\vec{h}$ is the normal of the horizontal surface, $\vec{t}$ the normal of
 
 **Atmospheric refraction**<br/>
 Close to the unobstructed terrestrial horizon, the position of the sun is significantly influenced by [atmospheric refraction](https://en.wikipedia.org/wiki/Atmospheric_refraction).
-The solar elevation angle of the actual (true) position is thereby lower than the perceived (apparent) position.
-We included an option (**refrac_cor=True**) to account for this effect by applying the formula of Sæmundsson (1986). This formula is also presented in Meeus (1998).
+The solar elevation angle of the true position is thereby lower than the apparent position.
+We included an option (**refrac_cor=True**) to account for this effect by applying the formula of Sæmundsson (1986). This formula is also presented in Meeus (1998) and reads
+
+$r = 1.02 \cdot \cot \left(h_{t} + \frac{10.3}{h_{t} + 5.11}\right) \cdot \left(\frac{p}{101} \frac{283}{273 + T}\right)$
+
+with r representing atmospheric refraction (degree), h<sub>t</sub> the sun's true elevation angle (degree), p atmospheric pressure (hPa) and T temperature (K).
 Atmospheric refraction increases with increasing air pressure and decreasing temperature and is only significant for very low solar elevation angles, as illustrated in the below figure.
 The dotted lines represent the raw output according to Sæmundsson (1986). We keep refraction correction constant for elevation angles smaller than -1.0°.
 ![Alt text](https://github.com/ChristianSteger/Images/blob/master/Atmos_refrac_Saemundsson.png?raw=true "Atmospheric refraction accoring to Sæmundsson (1986)")
