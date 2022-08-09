@@ -103,7 +103,7 @@ make install
 
 The usage of the packages is best illustrated by means of examples, which can either be run in a Python IDE (like PyCharm or Spyder) or in the terminal.
 To run the examples, the path **path_out** must be adapted to a location that provides enough disk space. For the example **horizon/gridded_planar_DEM_2m.py**, the path to the hmm executable (**hmm_ex**) has to be additionally adapted.
-All input data [DEM or auxiliary data](# Digital elevation model and auxiliary data) required for running the examples is downloaded automatically.
+All input data [DEM or auxiliary data](# Digital-elevation-model-and-auxiliary-data) required for running the examples is downloaded automatically.
 
 ## Examples: Terrain parameters (slope, horizon and sky view factor)
 
