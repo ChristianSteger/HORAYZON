@@ -124,7 +124,7 @@ The module **shadow** allows to compute shadow maps and correction factors for d
 This module was not part of the initial HORAYZON release and is thus not described in the [reference publication](https://doi.org/10.5194/gmd-2022-58). A more detailed description is therefore provided here.
 To compute gridded shadow maps or shortwave correction factors for varying sun positions, a class **shadow.Terrain** must first be created and initialised.
 In this step, the gridded terrain input is first converted to a triangle mesh and these triangles are then stored in a bounding volume hierarchy (BVH) to performe ray casting efficiently.
-During initialisation, and optional mask can be provided to ignore certain grid cells and a flag to consider [atmospheric refraction](#abcde) can be enabled.
+During initialisation, and optional mask can be provided to ignore certain grid cells and a flag to consider [atmospheric refraction](#link_atmos_refrac) can be enabled.
 Two methods (**Terrain.shadow()** and **Terrain.sw_dir_cor()**) can then be called for various sun positions.
 The output of the method **Terrain.shadow()** is encoded as follows: 0: illuminated, 1: self-shaded, 2: terrain-shaded, 3: not considered (respectively masked).
 The correction factors for downwelling direct shortwave radiation is computed with the method **Terrain.sw_dir_cor()** according to Müller and Scherer (2005).
@@ -142,7 +142,7 @@ where $\vec{h}$ is the normal of the horizontal surface, $\vec{t}$ the normal of
 - **shadow/gridded_planar_DEM_artificial.py**: Compute shortwave correction factor from artificial topography (hemispherical mountain in the centre). The illumination source (sun) rotates once around the centre.
 - **shadow/gridded_curved_DEM_NASADEM.py** Compute shortwave correction factor from NASADEM (geodetic coordinates, ~30 m resolution) for an example region in the Karakoram for a day in northern-hemisphere winter. Earth's surface curvature is considered and atmospheric refraction ignored. All non-glacier grid cells are masked to speed-up computation.
 
-<a name="abcde"> **Atmospheric refraction**<br/> </a>
+<a name="link_atmos_refrac"> **Atmospheric refraction**<br/> </a>
 Close to the unobstructed terrestrial horizon, the position of the sun is significantly influenced by [atmospheric refraction](https://en.wikipedia.org/wiki/Atmospheric_refraction).
 The solar elevation angle of the true position is thereby lower than the apparent position.
 We included an option (**refrac_cor=True**) to account for this effect by applying the formula of Sæmundsson (1986). This formula is also presented in Meeus (1998) and reads
