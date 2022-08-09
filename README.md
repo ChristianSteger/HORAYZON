@@ -140,7 +140,7 @@ We included an option (**refrac_cor=True**) to account for this effect by applyi
 
 $r = \frac{1}{60} \left(1.02 \cdot \cot \left(h_{t} + \frac{10.3}{h_{t} + 5.11}\right) + 0.0019279 \right) \cdot \left(\frac{p}{101} \frac{283}{273 + T}\right)$
 
-with r representing atmospheric refraction (degree), h<sub>t</sub> the sun's true elevation angle (degree), p atmospheric pressure (kPa) and T temperature (K).
+with r representing atmospheric refraction (degree), h<sub>t</sub> the sun's true elevation angle (degree), p atmospheric pressure (kPa) and T temperature (° C). Not that the function argument of *cot* must be provided in **radian**.
 Atmospheric refraction increases with increasing air pressure and decreasing temperature and is only significant for very low solar elevation angles, as illustrated in the below figure.
 The dotted lines represent the raw output according to Sæmundsson (1986). We keep refraction correction constant for elevation angles smaller than -1.0°.
 ![Alt text](https://github.com/ChristianSteger/Images/blob/master/Atmos_refrac_Saemundsson.png?raw=true "Atmospheric refraction accoring to Sæmundsson (1986)")
