@@ -138,7 +138,7 @@ Close to the unobstructed terrestrial horizon, the position of the sun is signif
 The solar elevation angle of the true position is thereby lower than the apparent position.
 We included an option (**refrac_cor=True**) to account for this effect by applying the formula of Sæmundsson (1986). This formula is also presented in Meeus (1998) and reads
 
-$r = \frac{1.02}{60} \cdot \cot \left(h_{t} + \frac{10.3}{h_{t} + 5.11}\right) \cdot \left(\frac{p}{101} \frac{283}{273 + T}\right)$
+$r = \frac{1}{60} \left(1.0.2 \cdot \cot \left(h_{t} + \frac{10.3}{h_{t} + 5.11}\right) + 0.0019279 \right) \cdot \left(\frac{p}{101} \frac{283}{273 + T}\right)$
 
 with r representing atmospheric refraction (degree), h<sub>t</sub> the sun's true elevation angle (degree), p atmospheric pressure (kPa) and T temperature (K).
 Atmospheric refraction increases with increasing air pressure and decreasing temperature and is only significant for very low solar elevation angles, as illustrated in the below figure.
