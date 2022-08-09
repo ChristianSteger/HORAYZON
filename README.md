@@ -140,10 +140,10 @@ We included an option (**refrac_cor=True**) to account for this effect by applyi
 Atmospheric refraction increases with increasing air pressure and decreasing temperature, as illustrated in the below figure.
 The dotted lines represent the raw output according to Sæmundsson (1986). We keep refraction correction constant for elevation angles smaller than -1.0°.
 ![Alt text](https://github.com/ChristianSteger/Images/blob/master/Atmos_refrac_Saemundsson.png?raw=true "Atmospheric refraction accoring to Sæmundsson (1986)")
-At sea level, we assume and temperature of T<sub>0</sub> = 10° C and an atmospheric pressure of p<sub>0</sub> = 101.0 kPa. These quantities are extrapolated to higher elevation with a constant linear temperature
+At sea level, we assume an temperature of T<sub>0</sub> = 10° C and an atmospheric pressure of p<sub>0</sub> = 101.0 kPa. These quantities are extrapolated to higher elevation with a constant linear temperature
 lapse rate and the hydrostatic assumption cording to the following two equations:
 
-$T(z) = T_{0} - \Gamma * z$
+$T(z) = T_{0} - \Gamma \cdot z$
 $p(z) = p_{0} \cdot \left(\frac{T_{0} - \Gamma \cdot z}{T_{0}}\right)^{\frac{g}{R_{d} \cdot \Gamma}}$
 
 
