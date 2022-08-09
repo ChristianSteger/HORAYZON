@@ -123,7 +123,7 @@ The term sky view factor (SVF) is defined ambiguously in literature. In Zakšek 
 ## Examples: Shadow map and shortwave correction factor
 
 The module **shadow** allows to compute shadow maps and correction factors for downwelling direct shortwave radiation for arbitrary terrains and sun positions. 
-This module was not part of the initial HORAYZON release and is thus not described in the [reference publication](https://doi.org/10.5194/gmd-2022-58). A more detailed description is therefore provided here.
+This module was not part of the initial HORAYZON release and is thus **not described** in the [reference publication](https://doi.org/10.5194/gmd-2022-58). A more detailed description is therefore provided here.
 To compute gridded shadow maps or shortwave correction factors, a class **shadow.Terrain** must first be created and initialised.
 In this step, the gridded terrain input is first converted to a triangle mesh and these triangles are then stored in a bounding volume hierarchy (BVH) to perform ray casting efficiently.
 During initialisation, and optional mask can be provided to ignore certain grid cells and a flag to consider [atmospheric refraction](#link_atmos_refrac) can be enabled.
