@@ -137,11 +137,20 @@ where $\vec{h}$ is the normal of the horizontal surface, $\vec{t}$ the normal of
 Close to the unobstructed terrestrial horizon, the position of the sun is significantly influenced by [atmospheric refraction](https://en.wikipedia.org/wiki/Atmospheric_refraction).
 The solar elevation angle of the actual (true) position is thereby lower than the perceived (apparent) position.
 We included an option (**refrac_cor=True**) to account for this effect by applying the formula of Sæmundsson (1986). This formula is also presented in Meeus (1998).
-Atmospheric refraction increases with increasing air pressure and decreasing temperature.
+Atmospheric refraction increases with increasing air pressure and decreasing temperature, as illustrated in the below figure.
+The dotted lines represent the raw output according to Sæmundsson (1986). We keep refraction correction constant for elevation angles smaller than -1.0°.
+![Alt text](https://github.com/ChristianSteger/Images/blob/master/Atmos_refrac_Saemundsson.png?raw=true "Atmospheric refraction accoring to Sæmundsson (1986)")
+At sea level, we assume and temperature ($T_{0}$) of 10° C and an atmospheric pressure ($p_{0}$)of 101.0 kPa. These quantities are extrapolated to higher elevation with a constant linear temperature
+lapse rate and the hydrostatic assumption cording to the following two equations:
+
+$T(z) = T_{0} - \Gamma * z$
+$p(z) = p_{0} \cdot \left(\frac{T_{0} - \Gamma \cdot z}{T_{0}}\right)^{\frac{g}{R_{d} \cdot \Gamma}}$
+
+
 We assume an atmospheric pressure of 101.0 kPa and a temperature of 10° C at sea level and extrapolate these quantities with a constant linear temperature lapse rate of 6.5° C per km and the hydrostatic assumption to higher elevations.
 Atmospheric refraction is only significant for very low solar elevation angles:
-![Alt text](https://github.com/ChristianSteger/Images/blob/master/Atmos_refrac_Saemundsson.png?raw=true "Atmospheric refraction accoring to Sæmundsson (1986)")
-The dotted lines in the above figure represent the raw output according to Sæmundsson (1986). We keep the refraction correction constant for elevation angles smaller than -1.0°. An atmospheric pressure of 70 kPa corresponds to an elevation of ~3000 m a.s.l.
+
+ An atmospheric pressure of 70 kPa corresponds to an elevation of ~3000 m a.s.l.
 For elevated areas like mountains, the influence of atmospheric refraction is smaller due to the lower atmospheric pressure. 
 
 # Digital elevation model and auxiliary data
