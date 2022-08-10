@@ -6,6 +6,10 @@ When you use HORAYZON, please cite:
 
 **Steger, C. R., Steger, B. and Schär, C (2022): HORAYZON v1.2: An efficient and flexible ray-tracing algorithm to compute horizon and sky view factor, Geosci. Model Dev., https://doi.org/10.5194/gmd-2022-58**
 
+and
+
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.6965104.svg)](https://doi.org/10.5281/zenodo.6965104)
+
 # Package dependencies
 
 HORAYZON depends on multiple external libraries and packages. The essential ones are listed below under **Core dependencies**. Further dependencies are needed to run the examples (**Base dependencies for examples**). The examples **horizon/gridded_curved_DEM_masked.py**, **horizon/gridded_planar_DEM_2m.py** and **shadow/gridded_curved_DEM_NASADEM.py** require more complex dependencies, which are listed under **All dependencies for examples**. It is recommended to install dependencies via [Conda](https://docs.conda.io/en/latest/#), which covers all dependencies except **hmm**.
