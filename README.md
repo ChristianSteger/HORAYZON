@@ -10,7 +10,7 @@ and
 
 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.6965104.svg)](https://doi.org/10.5281/zenodo.6965104)
 
-Please refer to the sections [Known issues](#Known-issues) and [Support, feedback and collaboration](#Support,-feedback-and-collaboration) in case you encounter any **issues** with HORAYZON.
+Please refer to the sections [Known issues](#Known-issues) and [Support and collaboration](#Support-and-collaboration) in case you encounter any **issues** with HORAYZON.
 
 # Package dependencies
 
@@ -203,5 +203,5 @@ The below list contains known issues with HORAYZON, which will be addressed in a
 - Yokoyama, R., Shirasawa, M. and Pike, R. J. (2002): Visualizing Topography by Openness: A New Application of Image Processing to Digital Elevation Models, Photogramm. Eng. Remote Sens., 68, 257-265.
 - Zakšek, K., Oštir, K. and Kokalj, Ž. (2011): Sky-View Factor as a Relief Visualization Technique, Remote Sens., 3(2):398-415, https://doi.org/10.3390/rs3020398
 
-# Support, feedback and collaboration
+# Support and collaboration
 In case of issues or questions, contact Christian R. Steger (christian.steger@env.ethz.ch). Please report any bugs you find in HORAYZON. You are welcome to fork this repository to modify the source code - we are open to consider *pull requests* for future HORAYZON versions/releases.
