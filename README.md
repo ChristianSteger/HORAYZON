@@ -141,6 +141,7 @@ According to Equation (2) in Müller and Scherer (2005), the correction factor $
 $f_{cor} = \left( \dfrac{1.0}{\vec{h} \times \vec{s}} \right) \left( \dfrac{1.0}{\vec{h} \times \vec{t}} \right) \ {mask}_{shadow} \ \left( \vec{t} \times \vec{s} \right)$
 
 where $\vec{h}$ is the normal of the horizontal surface, $\vec{t}$ the normal of the tilted surface, $\vec{s}$ the sun position vector and ${mask}_{shadow}$ the terrain-shading mask (0: shadow, 1: illuminated). All above vectors represent unit vectors.
+The same equation for $f_{cor}$ is applied in Manners et al. (2012).
 
 - **shadow/gridded_curved_DEM_SRTM.py**: Compute shadow map and shortwave correction factor from SRTM (geodetic coordinates, ~90 m resolution) for South Georgia in the South Atlantic Ocean for a day in southern-hemisphere winter. Earth's surface curvature and atmospheric refraction are considered. Plot output of this script is shown below.
 ![Alt text](https://github.com/ChristianSteger/Images/blob/master/Elevation_sw_dir_cor.png?raw=true "Output from shadow/gridded_curved_DEM_SRTM.py")
@@ -186,12 +187,13 @@ Auxiliary data, like geoid undulation data (EGM96 and GEOID12A), coastline polyg
 - [GAMDAM](https://doi.pangaea.de/10.1594/PANGAEA.891423)
 
 # References
-- Helbig, N., Löwe, H. and Lehning, M. (2009): Radiosity Approach for the Shortwave Surface Radiation Balance in Complex Terrain, Journal of the Atmospheric Sciences, 66(9), 2900-2912, https://doi.org/10.1175/2009JAS2940.1
+- Helbig, N., Löwe, H. and Lehning, M. (2009): Radiosity Approach for the Shortwave Surface Radiation Balance in Complex Terrain, J. Atmos. Sci., 66(9), 2900-2912, https://doi.org/10.1175/2009JAS2940.1
+- Manners, J., Vosper, S.B. and Roberts, N. (2012), Radiative transfer over resolved topographic features for high-resolution weather prediction. Q.J.R. Meteorol. Soc., 138: 720-733. https://doi.org/10.1002/qj.956
 - Meeus (1998). Astronomical algorithms (Second edition). Richmond, Va.: Willmann-Bell. pp. 105–108. ISBN 0943396611.
-- Müller, M. D., and Scherer, D. (2005): A Grid- and Subgrid-Scale Radiation Parameterization of Topographic Effects for Mesoscale Weather Forecast Models, Monthly Weather Review, 133(6), 1431-1442, https://journals.ametsoc.org/view/journals/mwre/133/6/mwr2927.1.xml
+- Müller, M. D. and Scherer, D. (2005): A Grid- and Subgrid-Scale Radiation Parameterization of Topographic Effects for Mesoscale Weather Forecast Models, Mon. Weather Rev., 133(6), 1431-1442, https://journals.ametsoc.org/view/journals/mwre/133/6/mwr2927.1.xml
 - Sæmundsson (1986). Astronomical Refraction. Sky and Telescope. 72: 70.
-- Yokoyama, R., Shirasawa, M. and Pike, R. J. (2002): Visualizing Topography by Openness: A New Application of Image Processing to Digital Elevation Models, Photogrammetric Engineering and Remote Sensing, 68, 257-265.
-- Zakšek, K., Oštir, K. and Kokalj, Ž. (2011): Sky-View Factor as a Relief Visualization Technique, Remote Sensing, 3(2):398-415, https://doi.org/10.3390/rs3020398
+- Yokoyama, R., Shirasawa, M. and Pike, R. J. (2002): Visualizing Topography by Openness: A New Application of Image Processing to Digital Elevation Models, Photogramm. Eng. Remote Sens., 68, 257-265.
+- Zakšek, K., Oštir, K. and Kokalj, Ž. (2011): Sky-View Factor as a Relief Visualization Technique, Remote Sens., 3(2):398-415, https://doi.org/10.3390/rs3020398
 
 # Support, feedback and collaboration
 In case of issues or questions, contact Christian R. Steger (christian.steger@env.ethz.ch). Please report any bugs you find in HORAYZON. You are welcome to fork this repository to modify the source code - we are open to consider *pull requests* for future HORAYZON versions/releases.
