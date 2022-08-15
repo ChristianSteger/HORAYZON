@@ -10,6 +10,8 @@ and
 
 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.6965104.svg)](https://doi.org/10.5281/zenodo.6965104)
 
+Please refer to the sections [Known issues](#Known-issues) and [Support, feedback and collaboration](#Support,-feedback-and-collaboration) in case you encounter any **issues with HORAYZON**.
+
 # Package dependencies
 
 HORAYZON depends on multiple external libraries and packages. The essential ones are listed below under **Core dependencies**. Further dependencies are needed to run the examples (**Base dependencies for examples**). The examples **horizon/gridded_curved_DEM_masked.py**, **horizon/gridded_planar_DEM_2m.py** and **shadow/gridded_curved_DEM_NASADEM.py** require more complex dependencies, which are listed under **All dependencies for examples**. It is recommended to install dependencies via [Conda](https://docs.conda.io/en/latest/#), which covers all dependencies except **hmm**.
@@ -185,6 +187,9 @@ Auxiliary data, like geoid undulation data (EGM96 and GEOID12A), coastline polyg
 - [GEOID12A](https://geodesy.noaa.gov/GEOID/GEOID12A/GEOID12A_AK.shtml)
 - [GSHHG](https://www.soest.hawaii.edu/pwessel/gshhg/)
 - [GAMDAM](https://doi.pangaea.de/10.1594/PANGAEA.891423)
+
+# Known issues
+- Test
 
 # References
 - Helbig, N., Löwe, H. and Lehning, M. (2009): Radiosity Approach for the Shortwave Surface Radiation Balance in Complex Terrain, J. Atmos. Sci., 66(9), 2900-2912, https://doi.org/10.1175/2009JAS2940.1
