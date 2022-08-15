@@ -191,8 +191,8 @@ Auxiliary data, like geoid undulation data (EGM96 and GEOID12A), coastline polyg
 # Known issues
 The below list contains known issues with HORAYZON, which will be addressed in a future release:
 - Some inconsistencies in user-defined input arguments are currently not checked due to performance reasons. A known problematic argument pair is **dist_search** and **elev_ang_low_lim** in the functions **horizon_gridded()** and **horizon_locations()**.
-  Horizon elevation angles can be distinctively negative for very small horizon search distances (e.g. 1 km) and elevated positions like mountain peaks. Such low elevation angles fall below the default setting for **elev_ang_low_lim** of -15.0° degree.
-  To prevent the algorithm from being stuck in a infinite loop, a smaller value for **elev_ang_low_lim** has to be chosen (e.g. -88.0 degree).
+  Horizon elevation angles can be distinctively negative for very small horizon search distances (e.g. 1 km) and elevated positions like mountain peaks. Such low elevation angles fall below the default setting for **elev_ang_low_lim** of -15.0°.
+  To prevent the algorithm from being stuck in a infinite loop, a smaller value for **elev_ang_low_lim** has to be chosen (e.g. -88.0°).
 
 # References
 - Helbig, N., Löwe, H. and Lehning, M. (2009): Radiosity Approach for the Shortwave Surface Radiation Balance in Complex Terrain, J. Atmos. Sci., 66(9), 2900-2912, https://doi.org/10.1175/2009JAS2940.1
