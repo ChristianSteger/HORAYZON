@@ -125,7 +125,7 @@ cd HORAYZON
 ```
 
 The setup file **setup_manual.py** must then be adapted to specify the **include** and **library** paths for the external libraries and to select a compiler to build HORAYZON.
-The same compiler (**GCC** or **Clang**) as was used to build the NetCDF-4 C++ library must be selected to avoid an inconsistency between the C++ standard libraries (libstdc++ and libc++).
+The same compiler (**GCC** or **Clang**) as was used to build the NetCDF-4 C++ library must be selected to avoid an inconsistency between C++ standard libraries (libstdc++ and libc++).
 Finally, the HORAYZON package can be installed with
 
 ```bash
