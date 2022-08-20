@@ -36,7 +36,7 @@ The examples **horizon/gridded_curved_DEM_masked.py**, **horizon/gridded_planar_
 
 HORAYZON has been tested with **Python 3.10** (Linux) and **Python 3.9** (Mac OS X). 
 It is recommended to install dependencies via [Conda](https://docs.conda.io/en/latest/#), which covers all dependencies except **hmm**.
-Installation via **Conda** can be accomplished as follows:
+Installation via **Conda** can be accomplished as follows for different platforms:
 
 ## Linux
 
@@ -116,7 +116,7 @@ make install
 HORAYZON can also be built without Conda but this requires some additional manual steps.
 If not already available, the following three external libraries **Intel Embree** , **Threading Building Blocks (TBB)** and **NetCDF-4 C++** have to be installed.
 This can be done either via a package manager (APT, MacPorts, etc.) or by manually building them from source.
-Afterwards, the required Python packages have to be installed (for instance with 'pip') and the HORAYZON package can be downloaded:
+Afterwards, the required Python packages have to be installed (for instance with **pip**) and the HORAYZON package can be downloaded:
 
 ```bash
 git clone --branch installation https://github.com/ChristianSteger/HORAYZON.git
