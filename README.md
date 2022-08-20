@@ -1,6 +1,8 @@
 # HORAYZON
 
-Package to efficiently compute terrain parameters (like **horizon**, **sky view factor**, **topographic openness**, slope angle/aspect) from high-resolution digital elevation model (DEM) data. The package also allows to compute **shadow maps** and **correction factors for downwelling direct shortwave radiation** for specific sun positions. Horizon computation is based on the high-performance ray-tracing library Intel&copy; Embree. Calculations are parallelised with OpenMP (Cython code) or Threading Building Blocks (C++ code).
+Package to efficiently compute terrain parameters (like **horizon**, **sky view factor**, **topographic openness**, slope angle/aspect) from high-resolution digital elevation model (DEM) data.
+The package also allows to compute **shadow maps** and **correction factors for downwelling direct shortwave radiation** for specific sun positions.
+Horizon computation is based on the high-performance ray-tracing library Intel&copy; Embree. Calculations are parallelised with OpenMP (Cython code) or Threading Building Blocks (C++ code).
 
 When you use HORAYZON, please cite:
 
@@ -14,7 +16,9 @@ Please refer to the sections [Known issues](#Known-issues) and [Support and coll
 
 # Package dependencies
 
-HORAYZON depends on multiple external libraries and packages. The essential ones are listed below under **Core dependencies**. Further dependencies are needed to run the examples (**Base dependencies for examples**). The examples **horizon/gridded_curved_DEM_masked.py**, **horizon/gridded_planar_DEM_2m.py** and **shadow/gridded_curved_DEM_NASADEM.py** require more complex dependencies, which are listed under **All dependencies for examples**. It is recommended to install dependencies via [Conda](https://docs.conda.io/en/latest/#), which covers all dependencies except **hmm**.
+HORAYZON depends on multiple external libraries and packages. The essential ones are listed below under **Core dependencies**.
+Further dependencies are needed to run the examples (**Base dependencies for examples**).
+The examples **horizon/gridded_curved_DEM_masked.py**, **horizon/gridded_planar_DEM_2m.py** and **shadow/gridded_curved_DEM_NASADEM.py** require more complex dependencies, which are listed under **All dependencies for examples**.
 
 **Core dependencies**
 - [Intel Embree](https://www.embree.org) and [Threading Building Blocks (TBB)](https://github.com/oneapi-src/oneTBB)
@@ -30,7 +34,9 @@ HORAYZON depends on multiple external libraries and packages. The essential ones
 
 # Installation
 
-HORAYZON has been tested with **Python 3.10** (Linux) and **Python 3.9** (Mac OS X). Installation can be accomplished as follows:
+HORAYZON has been tested with **Python 3.10** (Linux) and **Python 3.9** (Mac OS X). 
+It is recommended to install dependencies via [Conda](https://docs.conda.io/en/latest/#), which covers all dependencies except **hmm**.
+Installation via **Conda** can be accomplished as follows:
 
 ## Linux
 
