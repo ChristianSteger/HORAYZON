@@ -60,7 +60,7 @@ conda create -n horayzon_all -c conda-forge embree3 tbb-devel netcdf-cxx4 cython
 
 and **activate this environment**. The HORAYZON package can then be installed with:
 ```bash
-git clone --branch installation https://github.com/ChristianSteger/HORAYZON.git
+git clone https://github.com/ChristianSteger/HORAYZON.git
 cd HORAYZON  
 python -m pip install .
 ```
@@ -87,7 +87,7 @@ conda create -n horayzon_all -c conda-forge embree3 tbb-devel netcdf-cxx4 cython
 
 and **activate this environment**. The HORAYZON package can then be installed with:
 ```bash
-git clone --branch installation https://github.com/ChristianSteger/HORAYZON.git
+git clone https://github.com/ChristianSteger/HORAYZON.git
 cd HORAYZON
 python -m pip install .
 ```
@@ -120,7 +120,7 @@ This can be done either via a package manager (APT, MacPorts, etc.) or by manual
 Afterwards, the required Python packages have to be installed (for instance with **pip**) and the HORAYZON package can be downloaded:
 
 ```bash
-git clone --branch installation https://github.com/ChristianSteger/HORAYZON.git
+git clone https://github.com/ChristianSteger/HORAYZON.git
 cd HORAYZON
 ```
 
