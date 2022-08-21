@@ -24,9 +24,14 @@ path_include = ["/opt/local/include/"]
 path_lib = ["/opt/local/lib/libembree3",
             "/opt/local/lib/libnetcdf",
             "/opt/local/lib/libnetcdf_c++4"]  # without file ending
+# - depending on defined library paths and loaded modules, it might be
+#   necessary to add paths to further libraries like 'libimf' and 'libtbb'
+# - in case a library is not found during execution of HORAYZON, it has to be
+#   defined before running Python/HORAYZON via 'LD_LIBRARY_PATH'.
 
 # Compiler
-compiler = "clang++"  # (like gcc, clang, clang++)
+compiler = "clang++"  # (like gcc, clang, clang++, default)
+# "default": compiler is not redefined
 
 # NetCDF 3/4 library (legacy; no adaptation required here)
 lib_netcdf = ["libnetcdf", "libnetcdf_c++4"]  # NetCDF4
@@ -56,7 +61,8 @@ extra_objects_cpp = [i + lib_end for i in path_lib]
 # Compile Cython/C++ code
 # -----------------------------------------------------------------------------
 
-os.environ["CC"] = compiler
+if compiler != "default":
+    os.environ["CC"] = compiler
 
 ext_modules = [
     Extension("horayzon.transform",
