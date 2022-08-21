@@ -10,7 +10,7 @@ When you use HORAYZON, please cite:
 
 and
 
-[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.6965104.svg)](https://doi.org/10.5281/zenodo.6965104)
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.7013764.svg)](https://doi.org/10.5281/zenodo.7013764)
 
 Please refer to the sections [Known issues](#Known-issues) and [Support and collaboration](#Support-and-collaboration) in case you encounter any **issues** with HORAYZON.
 
