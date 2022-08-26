@@ -170,7 +170,7 @@ According to Equation (2) in Müller and Scherer (2005), the correction factor i
 
 $$f_{cor} = \left( \dfrac{1.0}{\vec{h} \times \vec{s}} \right) \left( \dfrac{1.0}{\vec{h} \times \vec{t}} \right) \ {mask}_{shadow} \ \left( \vec{t} \times \vec{s} \right)$$
 
-where vector *h* is the normal of the horizontal surface, vector *t* the normal of the tilted surface, vector *s* the sun position vector and ${mask}_{shadow}$ the terrain-shading mask (0: shadow, 1: illuminated). All above vectors represent unit vectors.
+where vector *h* is the normal of the horizontal surface, vector *t* the normal of the tilted surface, vector *s* the sun position vector and mask<sub>shadow</sub> the terrain-shading mask (0: shadow, 1: illuminated). All above vectors represent unit vectors.
 The same equation for the correction of downwelling direct shortwave radiation is applied in Manners et al. (2012).
 
 - **shadow/gridded_curved_DEM_SRTM.py**: Compute shadow map and shortwave correction factor from SRTM (geodetic coordinates, ~90 m resolution) for South Georgia in the South Atlantic Ocean for a day in southern-hemisphere winter. Earth's surface curvature and atmospheric refraction are considered. Plot output of this script is shown below.
