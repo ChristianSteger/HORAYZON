@@ -166,7 +166,7 @@ The output of the method **Terrain.shadow()** is encoded as follows: 0: illumina
 The correction factors for downwelling direct shortwave radiation is computed with the method **Terrain.sw_dir_cor()** according to Müller and Scherer (2005).
 This factor can be applied to radiation output from a regional climate or general circulation model, in which radiation is only simulated along the vertical dimension and all grid cells are assumed to have a horizontal surface. 
 The correction factor accounts for all terrain-induced modifications in radiation, like self/terrain-shading, changes in angles between the sun and the surface's normal vector and the geometric surface enlargement of grid cells due to sloping surfaces.
-According to Equation (2) in Müller and Scherer (2005), the correction factor $f_{cor}$ is computed as
+According to Equation (2) in Müller and Scherer (2005), the correction factor is computed as
 
 $f_{cor}$
 
