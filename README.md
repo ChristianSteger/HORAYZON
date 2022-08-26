@@ -193,11 +193,11 @@ The dotted lines represent the raw output according to the above equation. We ke
 At sea level, we assume a temperature of T<sub>0</sub> = 10° C and an atmospheric pressure of p<sub>0</sub> = 101.0 kPa. These quantities are extrapolated to higher elevations with a constant linear temperature
 lapse rate and the hydrostatic assumption according to the following two equations
 
-$$T(z) = T_{0} - \Gamma \cdot z$$
+$$T(z) = T_{0} - L \cdot z$$
 
-$$p(z) = p_{0} \cdot \left(\frac{T_{0} - \Gamma \cdot z}{T_{0}}\right)^{\frac{g}{R_{d} \cdot \Gamma}}$$
+$$p(z) = p_{0} \cdot \left(\frac{T_{0} - L \cdot z}{T_{0}}\right)^{\frac{g}{R_{d} \cdot L}}$$
 
-with g representing the acceleration due to gravity (9.81 m <sup>-2</sup>), R<sub>d</sub> the gas constant for dry air (287.0 J K<sup>-1</sup> kg<sup>-1</sup>) and $\Gamma$ the lapse rate (0.0065° C m<sup>-1</sup>).
+with *g* representing the acceleration due to gravity (9.81 m <sup>-2</sup>), *R<sub>d</sub>* the gas constant for dry air (287.0 J K<sup>-1</sup> kg<sup>-1</sup>) and *L* the lapse rate (0.0065° C m<sup>-1</sup>).
 These assumptions yield a temperature of -9.5° C and an atmospheric pressure of ~70 kPa for an elevation of 3000 m a.s.l. According to the above figure, changes in atmospheric pressure dominate the influence on atmospheric refraction,
 which results in less significant refraction effects for elevated areas like mountains.
 
