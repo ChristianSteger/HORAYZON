@@ -169,7 +169,6 @@ The correction factor accounts for all terrain-induced modifications in radiatio
 According to Equation (2) in Müller and Scherer (2005), the correction factor is computed as
 
 $f_{cor}$
-
 $f_{cor}$
 
 $f_{cor} = \left( \dfrac{1.0}{\vec{h} \times \vec{s}} \right) \left( \dfrac{1.0}{\vec{h} \times \vec{t}} \right) \ {mask}_{shadow} \ \left( \vec{t} \times \vec{s} \right)$
