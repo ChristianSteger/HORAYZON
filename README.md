@@ -225,7 +225,7 @@ The below list contains known issues with HORAYZON, which will be addressed in a
 
 # Comparison with other terrain horizon algorithm
 Another high-performance and parallelised algorithm to compute terrain horizon is presented in Dozier (2022).
-A brief comparison between this algorithm and HORAYZON can be found in here.
+A brief comparison between this algorithm and HORAYZON can be found in [here](https://github.com/ChristianSteger/Images/blob/master/algorithm_comparison.pdf).
 
 # References
 - Dozier, J. (2022): Revisiting the topographic horizon problem in the era of big data and parallel computing, IEEE Geosci. Remote Sens. Lett., 19, 1-5, https://doi.org/10.1109/LGRS.2021.3125278
