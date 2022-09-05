@@ -223,7 +223,12 @@ The below list contains known issues with HORAYZON, which will be addressed in a
   Horizon elevation angles can be distinctively negative for very small horizon search distances (e.g. 1 km) and elevated positions like mountain peaks. Such low elevation angles fall below the default setting for **elev_ang_low_lim** of -15.0°.
   To prevent the algorithm from being stuck in a infinite loop, a smaller value for **elev_ang_low_lim** has to be chosen (e.g. -89.0°).
 
+# Comparison with other terrain horizon algorithm
+Another high-performance and parallelised algorithm to compute terrain horizon is presented in Dozier (2022).
+A brief comparison between this algorithm and HORAYZON can be found in here.
+
 # References
+- Dozier, J. (2022): Revisiting the topographic horizon problem in the era of big data and parallel computing, IEEE Geosci. Remote Sens. Lett., 19, 1-5, https://doi.org/10.1109/LGRS.2021.3125278
 - Helbig, N., Löwe, H. and Lehning, M. (2009): Radiosity Approach for the Shortwave Surface Radiation Balance in Complex Terrain, J. Atmos. Sci., 66(9), 2900-2912, https://doi.org/10.1175/2009JAS2940.1
 - Manners, J., Vosper, S.B. and Roberts, N. (2012), Radiative transfer over resolved topographic features for high-resolution weather prediction. Q.J.R. Meteorol. Soc., 138: 720-733. https://doi.org/10.1002/qj.956
 - Meeus (1998). Astronomical algorithms (Second edition). Richmond, Va.: Willmann-Bell. pp. 105–108. ISBN 0943396611.
