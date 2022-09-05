@@ -143,10 +143,10 @@ All input data [DEM or auxiliary data](#Digital-elevation-model-and-auxiliary-da
 
 Two terrain horizon functions are available, **horizon_gridded()** and **horizon_locations()**. The former function allows to compute horizon for gridded input while the latter allows to compute horizon for arbitrary selected locations. The second function can optionally output the distance to the horizon. The following five examples are provided:
 - **horizon/gridded_curved_DEM.py**: Compute topographic parameters from SRTM (geodetic coordinates, ~90 m resolution) for a ~50x50 km example region in the European Alps. Earth's surface curvature is considered. Plot output of this script is shown below.
-![Alt text](https://github.com/ChristianSteger/Images/blob/master/Topo_slope_SVF_new.png?raw=true "Output from horizon/gridded_curved_DEM.py")
+![Alt text](https://github.com/ChristianSteger/Media/blob/master/Topo_slope_SVF_new.png?raw=true "Output from horizon/gridded_curved_DEM.py")
 - **horizon/gridded_planar_DEM.py**: Compute topographic parameters from swisstopo DHM25 (map projection, 25 m resolution) for a ~25x40 km example region in Switzerland. Earth's surface curvature is neglected.
 - **horizon/locations_curved_DEM.py**: Compute topographic parameters (additionally distance to horizon) from SRTM (geodetic coordinates, ~90 m resolution) for 11 locations in Switzerland. Earth's surface curvature is considered. Plot output of this script for one location is shown below.
-![Alt text](https://github.com/ChristianSteger/Images/blob/master/Wengen.png?raw=true "Output from horizon/locations_curved_DEM.py")
+![Alt text](https://github.com/ChristianSteger/Media/blob/master/Wengen.png?raw=true "Output from horizon/locations_curved_DEM.py")
 - **horizon/gridded_curved_DEM_masked.py**: Compute topographic parameters from SRTM (geodetic coordinates, ~90 m resolution) for South Georgia in the South Atlantic Ocean. Earth's surface curvature is considered. DEM grid cells, which are at least 20 km apart from land, are masked to speed-up horizon computation.
 - **horizon/gridded_planar_DEM_2m.py**:  Compute gridded topographic parameters from swissALTI3D (map projection, 2 m resolution) for a 3x3 km example region in Switzerland. Earth's surface curvature is neglected. The outer DEM domain is simplified and represented by a triangulated irregular network (TIN) to reduce the large memory footprint of the DEM data.
 
@@ -174,7 +174,7 @@ where vector *h* is the normal of the horizontal surface, vector *t* the normal 
 The same equation for the correction of downwelling direct shortwave radiation is applied in Manners et al. (2012).
 
 - **shadow/gridded_curved_DEM_SRTM.py**: Compute shadow map and shortwave correction factor from SRTM (geodetic coordinates, ~90 m resolution) for South Georgia in the South Atlantic Ocean for a day in southern-hemisphere winter. Earth's surface curvature and atmospheric refraction are considered. Plot output of this script is shown below.
-![Alt text](https://github.com/ChristianSteger/Images/blob/master/Elevation_sw_dir_cor.png?raw=true "Output from shadow/gridded_curved_DEM_SRTM.py")
+![Alt text](https://github.com/ChristianSteger/Media/blob/master/Elevation_sw_dir_cor.png?raw=true "Output from shadow/gridded_curved_DEM_SRTM.py")
 - **shadow/gridded_curved_DEM_REMA.py**: Compute shortwave correction factor from REMA (map projection, ~100 m resolution) for an example region in Antarctica for a day in southern-hemisphere summer. Earth's surface curvature and atmospheric refraction are considered and ocean grid cells are ignored (masked).
 - **shadow/gridded_planar_DEM_artificial.py**: Compute shortwave correction factor from artificial topography (hemispherical mountain in the centre). The illumination source (sun) rotates once around the centre.
 - **shadow/gridded_curved_DEM_NASADEM.py** Compute shortwave correction factor from NASADEM (geodetic coordinates, ~30 m resolution) for an example region in the Karakoram for a day in northern-hemisphere winter. Earth's surface curvature is considered and atmospheric refraction ignored. All non-glacier grid cells are masked to speed-up computation. An [NASA Earthdata account](https://urs.earthdata.nasa.gov) is required and [*wget* has to be set](https://disc.gsfc.nasa.gov/data-access) to download NASADEM data.
@@ -189,7 +189,7 @@ $$r = \frac{1}{60} \left(1.02 \cdot \cot \left(h_{t} + \frac{10.3}{h_{t} + 5.11}
 with *r* representing atmospheric refraction (degree), *h<sub>t</sub>* the sun's true elevation angle (degree), *p* atmospheric pressure (kPa) and *T* temperature (° C). Note that the function argument of *cot* must be provided in **radian**.
 Atmospheric refraction increases with increasing air pressure and decreasing temperature and is only significant for very low solar elevation angles, as illustrated in the below figure.
 The dotted lines represent the raw output according to the above equation. We keep refraction correction constant for elevation angles smaller than -1.0°.
-![Alt text](https://github.com/ChristianSteger/Images/blob/master/Atmos_refrac_Saemundsson.png?raw=true "Atmospheric refraction accoring to Sæmundsson (1986)")
+![Alt text](https://github.com/ChristianSteger/Media/blob/master/Atmos_refrac_Saemundsson.png?raw=true "Atmospheric refraction accoring to Sæmundsson (1986)")
 At sea level, we assume a temperature of T<sub>0</sub> = 10° C and an atmospheric pressure of p<sub>0</sub> = 101.0 kPa. These quantities are extrapolated to higher elevations with a constant linear temperature
 lapse rate and the hydrostatic assumption according to the following two equations
 
@@ -225,7 +225,7 @@ The below list contains known issues with HORAYZON, which will be addressed in a
 
 # Comparison with other algorithm
 Another high-performance and parallelised algorithm to compute terrain horizon is presented in Dozier (2022).
-A brief comparison between this algorithm and HORAYZON can be found [here](https://github.com/ChristianSteger/Images/blob/master/algorithm_comparison.pdf).
+A brief comparison between this algorithm and HORAYZON can be found [here](https://github.com/ChristianSteger/Media/blob/master/algorithm_comparison.pdf).
 
 # References
 - Dozier, J. (2022): Revisiting the topographic horizon problem in the era of big data and parallel computing, IEEE Geosci. Remote Sens. Lett., 19, 1-5, https://doi.org/10.1109/LGRS.2021.3125278
