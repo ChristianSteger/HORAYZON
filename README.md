@@ -98,7 +98,7 @@ python -m pip install .
 ```
 
 ## Optional installation of hmm
-**hmm** depends on **glm**, which can also be installed via Conda
+**hmm** depends on [**glm**](https://github.com/g-truc/glm), which can also be installed via Conda
 ```bash
 conda install -c conda-forge glm
 ```
