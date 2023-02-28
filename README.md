@@ -15,7 +15,7 @@ and
 Please refer to the sections [Known issues](#Known-issues) and [Support and collaboration](#Support-and-collaboration) in case you encounter any **issues** with HORAYZON.
 
 The animation below illustrates the method applied in HORAYZON to find the terrain horizon for individual azimuth directions. Note that for performance reasons, HORAYZON applies a binary search algorithm to determine the horizon for the first azimuth direction (in contrast to the animation).
-![Alt text](https://github.com/ChristianSteger/Media/blob/master/Terrain3D_terrain_horizon.gif?raw=true "Output from triangles_terrain_horizon.py")
+![Alt text](https://github.com/ChristianSteger/Media/blob/master/Terrain3D_terrain_horizon_new.gif?raw=true "Output from triangles_terrain_horizon.py")
 
 # Package dependencies
 
