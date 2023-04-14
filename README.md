@@ -141,7 +141,7 @@ python -m pip install .
 The usage of the packages is best illustrated by means of examples, which can either be run in a Python IDE (like PyCharm or Spyder) or in the terminal.
 To run the examples, the path **path_out** must be adapted in the example script to a location that provides enough disk space.
 For the example **horizon/gridded_planar_DEM_2m.py**, the path to the hmm executable (**hmm_ex**) has to be additionally adapted.
-All input data [DEM or auxiliary data](#Digital-elevation-model-and-auxiliary-data) required for running the examples is downloaded automatically.
+All input [DEM or auxiliary data](#Digital-elevation-model-and-auxiliary-data) required for running the examples is downloaded automatically.
 When HORAYZON tries to download auxiliary data for the first time, a local path for the data has to be provided by the user.
 This path is saved in the text file *path_aux_data.txt*, which is stored in the directory to which the HORAYZON package was installed.
 In case this path is unknown, it can be found by running
