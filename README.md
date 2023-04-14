@@ -151,7 +151,7 @@ import horayzon
 print(horayzon.__file__)
 ```
 
-in Python. In case the auxiliary data is manually moved later, the path in *path_aux_data.txt* has to be adapted accordingly.
+in Python. If the auxiliary data is later on moved manually to a new directory, the path in *path_aux_data.txt* has to be adapted accordingly.
 
 ## Examples: Terrain parameters (slope, horizon and sky view factor)
 
