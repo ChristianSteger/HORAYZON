@@ -1,0 +1,11 @@
+name: horayzon_base
+channels:
+  - conda-forge
+dependencies:
+- ipython
+- matplotlib
+- netcdf4
+- pillow
+- pyproj
+- skyfield
+

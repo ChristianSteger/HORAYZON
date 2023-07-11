@@ -1,0 +1,15 @@
+name: horayzon_core
+channels:
+  - conda-forge
+dependencies:
+  - cython
+  - embree3=3.13
+  - geographiclib=2.0
+  - netcdf-cxx4
+  - numpy=1.23
+  - requests
+  - scipy
+  - tbb-devel=2021.6
+  - tqdm=4.64
+  - xarray
+

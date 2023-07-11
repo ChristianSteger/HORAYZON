@@ -1,0 +1,11 @@
+name: horayzon_all
+channels:
+  - conda-forge
+dependencies:
+  - shapely
+  - fiona
+  - pygeos
+  - scikit-image
+  - rasterio
+  - trimesh
+
