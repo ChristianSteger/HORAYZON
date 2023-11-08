@@ -195,13 +195,13 @@ def horizon_gridded(
     # Allocate horizon array
     cdef float hori_buffer_size = (vec_norm.shape[0] * vec_norm.shape[1] *
                                    azim_num * 4) / (10.0 ** 9.0)
-    cdef int hori_buffer_len
+    cdef np.int64_t hori_buffer_len
     if hori_buffer_size <= hori_buffer_size_max:
         print("Horizon buffer size is below specified limit")
         hori_buffer_len = vec_norm.shape[0] * vec_norm.shape[1] * azim_num
     else:
         print("Horizon buffer size is restricted")
-        hori_buffer_len = int((hori_buffer_size_max * 10 ** 9) / 4) + 100000
+        hori_buffer_len = np.int64((hori_buffer_size_max * 10 ** 9) / 4) + 100000
         # add some "safety" memory to the buffer (-> 100000)
     cdef np.ndarray[np.float32_t, ndim = 1, mode = "c"] \
         hori_buffer = np.empty(hori_buffer_len,  dtype=np.float32)
@@ -378,7 +378,7 @@ def horizon_locations(
     units_c = units.encode("utf-8")
 
     # Allocate horizon array
-    cdef int hori_buffer_len = vec_norm.shape[0] * azim_num
+    cdef np.int64_t hori_buffer_len = vec_norm.shape[0] * azim_num
     cdef np.ndarray[np.float32_t, ndim = 1, mode = "c"] \
         hori_buffer = np.empty(hori_buffer_len,  dtype=np.float32)
     hori_buffer.fill(np.nan)
