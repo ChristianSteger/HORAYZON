@@ -195,7 +195,7 @@ def horizon_gridded(
     # Allocate horizon array
     cdef float hori_buffer_size = (vec_norm.shape[0] * vec_norm.shape[1] *
                                    azim_num * 4) / (10.0 ** 9.0)
-    cdef int hori_buffer_len
+    cdef np.int64_t hori_buffer_len
     if hori_buffer_size <= hori_buffer_size_max:
         print("Horizon buffer size is below specified limit")
         hori_buffer_len = vec_norm.shape[0] * vec_norm.shape[1] * azim_num
