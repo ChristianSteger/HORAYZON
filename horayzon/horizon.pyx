@@ -378,7 +378,7 @@ def horizon_locations(
     units_c = units.encode("utf-8")
 
     # Allocate horizon array
-    cdef int hori_buffer_len = vec_norm.shape[0] * azim_num
+    cdef np.int64_t hori_buffer_len = vec_norm.shape[0] * azim_num
     cdef np.ndarray[np.float32_t, ndim = 1, mode = "c"] \
         hori_buffer = np.empty(hori_buffer_len,  dtype=np.float32)
     hori_buffer.fill(np.nan)
