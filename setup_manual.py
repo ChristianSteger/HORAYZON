@@ -44,9 +44,11 @@ lib_netcdf = ["libnetcdf", "libnetcdf_c++4"]  # NetCDF4
 if sys.platform in ["linux", "linux2"]:
     print("Operating system: Linux")
     lib_end = ".so"
+    extra_compile_args_cpp = ["-O3"]
 elif sys.platform in ["darwin"]:
     print("Operating system: Mac OS X")
     lib_end = ".dylib"
+    extra_compile_args_cpp = ["-O3", "-std=c++11"]
 elif sys.platform in ["win32"]:
     print("Operating system: Windows")
     print("Warning: Package not yet tested for Windows")
@@ -87,13 +89,13 @@ ext_modules = [
               sources=["horayzon/horizon.pyx", "horayzon/horizon_comp.cpp"],
               include_dirs=include_dirs_cpp,
               extra_objects=extra_objects_cpp,
-              extra_compile_args=["-O3"],
+              extra_compile_args=extra_compile_args_cpp,
               language="c++"),
     Extension("horayzon.shadow",
               sources=["horayzon/shadow.pyx", "horayzon/shadow_comp.cpp"],
               include_dirs=include_dirs_cpp,
               extra_objects=extra_objects_cpp,
-              extra_compile_args=["-O3"],
+              extra_compile_args=extra_compile_args_cpp,
               language="c++")
     ]
 

@@ -31,6 +31,7 @@ if sys.platform in ["linux", "linux2"]:
     lib_end = ".so"
     compiler = "gcc"
     extra_compile_args_cython = ["-O3", "-ffast-math", "-fopenmp"]
+    extra_compile_args_cpp = ["-O3"]
 elif sys.platform in ["darwin"]:
     print("Operating system: Mac OS X")
     lib_end = ".dylib"
@@ -38,6 +39,7 @@ elif sys.platform in ["darwin"]:
     extra_compile_args_cython = ["-O3", "-ffast-math",
                                  "-Wl,-rpath," + path_lib_conda,
                                  "-L" + path_lib_conda, "-fopenmp"]
+    extra_compile_args_cpp = ["-O3", "-std=c++11"]
 elif sys.platform in ["win32"]:
     print("Operating system: Windows")
     print("Warning: Package not yet tested for Windows")
@@ -77,13 +79,13 @@ ext_modules = [
               sources=["horayzon/horizon.pyx", "horayzon/horizon_comp.cpp"],
               include_dirs=include_dirs_cpp,
               extra_objects=extra_objects_cpp,
-              extra_compile_args=["-O3"],
+              extra_compile_args=extra_compile_args_cpp,
               language="c++"),
     Extension("horayzon.shadow",
               sources=["horayzon/shadow.pyx", "horayzon/shadow_comp.cpp"],
               include_dirs=include_dirs_cpp,
               extra_objects=extra_objects_cpp,
-              extra_compile_args=["-O3"],
+              extra_compile_args=extra_compile_args_cpp,
               language="c++")
     ]
 
