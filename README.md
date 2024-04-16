@@ -74,17 +74,17 @@ This can be done via Conda. Create an appropriate Conda environment
 
 **Core dependencies**
 ```bash
-conda create -n horayzon_core -c conda-forge embree3 tbb-devel cython numpy scipy geographiclib tqdm requests xarray c-compiler openmp python=3.9
+conda create -n horayzon_core -c conda-forge embree3 tbb-devel cython numpy scipy geographiclib tqdm requests xarray c-compiler openmp
 ```
 
 **Base dependencies for examples**
 ```bash
-conda create -n horayzon_base -c conda-forge embree3 tbb-devel cython numpy scipy geographiclib tqdm requests xarray netcdf4 matplotlib pillow skyfield pyproj ipython c-compiler openmp python=3.9
+conda create -n horayzon_base -c conda-forge embree3 tbb-devel cython numpy scipy geographiclib tqdm requests xarray netcdf4 matplotlib pillow skyfield pyproj ipython c-compiler openmp
 ```
 
 **All dependencies for examples (masking and high-resolution DEM examples; GDAL dependency)**
 ```bash
-conda create -n horayzon_all -c conda-forge embree3 tbb-devel cython numpy scipy geographiclib tqdm requests xarray netcdf4 matplotlib pillow skyfield pyproj ipython shapely fiona pygeos scikit-image rasterio trimesh c-compiler openmp python=3.9
+conda create -n horayzon_all -c conda-forge embree3 tbb-devel cython numpy scipy geographiclib tqdm requests xarray netcdf4 matplotlib pillow skyfield pyproj ipython shapely fiona pygeos scikit-image rasterio trimesh c-compiler openmp
 ```
 
 and **activate this environment**. The HORAYZON package can then be installed with:
