@@ -19,11 +19,9 @@ import numpy as np
 # Manual settings
 # -----------------------------------------------------------------------------
 
-# Paths for Intel Embree, Threading Building Blocks (TBB) and NetCDF-4 C++
+# Paths for Intel Embree and Threading Building Blocks (TBB)
 path_include = ["/opt/local/include/"]
-path_lib = ["/opt/local/lib/libembree3",
-            "/opt/local/lib/libnetcdf",
-            "/opt/local/lib/libnetcdf_c++4"]  # without file ending
+path_lib = ["/opt/local/lib/libembree3"]  # without file ending
 # - depending on defined library paths and loaded modules, it might be
 #   necessary to add paths to further libraries like 'libimf' and 'libtbb'
 # - in case a library is not found during execution of HORAYZON, it has to be
@@ -32,10 +30,6 @@ path_lib = ["/opt/local/lib/libembree3",
 # Compiler
 compiler = "clang++"  # (like gcc, clang, clang++, default)
 # "default": compiler is not redefined
-
-# NetCDF 3/4 library (legacy; no adaptation required here)
-lib_netcdf = ["libnetcdf", "libnetcdf_c++4"]  # NetCDF4
-# lib_netcdf = ["libnetcdf_c++"]  # NetCDF3
 
 # -----------------------------------------------------------------------------
 # Operating system dependent settings

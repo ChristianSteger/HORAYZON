@@ -25,7 +25,6 @@ The examples **horizon/gridded_curved_DEM_masked.py**, **horizon/gridded_planar_
 
 **Core dependencies**
 - [Intel Embree](https://www.embree.org) and [Threading Building Blocks (TBB)](https://github.com/oneapi-src/oneTBB)
-- [NetCDF-4 C++ library](https://github.com/Unidata/netcdf-cxx4)
 - Python packages: Cython, NumPy, SciPy, GeographicLib, tqdm, requests, xarray
 
 **Base dependencies for examples**
@@ -48,17 +47,17 @@ Installation requires the [GNU Compiler Collection (GCC)](https://gcc.gnu.org). 
 
 **Core dependencies**
 ```bash
-conda create -n horayzon_core -c conda-forge embree3 tbb-devel netcdf-cxx4 cython numpy scipy geographiclib tqdm requests xarray
+conda create -n horayzon_core -c conda-forge embree3 tbb-devel cython numpy scipy geographiclib tqdm requests xarray
 ```
 
 **Base dependencies for examples**
 ```bash
-conda create -n horayzon_base -c conda-forge embree3 tbb-devel netcdf-cxx4 cython numpy scipy geographiclib tqdm requests xarray netcdf4 matplotlib pillow skyfield pyproj ipython
+conda create -n horayzon_base -c conda-forge embree3 tbb-devel cython numpy scipy geographiclib tqdm requests xarray netcdf4 matplotlib pillow skyfield pyproj ipython
 ```
 
 **All dependencies for examples (masking and high-resolution DEM examples; GDAL dependency)**
 ```bash
-conda create -n horayzon_all -c conda-forge embree3 tbb-devel netcdf-cxx4 cython numpy scipy geographiclib tqdm requests xarray netcdf4 matplotlib pillow skyfield pyproj ipython shapely fiona pygeos scikit-image rasterio trimesh
+conda create -n horayzon_all -c conda-forge embree3 tbb-devel cython numpy scipy geographiclib tqdm requests xarray netcdf4 matplotlib pillow skyfield pyproj ipython shapely fiona pygeos scikit-image rasterio trimesh
 ```
 
 and **activate this environment**. The HORAYZON package can then be installed with:
@@ -75,17 +74,17 @@ This can be done via Conda. Create an appropriate Conda environment
 
 **Core dependencies**
 ```bash
-conda create -n horayzon_core -c conda-forge embree3 tbb-devel netcdf-cxx4 cython numpy scipy geographiclib tqdm requests xarray c-compiler openmp python=3.9
+conda create -n horayzon_core -c conda-forge embree3 tbb-devel cython numpy scipy geographiclib tqdm requests xarray c-compiler openmp python=3.9
 ```
 
 **Base dependencies for examples**
 ```bash
-conda create -n horayzon_base -c conda-forge embree3 tbb-devel netcdf-cxx4 cython numpy scipy geographiclib tqdm requests xarray netcdf4 matplotlib pillow skyfield pyproj ipython c-compiler openmp python=3.9
+conda create -n horayzon_base -c conda-forge embree3 tbb-devel cython numpy scipy geographiclib tqdm requests xarray netcdf4 matplotlib pillow skyfield pyproj ipython c-compiler openmp python=3.9
 ```
 
 **All dependencies for examples (masking and high-resolution DEM examples; GDAL dependency)**
 ```bash
-conda create -n horayzon_all -c conda-forge embree3 tbb-devel netcdf-cxx4 cython numpy scipy geographiclib tqdm requests xarray netcdf4 matplotlib pillow skyfield pyproj ipython shapely fiona pygeos scikit-image rasterio trimesh c-compiler openmp python=3.9
+conda create -n horayzon_all -c conda-forge embree3 tbb-devel cython numpy scipy geographiclib tqdm requests xarray netcdf4 matplotlib pillow skyfield pyproj ipython shapely fiona pygeos scikit-image rasterio trimesh c-compiler openmp python=3.9
 ```
 
 and **activate this environment**. The HORAYZON package can then be installed with:
@@ -118,7 +117,7 @@ make install
 
 ## Installation without Conda
 HORAYZON can also be built without Conda but this requires some additional manual steps.
-If not already available, the following three external libraries **Intel Embree** , **Threading Building Blocks (TBB)** and **NetCDF-4 C++** have to be installed.
+If not already available, the following two external libraries **Intel Embree** and **Threading Building Blocks (TBB)** have to be installed.
 This can be done either via a package manager (APT, MacPorts, etc.) or by manually building them from source.
 Afterwards, the required Python packages have to be installed (for instance with **pip**) and the HORAYZON package can be downloaded:
 
@@ -128,7 +127,6 @@ cd HORAYZON
 ```
 
 The setup file **setup_manual.py** must then be adapted to specify the **include** and **library** paths for the external libraries and to select a compiler to build HORAYZON.
-The same compiler (**GCC** or **Clang**) as was used to build the NetCDF-4 C++ library must be selected to avoid an inconsistency between C++ standard libraries (libstdc++ and libc++).
 Finally, the HORAYZON package can be installed with:
 
 ```bash

@@ -14,14 +14,6 @@ from distutils.extension import Extension
 import numpy as np
 
 # -----------------------------------------------------------------------------
-# Manual settings
-# -----------------------------------------------------------------------------
-
-# NetCDF 3/4 library
-lib_netcdf = ["libnetcdf", "libnetcdf_c++4"]  # NetCDF4
-# lib_netcdf = ["libnetcdf_c++"]  # NetCDF3
-
-# -----------------------------------------------------------------------------
 # Operating system dependent settings
 # -----------------------------------------------------------------------------
 
@@ -47,8 +39,7 @@ else:
     raise ValueError("Unsupported operating system")
 libraries_cython = ["m", "pthread"]
 include_dirs_cpp = [np.get_include()]
-extra_objects_cpp = [path_lib_conda + i + lib_end for i in ["libembree3"]
-                     + lib_netcdf]
+extra_objects_cpp = [path_lib_conda + i + lib_end for i in ["libembree3"]]
 
 # -----------------------------------------------------------------------------
 # Compile Cython/C++ code

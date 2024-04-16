@@ -13,7 +13,6 @@
 import os
 import numpy as np
 import xarray as xr
-from netCDF4 import Dataset
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 import zipfile
@@ -123,7 +122,7 @@ d_lon = np.diff(lon).mean()
 d_lat = np.diff(lat).mean()
 transform = Affine(d_lon, 0.0, lon[0] - d_lon / 2.0,
                    0.0, d_lat, lat[0] - d_lat / 2.0)
-mask_land_gshhs = rasterize(coastline_GSHHS, (len(lat), len(lon)),
+mask_land_gshhs = rasterize(coastline_GSHHS.geoms, (len(lat), len(lon)),
                             transform=transform).astype(bool)
 
 # Compute common land-sea-mask, contours and transform coordinates
@@ -158,8 +157,8 @@ norm = mpl.colors.BoundaryNorm(bounds, cmap.N)
 fig = plt.figure(figsize=(11, 6))
 plt.pcolormesh(lon[slice_in[1]], lat[slice_in[0]], mask_type, shading="auto",
                cmap=cmap, norm=norm)
-plt.axis([lon[slice_in[1]].min(), lon[slice_in[1]].max(),
-          lat[slice_in[0]].min(), lat[slice_in[0]].max()])
+plt.axis((lon[slice_in[1]].min(), lon[slice_in[1]].max(),
+          lat[slice_in[0]].min(), lat[slice_in[0]].max()))
 plt.xlabel("Longitude [degree]")
 plt.ylabel("Latitude [degree]")
 cbar = plt.colorbar()
@@ -178,26 +177,31 @@ mask[(mask_type == -1)] = 0  # mask area outside of buffer
 # -----------------------------------------------------------------------------
 
 # Compute horizon
-hray.horizon.horizon_gridded(vert_grid, dem_dim_0, dem_dim_1,
-                             vec_norm_enu, vec_north_enu,
-                             offset_0, offset_1,
-                             file_out=path_out + file_hori,
-                             x_axis_val=lon[slice_in[1]].astype(np.float32),
-                             y_axis_val=lat[slice_in[0]].astype(np.float32),
-                             x_axis_name="lon", y_axis_name="lat",
-                             units="degree", hori_buffer_size_max=4.5,
-                             mask=mask, dist_search=dist_search,
-                             azim_num=azim_num, hori_acc=hori_acc)
+hori, azim = hray.horizon.horizon_gridded(
+    vert_grid, dem_dim_0, dem_dim_1,
+    vec_norm_enu, vec_north_enu,
+    offset_0, offset_1,
+    mask=mask, dist_search=dist_search,
+    azim_num=azim_num, hori_acc=hori_acc)
 
-# Load horizon data
-ds = xr.open_dataset(path_out + file_hori)
-hori = ds["horizon"].values
-azim = ds["azim"].values
-ds.close()
-
-# Swap coordinate axes (-> make viewable with ncview)
-ds_ncview = ds.transpose("azim", "lat", "lon")
-ds_ncview.to_netcdf(path_out + file_hori[:-3] + "_ncview.nc")
+# Save horizon to NetCDF file (in Ncview-compatible format)
+ds = xr.Dataset({
+    "horizon": xr.DataArray(
+        data=np.moveaxis(hori, 2, 0),
+        dims=["azim", "lat", "lon"],
+        coords={
+            "azim": azim,
+            "lat": lat[slice_in[0]],
+            "lon": lon[slice_in[1]]},
+        attrs={
+            "units": "radian"
+        })
+    })
+ds["azim"].attrs["units"] = "radian"
+ds["lat"].attrs["units"] = "degree"
+ds["lon"].attrs["units"] = "degree"
+encoding = {i: {"_FillValue": None} for i in ("azim", "lat", "lon")}
+ds.to_netcdf(path_out + file_hori, encoding=encoding)
 
 # Compute rotation matrix (global ENU -> local ENU)
 rot_mat_glob2loc = hray.transform.rotation_matrix_glob2loc(vec_north_enu,
@@ -225,35 +229,28 @@ aspect = np.pi / 2.0 - np.arctan2(vec_tilt[:, :, 1],
 aspect[aspect < 0.0] += np.pi * 2.0  # [0.0, 2.0 * np.pi]
 
 # Save topographic parameters to NetCDF file
-ncfile = Dataset(filename=path_out + file_topo_par, mode="w")
-ncfile.createDimension(dimname="lat", size=svf.shape[0])
-ncfile.createDimension(dimname="lon", size=svf.shape[1])
-nc_lat = ncfile.createVariable(varname="lat", datatype="f",
-                               dimensions="lat")
-nc_lat[:] = lat[slice_in[0]]
-nc_lat.units = "degree"
-nc_lon = ncfile.createVariable(varname="lon", datatype="f",
-                               dimensions="lon")
-nc_lon[:] = lon[slice_in[1]]
-nc_lon.units = "degree"
-nc_data = ncfile.createVariable(varname="elevation", datatype="f",
-                                dimensions=("lat", "lon"))
-nc_data[:] = elevation[slice_in]
-nc_data.long_name = "ellipsoidal height"
-nc_data.units = "m"
-nc_data = ncfile.createVariable(varname="slope", datatype="f",
-                                dimensions=("lat", "lon"))
-nc_data[:] = slope
-nc_data.long_name = "slope angle"
-nc_data.units = "rad"
-nc_data = ncfile.createVariable(varname="aspect", datatype="f",
-                                dimensions=("lat", "lon"))
-nc_data[:] = aspect
-nc_data.long_name = "slope aspect (clockwise from North)"
-nc_data.units = "rad"
-nc_data = ncfile.createVariable(varname="svf", datatype="f",
-                                dimensions=("lat", "lon"))
-nc_data[:] = svf
-nc_data.long_name = "sky view factor"
-nc_data.units = "-"
-ncfile.close()
+ds = xr.Dataset(
+    coords=dict(
+        lat=(["lat"], lat[slice_in[0]]),
+        lon=(["lon"], lon[slice_in[1]]),
+    ),
+    data_vars=dict(
+        elevation=(["lat", "lon"], elevation[slice_in],
+                   {"long_name": "ellipsoidal height",
+                    "units": "m"}),
+        slope=(["lat", "lon"], slope,
+               {"long_name": "slope angle",
+                "units": "radian"}),
+        aspect=(["lat", "lon"], aspect,
+                {"long_name": "slope aspect (clockwise from North)",
+                "units": "radian"}),
+        svf=(["lat", "lon"], svf,
+             {"long_name": "sky view factor",
+              "units": "-"}),
+    )
+)
+ds["lat"].attrs["units"] = "degree"
+ds["lon"].attrs["units"] = "degree"
+encoding = {i: {"_FillValue": None} for i in
+            ("lat", "lon", "elevation", "slope", "aspect")}
+ds.to_netcdf(path_out + file_topo_par, encoding=encoding)

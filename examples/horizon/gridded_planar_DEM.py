@@ -80,25 +80,29 @@ vec_north[:, :, 1] = 1.0
 vert_grid = hray.auxiliary.rearrange_pad_buffer(*np.meshgrid(x, y), elevation)
 
 # Compute horizon
-hray.horizon.horizon_gridded(vert_grid, dem_dim_0, dem_dim_1,
-                             vec_norm, vec_north, offset_0, offset_1,
-                             file_out=path_out + file_hori,
-                             x_axis_val=x[slice_in[1]].astype(np.float32),
-                             y_axis_val=y[slice_in[0]].astype(np.float32),
-                             x_axis_name="x", y_axis_name="y",
-                             units="metre", dist_search=dist_search,
-                             azim_num=azim_num)
+hori, azim = hray.horizon.horizon_gridded(
+    vert_grid, dem_dim_0, dem_dim_1,
+    vec_norm, vec_north, offset_0, offset_1,
+    dist_search=dist_search, azim_num=azim_num)
 
-# Load horizon data
-ds = xr.open_dataset(path_out + file_hori)
-hori = ds["horizon"].values
-azim = ds["azim"].values
-ds.close()
-# del vec_north, vec_norm
-
-# Swap coordinate axes (-> make viewable with ncview)
-ds_ncview = ds.transpose("azim", "y", "x")
-ds_ncview.to_netcdf(path_out + file_hori[:-3] + "_ncview.nc")
+# Save horizon to NetCDF file (in Ncview-compatible format)
+ds = xr.Dataset({
+    "horizon": xr.DataArray(
+        data=np.moveaxis(hori, 2, 0),
+        dims=["azim", "y", "x"],
+        coords={
+            "azim": azim,
+            "y": y[slice_in[0]],
+            "x": x[slice_in[1]]},
+        attrs={
+            "units": "radian"
+        })
+    })
+ds["azim"].attrs["units"] = "radian"
+ds["y"].attrs["units"] = "metre"
+ds["x"].attrs["units"] = "metre"
+encoding = {i: {"_FillValue": None} for i in ("azim", "y", "x")}
+ds.to_netcdf(path_out + file_hori, encoding=encoding)
 
 # Compute slope
 x_2d, y_2d = np.meshgrid(x, y)
@@ -119,35 +123,28 @@ aspect = np.pi / 2.0 - np.arctan2(vec_tilt[:, :, 1],
 aspect[aspect < 0.0] += np.pi * 2.0  # [0.0, 2.0 * np.pi]
 
 # Save topographic parameters to NetCDF file
-ncfile = Dataset(filename=path_out + file_topo_par, mode="w")
-ncfile.createDimension(dimname="y", size=svf.shape[0])
-ncfile.createDimension(dimname="x", size=svf.shape[1])
-nc_lat = ncfile.createVariable(varname="y", datatype="f",
-                               dimensions="y")
-nc_lat[:] = y[slice_in[0]]
-nc_lat.units = "metre"
-nc_lon = ncfile.createVariable(varname="x", datatype="f",
-                               dimensions="x")
-nc_lon[:] = x[slice_in[1]]
-nc_lon.units = "metre"
-nc_data = ncfile.createVariable(varname="elevation", datatype="f",
-                                dimensions=("y", "x"))
-nc_data[:] = elevation[slice_in]
-nc_data.long_name = "elevation"
-nc_data.units = "m"
-nc_data = ncfile.createVariable(varname="slope", datatype="f",
-                                dimensions=("y", "x"))
-nc_data[:] = slope
-nc_data.long_name = "slope angle"
-nc_data.units = "rad"
-nc_data = ncfile.createVariable(varname="aspect", datatype="f",
-                                dimensions=("y", "x"))
-nc_data[:] = aspect
-nc_data.long_name = "slope aspect (clockwise from North)"
-nc_data.units = "rad"
-nc_data = ncfile.createVariable(varname="svf", datatype="f",
-                                dimensions=("y", "x"))
-nc_data[:] = svf
-nc_data.long_name = "sky view factor"
-nc_data.units = "-"
-ncfile.close()
+ds = xr.Dataset(
+    coords=dict(
+        y=(["y"], y[slice_in[0]]),
+        x=(["x"], x[slice_in[1]]),
+    ),
+    data_vars=dict(
+        elevation=(["y", "x"], elevation[slice_in],
+                   {"long_name": "elevation",
+                    "units": "m"}),
+        slope=(["y", "x"], slope,
+               {"long_name": "slope angle",
+                "units": "radian"}),
+        aspect=(["y", "x"], aspect,
+                {"long_name": "slope aspect (clockwise from North)",
+                "units": "radian"}),
+        svf=(["y", "x"], svf,
+             {"long_name": "sky view factor",
+              "units": "-"}),
+    )
+)
+ds["y"].attrs["units"] = "metre"
+ds["x"].attrs["units"] = "metre"
+encoding = {i: {"_FillValue": None} for i in
+            ("y", "x", "elevation", "slope", "aspect")}
+ds.to_netcdf(path_out + file_topo_par, encoding=encoding)

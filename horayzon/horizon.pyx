@@ -22,10 +22,6 @@ cdef extern from "horizon_comp.h":
             float hori_acc, char* ray_algorithm, char* geom_type,
             float* vert_simp, int num_vert_simp,
             np.npy_int32* tri_ind_simp, int num_tri_simp,
-            char* file_out,
-            float* x_axis_val, float* y_axis_val,
-            char* x_axis_name, char* y_axis_name, char* units,
-            float hori_buffer_size_max,
             float elev_ang_low_lim,
             np.npy_uint8* mask, float hori_fill,
             float ray_org_elev)
@@ -36,10 +32,6 @@ def horizon_gridded(
         np.ndarray[np.float32_t, ndim = 3] vec_norm,
         np.ndarray[np.float32_t, ndim = 3] vec_north,
         int offset_0, int offset_1,
-        str file_out,
-        np.ndarray[np.float32_t, ndim = 1] x_axis_val,
-        np.ndarray[np.float32_t, ndim = 1] y_axis_val,
-        str x_axis_name, str y_axis_name, str units,
         float dist_search,
         int azim_num=360,
         float hori_acc=0.25,
@@ -51,7 +43,6 @@ def horizon_gridded(
         np.ndarray[np.int32_t, ndim = 1]
         tri_ind_simp=np.array([0, 0, 0, 0], dtype=np.int32),
         int num_tri_simp=1,
-        float hori_buffer_size_max=1.5,
         float elev_ang_low_lim = -15.0,
         np.ndarray[np.uint8_t, ndim = 2] mask=None,
         float hori_fill=0.0,
@@ -79,18 +70,6 @@ def horizon_gridded(
         Offset of inner domain in y-direction
     offset_1 : int
         Offset of inner domain in x-direction
-    file_out : str
-        Path and file name for output
-    x_axis_val : ndarray of float
-        Array (one-dimensional) with x-coordinates of inner domain
-    y_axis_val : ndarray of float
-        Array (one-dimensional) with y-coordinates of inner domain
-    x_axis_name : str
-        Name of x-axis
-    y_axis_name : str
-        Name of y-axis
-    units : str
-        Units of x- and y-axis
     dist_search : float
         Search distance for horizon [kilometre]
     azim_num : int
@@ -110,8 +89,6 @@ def horizon_gridded(
         Array (one-dimensional) with vertex indices of triangles
     num_tri_simp : int
         Number of triangles
-    hori_buffer_size_max : float
-        Maximal size of horizon buffer [Gigabyte]
     elev_ang_low_lim : float
         Lower limit for elevation angle search [degree]
     mask : ndarray of uint8
@@ -119,7 +96,14 @@ def horizon_gridded(
     hori_fill : float
         Horizon fill values for masked locations
     ray_org_elev : float
-        Vertical elevation of ray origin above surface [metre]"""
+        Vertical elevation of ray origin above surface [metre]
+
+    Returns
+    -------
+    hori_buffer : ndarray of float
+        Array (three-dimensional) with horizon (y, x, azim_num) [radian]
+    azim : ndarray of float
+        Array (one-dimensional) with azimuth (azim_num) [radian]"""
 
 	# Check consistency and validity of input arguments
     if len(vert_grid) < (dem_dim_0 * dem_dim_1 * 3):
@@ -149,12 +133,6 @@ def horizon_gridded(
     if tri_ind_simp.max() > (num_vert_simp - 1):
         raise ValueError("triangle indices of simplified outer domain exceed "
                          "number of vertices")
-    if not os.path.isdir("/".join(file_out.split("/")[:-1])):
-        raise ValueError("output directory does not exist")
-    if ((len(y_axis_val) != vec_norm.shape[0])
-            or (len(x_axis_val) != vec_norm.shape[1])):
-        raise ValueError("lengths of x_axis_val and/or y_axis_val is/are"
-                         " inconsistent with dimension lengths of vec_norm")
     if hori_acc > 10.0:
         raise ValueError("limit of hori_acc (10 degree) is exceeded")
     if mask is None:
@@ -187,24 +165,11 @@ def horizon_gridded(
     # Convert input strings to bytes
     ray_algorithm_c = ray_algorithm.encode("utf-8")
     geom_type_c = geom_type.encode("utf-8")
-    file_out_c = file_out.encode("utf-8")
-    x_axis_name_c = x_axis_name.encode("utf-8")
-    y_axis_name_c = y_axis_name.encode("utf-8")
-    units_c = units.encode("utf-8")
 
     # Allocate horizon array
-    cdef float hori_buffer_size = (vec_norm.shape[0] * vec_norm.shape[1] *
-                                   azim_num * 4) / (10.0 ** 9.0)
-    cdef int hori_buffer_len
-    if hori_buffer_size <= hori_buffer_size_max:
-        print("Horizon buffer size is below specified limit")
-        hori_buffer_len = vec_norm.shape[0] * vec_norm.shape[1] * azim_num
-    else:
-        print("Horizon buffer size is restricted")
-        hori_buffer_len = int((hori_buffer_size_max * 10 ** 9) / 4) + 100000
-        # add some "safety" memory to the buffer (-> 100000)
-    cdef np.ndarray[np.float32_t, ndim = 1, mode = "c"] \
-        hori_buffer = np.empty(hori_buffer_len,  dtype=np.float32)
+    cdef np.ndarray[np.float32_t, ndim = 3, mode = "c"] \
+        hori_buffer = np.empty((vec_norm.shape[0], vec_norm.shape[1],
+        azim_num),  dtype=np.float32)
     hori_buffer.fill(np.nan)
 
     horizon_gridded_comp(
@@ -212,19 +177,24 @@ def horizon_gridded(
         dem_dim_0, dem_dim_1,
         &vec_norm[0,0,0], &vec_north[0,0,0],
         offset_0, offset_1,
-        &hori_buffer[0],
+        &hori_buffer[0,0,0],
         vec_norm.shape[0], vec_norm.shape[1],
         azim_num, dist_search,
         hori_acc, ray_algorithm_c, geom_type_c,
         &vert_simp[0], num_vert_simp,
         &tri_ind_simp[0], num_tri_simp,
-        file_out_c,
-        &x_axis_val[0], &y_axis_val[0],
-        x_axis_name_c, y_axis_name_c, units_c,
-        hori_buffer_size_max,
         elev_ang_low_lim,
         &mask[0,0], hori_fill,
         ray_org_elev)
+
+    # Recompute azimuth
+    cdef np.ndarray[np.float32_t, ndim = 1, mode = "c"] \
+        azim = np.empty(azim_num,  dtype=np.float32)
+    cdef int i
+    for i in range(azim_num):
+        azim[i] = ((2 * np.pi) / azim_num * i)
+
+    return hori_buffer, azim
 
 # -----------------------------------------------------------------------------
 # Compute horizon for arbitrary locations
@@ -237,12 +207,10 @@ cdef extern from "horizon_comp.h":
             float* coords,
             float* vec_norm, float* vec_north,
             float* hori_buffer,
+            float* hori_dist_buffer,
             int num_loc,
             int azim_num, float dist_search,
             float hori_acc, char* ray_algorithm, char* geom_type,
-            char* file_out,
-            float* x_axis_val, float* y_axis_val,
-            char* x_axis_name, char* y_axis_name, char* units,
             float elev_ang_low_lim,
             float* ray_org_elev,
             int hori_dist_out)
@@ -253,10 +221,6 @@ def horizon_locations(
         np.ndarray[np.float32_t, ndim = 2] coords,
         np.ndarray[np.float32_t, ndim = 2] vec_norm,
         np.ndarray[np.float32_t, ndim = 2] vec_north,
-        str file_out,
-        np.ndarray[np.float32_t, ndim = 1] x_axis_val,
-        np.ndarray[np.float32_t, ndim = 1] y_axis_val,
-        str x_axis_name, str y_axis_name, str units,
         float dist_search,
         int azim_num=360,
         float hori_acc=0.25,
@@ -288,18 +252,6 @@ def horizon_locations(
     vec_north : ndarray of float
         Array (two-dimensional) with north vector components
         (number of locations, components) [metre]
-    file_out : str
-        Path and file name for output
-    x_axis_val : ndarray of float
-        Array (one-dimensional) with x-coordinates of locations
-    y_axis_val : ndarray of float
-        Array (one-dimensional) with y-coordinates of locations
-    x_axis_name : str
-        Name of x-axis
-    y_axis_name : str
-        Name of y-axis
-    units: str
-        Units of x- and y-axis
     dist_search : float
         Search distance for horizon [kilometre]
     azim_num : int
@@ -317,7 +269,14 @@ def horizon_locations(
         Vertical elevation of ray origin above surface [metre]
     hori_dist_out : bool
         Option to output distance to horizon
-    """
+
+    Returns
+    -------
+    hori_buffer : ndarray of float
+        Array (two-dimensional) with horizon (number of locations,
+        azim_num) [radian]
+    azim : ndarray of float
+        Array (one-dimensional) with azimuth (azim_num) [radian]"""
 
 	# Check consistency and validity of input arguments
     if len(vert_grid) < (dem_dim_0 * dem_dim_1 * 3):
@@ -337,11 +296,6 @@ def horizon_locations(
         raise ValueError("invalid input argument for ray_algorithm")
     if geom_type not in ("triangle", "quad", "grid"):
         raise ValueError("invalid input argument for geom_type")
-    if not os.path.isdir("/".join(file_out.split("/")[:-1])):
-        raise ValueError("output directory does not exist")
-    if len(y_axis_val) != vec_norm.shape[0]:
-        raise ValueError("lengths of x_axis_val and/or y_axis_val is/are"
-                         " inconsistent with dimension lengths of vec_norm")
     if hori_acc > 10.0:
         raise ValueError("limit of hori_acc (10 degree) is exceeded")
     if (len(ray_org_elev) != 1) and (len(ray_org_elev) != coords.shape[0]):
@@ -372,29 +326,45 @@ def horizon_locations(
     # Convert input strings to bytes
     ray_algorithm_c = ray_algorithm.encode("utf-8")
     geom_type_c = geom_type.encode("utf-8")
-    file_out_c = file_out.encode("utf-8")
-    x_axis_name_c = x_axis_name.encode("utf-8")
-    y_axis_name_c = y_axis_name.encode("utf-8")
-    units_c = units.encode("utf-8")
 
     # Allocate horizon array
-    cdef int hori_buffer_len = vec_norm.shape[0] * azim_num
-    cdef np.ndarray[np.float32_t, ndim = 1, mode = "c"] \
-        hori_buffer = np.empty(hori_buffer_len,  dtype=np.float32)
+    cdef np.ndarray[np.float32_t, ndim = 2, mode = "c"] \
+        hori_buffer = np.empty((vec_norm.shape[0], azim_num),
+        dtype=np.float32)
     hori_buffer.fill(np.nan)
+
+    # Allocate 'distance to horizon' array
+    cdef int num_loc
+    if hori_dist_out:
+        num_loc = vec_norm.shape[0]
+    else:
+        num_loc = 1  # 'dummy length'
+    cdef np.ndarray[np.float32_t, ndim = 2, mode = "c"] \
+        hori_dist_buffer = np.empty((num_loc, azim_num), dtype=np.float32)
+    hori_dist_buffer.fill(np.nan)
 
     horizon_locations_comp(
         &vert_grid[0],
         dem_dim_0, dem_dim_1,
         &coords[0,0],
         &vec_norm[0,0], &vec_north[0,0],
-        &hori_buffer[0],
+        &hori_buffer[0,0],
+        &hori_dist_buffer[0,0],
         vec_norm.shape[0],
         azim_num, dist_search,
         hori_acc, ray_algorithm_c, geom_type_c,
-        file_out_c,
-        &x_axis_val[0], &y_axis_val[0],
-        x_axis_name_c, y_axis_name_c, units_c,
         elev_ang_low_lim,
         &ray_org_elev[0],
         hori_dist_out)
+
+    # Recompute azimuth
+    cdef np.ndarray[np.float32_t, ndim = 1, mode = "c"] \
+        azim = np.empty(azim_num,  dtype=np.float32)
+    cdef int i
+    for i in range(azim_num):
+        azim[i] = ((2 * np.pi) / azim_num * i)
+
+    if hori_dist_out:
+        return hori_buffer, hori_dist_buffer, azim
+    else:
+        return hori_buffer, azim

@@ -127,24 +127,13 @@ del vec_norm_ecef, vec_north_ecef
 # Compute horizon
 ray_org_elev = np.array([loc_sel[i][2] for i in loc_sel.keys()],
                         dtype=np.float32)
-hray.horizon.horizon_locations(vert_grid, dem_dim_0, dem_dim_1,
-                               coords, vec_norm_enu, vec_north_enu,
-                               dist_search=dist_search, azim_num=azim_num,
-                               hori_acc=hori_acc,
-                               x_axis_val=lon_loc.astype(np.float32),
-                               y_axis_val=lat_loc.astype(np.float32),
-                               x_axis_name="lon", y_axis_name="lat",
-                               units="degree",
-                               file_out=path_out + file_hori,
-                               ray_org_elev=ray_org_elev, hori_dist_out=True)
-
-# Load horizon data
-ds = xr.open_dataset(path_out + file_hori)
-azim = ds["azim"].values
-hori = ds["horizon"].values
-hori_dist = ds["horizon_distance"].values / 1000.0  # [km]
-ds.close()
-del vert_grid
+hori, hori_dist, azim = hray.horizon.horizon_locations(
+    vert_grid, dem_dim_0, dem_dim_1,
+    coords, vec_norm_enu, vec_north_enu,
+    dist_search=dist_search, azim_num=azim_num,
+    hori_acc=hori_acc,
+    ray_org_elev=ray_org_elev, hori_dist_out=True)
+hori_dist /= 1000.0  # [km]
 
 # Compute slope and sky view factor for locations
 topo_param = {}

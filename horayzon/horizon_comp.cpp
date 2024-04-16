@@ -13,15 +13,10 @@
 #include <string.h>
 #include <tbb/parallel_for.h>
 #include <tbb/parallel_reduce.h>
-#include <netcdf>  // NetCDF4
-#include <vector>  // NetCDF4
-// #include <netcdfcpp.h>  // NetCDF3
 #include <sstream>
 #include <iomanip>
 
 using namespace std;
-using namespace netCDF;  // NetCDF4
-using namespace netCDF::exceptions;  // NetCDF4
 
 //#############################################################################
 // Auxiliary functions
@@ -641,122 +636,6 @@ void (*function_pointer_hori_dist)(float ray_org_x, float ray_org_y, float
 // Compute horizon for gridded domain
 //#############################################################################
 
-//-----------------------------------------------------------------------------
-// Output writing (NetCDF4 interface)
-//-----------------------------------------------------------------------------
-
-void output_netcdf_gridded(float* hori_buffer, int azim_num,
-	size_t in_dim_len_0, size_t in_dim_len_1, char* file_out,
-	float* x_axis_val, float* y_axis_val, char* x_axis_name, char* y_axis_name,
-	char* units) {
-
-  	// Compute azimuth angles
-  	float *azim_ang = new float[azim_num];
-    for (int i = 0; i < azim_num; i++) {
-    	azim_ang[i] = ((2 * M_PI) / azim_num * i);
-    }
-  	
- 	int n_azim = azim_num;
-	int n_y = in_dim_len_0;
-	int n_x = in_dim_len_1;
-  	
-  	try { 
-  	
-  		NcFile dataFile(file_out, NcFile::replace);
-  		
-		NcDim dim_x = dataFile.addDim(x_axis_name, n_x);
-		NcDim dim_y = dataFile.addDim(y_axis_name, n_y); 
-		NcDim dim_azim = dataFile.addDim("azim", n_azim);
-		
-		vector<NcDim> dims_azim;
-		dims_azim.push_back(dim_azim);
-		NcVar data_azim = dataFile.addVar("azim", ncFloat, dims_azim);
-		data_azim.putVar(azim_ang);
-		data_azim.putAtt("units", "radian");
-
-		vector<NcDim> dims_x;
-		dims_x.push_back(dim_x);
-		NcVar data_x = dataFile.addVar(x_axis_name, ncFloat, dims_x);
-		data_x.putVar(x_axis_val);
-		data_x.putAtt("units", units);
-
-		vector<NcDim> dims_y;
-		dims_y.push_back(dim_y);
-		NcVar data_y = dataFile.addVar(y_axis_name, ncFloat, dims_y);
-		data_y.putVar(y_axis_val);
-		data_y.putAtt("units", units);
-
-		vector<NcDim> dims_data;
-		dims_data.push_back(dim_y);
-		dims_data.push_back(dim_x);
-		dims_data.push_back(dim_azim);
-		NcVar data = dataFile.addVar("horizon", ncFloat, dims_data);
-		data.putVar(hori_buffer);
-		data.putAtt("units", "radian");
-
-    }
-	catch(NcException& e)
-    	{e.what();
-      	cout << "Could not write to NetCDF file" << endl;
-    }
-     		
-  	delete[] azim_ang;
-
-}
-
-//-----------------------------------------------------------------------------
-// Output writing (NetCDF3 interface; legacy; outdated)
-//-----------------------------------------------------------------------------
-
-// void output_netcdf_gridded(float* hori_buffer, int azim_num,
-// 	size_t in_dim_len_0, size_t in_dim_len_1, char* file_out,
-// 	float* x_axis_val, float* y_axis_val, char* x_axis_name, char* y_axis_name,
-// 	char* units) {
-// 
-//   	// Compute azimuth angles
-//   	float *azim_ang = new float[azim_num];
-//     for (int i = 0; i < azim_num; i++) {
-//     	azim_ang[i] = ((2 * M_PI) / azim_num * i);
-//     }
-//   	
-//  	int n_azim = azim_num;
-// 	int n_y = in_dim_len_0;
-// 	int n_x = in_dim_len_1;
-//   	
-//     NcFile dataFile(file_out, NcFile::Replace);
-//     if (!dataFile.is_valid()) {
-// 		cout << "Could not open NetCDF file" << endl;
-//     } else {
-// 
-//    		NcDim* dim_x = dataFile.add_dim(x_axis_name, n_x);
-//     	NcDim* dim_y = dataFile.add_dim(y_axis_name, n_y);
-//     	NcDim* dim_azim = dataFile.add_dim("azim", n_azim);
-// 
-//     	NcVar *data_azim = dataFile.add_var("azim", ncFloat, dim_azim);
-//     	data_azim->put(&azim_ang[0], n_azim);
-//     	data_azim->add_att("units", "radian");
-//     	NcVar *data_x = dataFile.add_var(x_axis_name, ncFloat, dim_x);
-//     	data_x->put(&x_axis_val[0], n_x);
-//     	data_x->add_att("units", units);
-//     	NcVar *data_y = dataFile.add_var(y_axis_name, ncFloat, dim_y);
-//     	data_y->put(&y_axis_val[0], n_y);
-//     	data_y->add_att("units", units);
-// 
-//     	NcVar *data = dataFile.add_var("horizon", ncFloat, dim_azim,
-//     		dim_y, dim_x);
-//     	data->put(&hori_buffer[0], n_azim, n_y, n_x);
-//     	data->add_att("units", "radian");
-// 
-//     }
-//      		
-//   	delete[] azim_ang;
-// 
-// }
-
-//-----------------------------------------------------------------------------
-// Main function
-//-----------------------------------------------------------------------------
-
 void horizon_gridded_comp(float* vert_grid,
 	int dem_dim_0, int dem_dim_1,
 	float* vec_norm, float* vec_north,
@@ -767,10 +646,6 @@ void horizon_gridded_comp(float* vert_grid,
 	float hori_acc, char* ray_algorithm, char* geom_type,
 	float* vert_simp, int num_vert_simp,
 	int* tri_ind_simp, int num_tri_simp,
-    char* file_out,
-    float* x_axis_val, float* y_axis_val,
-    char* x_axis_name, char* y_axis_name, char* units,
-    float hori_buffer_size_max,
     float elev_ang_low_lim,
     uint8_t* mask, float hori_fill,
     float ray_org_elev) {
@@ -864,238 +739,81 @@ void horizon_gridded_comp(float* vert_grid,
     	elev_sin[elev_num - i - 1] = sin(ang);
     	elev_cos[elev_num - i - 1] = cos(ang);
     }
-  	
-    // ------------------------------------------------------------------------
-  	// Compute and save horizon in one iteration
-    // ------------------------------------------------------------------------
-
-    if (hori_buffer_size <= hori_buffer_size_max) {
-    
-    	cout << "Compute and save horizon in one iteration" << endl;
-
-    	// --------------------------------------------------------------------
-  		// Perform ray tracing
-    	// --------------------------------------------------------------------
-
-  		auto start_ray = std::chrono::high_resolution_clock::now();
-    
-		num_rays += tbb::parallel_reduce(
-			tbb::blocked_range<size_t>(0,dim_in_0), 0.0,
-			[&](tbb::blocked_range<size_t> r, size_t num_rays) {  // parallel
-
-		//for (size_t i = 0; i < dim_in_0; i++) {  // serial
-		for (size_t i=r.begin(); i<r.end(); ++i) {  // parallel
-  			for (size_t j = 0; j < (size_t)dim_in_1; j++) {
-
-  				size_t ind_arr = lin_ind_2d(dim_in_1, i, j);
-  				size_t ind_hori = lin_ind_3d(dim_in_1, azim_num, i, j, 0);
-  				if (mask[ind_arr] == 1) {
-    	
-    				// Get vector components
-    				size_t ind_vec = lin_ind_2d(dim_in_1, i, j) * 3;
-  					float norm_x = vec_norm[ind_vec];
-  					float north_x = vec_north[ind_vec];
-  					ind_vec += 1;
-  					float norm_y = vec_norm[ind_vec];
-  					float north_y = vec_north[ind_vec];
-  					ind_vec += 1;
-  					float norm_z = vec_norm[ind_vec];
-  					float north_z = vec_north[ind_vec];
-  		
-  					// Ray origin
-  					size_t ind_2d = lin_ind_2d(dem_dim_1, i + offset_0,
-  						j + offset_1);
-  					float ray_org_x = vert_grid[ind_2d * 3 + 0] 
-  						+ norm_x * ray_org_elev;
-  					float ray_org_y = vert_grid[ind_2d * 3 + 1] 
-  						+ norm_y * ray_org_elev;
-  					float ray_org_z = vert_grid[ind_2d * 3 + 2] 
-  						+ norm_z * ray_org_elev;
-  				
-  					// Compute inverse of rotation matrix
-  					float east_x, east_y, east_z;
-					cross_prod(north_x, north_y, north_z,
-							   norm_x, norm_y, norm_z,
-							   east_x, east_y, east_z);		
-					float rot_inv[3][3] = {{east_x, north_x, norm_x},
-									   	   {east_y, north_y, norm_y},
-									   	   {east_z, north_z, norm_z}};
-  				
-  					// Perform ray tracing
-  					function_pointer(ray_org_x, ray_org_y, ray_org_z,
-  				 		azim_num, hori_acc, dist_search,
-  				 		elev_ang_low_lim, elev_ang_up_lim, elev_num,
-  				 		scene, num_rays, &hori_buffer[ind_hori],
-  				 		azim_sin, azim_cos, elev_ang,
-  				 		elev_cos, elev_sin, rot_inv);
-  				 	
-  				 } else {
-  					for (int k = 0; k < azim_num; k++) {
-  						hori_buffer[ind_hori] = hori_fill;  // [radian]
-  						ind_hori += 1;
-  					}
-  				 }
-    	
-  			}
-  		}
-  	
-  		return num_rays;  // parallel
-  		}, std::plus<size_t>());  // parallel
-    
-  		auto end_ray = std::chrono::high_resolution_clock::now();
-  		time_ray += (end_ray - start_ray);
-  		
-    	// --------------------------------------------------------------------
-
-  		// Save horizon to NetCDF file
-    	auto start_out = std::chrono::high_resolution_clock::now();
-    	output_netcdf_gridded(hori_buffer, azim_num,
-    		dim_in_0, dim_in_1, file_out, x_axis_val, y_axis_val,
-    		x_axis_name, y_axis_name, units);
-  		auto end_out = std::chrono::high_resolution_clock::now();
-  		time_out += (end_out - start_out);
 
     // ------------------------------------------------------------------------
-  	// Compute and save horizon in multiple iterations
+	// Perform ray tracing
     // ------------------------------------------------------------------------
-  	
-  	} else {
-  	
-  		cout << "Compute and save horizon in multiple iterations" << endl;
-  		
-  		cout << "Block indices: ";
-  		int num_iter = ceil(hori_buffer_size / hori_buffer_size_max);
-  		int block_ind[num_iter + 2];
-  		if ((dim_in_1 % num_iter) == 0) {
-  			for (int i = 0; i < (num_iter + 1); i++) {
-  				block_ind[i] = (int)(dim_in_1 / num_iter) * i;
-  				cout << block_ind[i] << ", ";
-  			}
-  		} else {
-  			for (int i = 0; i < (num_iter + 1); i++) {
-  				block_ind[i] = (int)(dim_in_1 / num_iter) * i;
-  				cout << block_ind[i] << ", ";
-  			}
-  			block_ind[num_iter + 1] = dim_in_1;  		
-  			cout << block_ind[num_iter + 1] << ", ";
-  			num_iter += 1;
-  		}
-  		cout << endl;
-  		cout << "Number of iterations: " << num_iter << endl;
-  		
-  		int len_x;
-  		for (int m = 0; m < num_iter; m++) {
-  		
-    		// ----------------------------------------------------------------
-  			// Perform ray tracing
-    		// ----------------------------------------------------------------
-    		
-    		auto start_ray = std::chrono::high_resolution_clock::now();
-    		
-    		len_x = block_ind[m + 1] - block_ind[m];
-  	
-			num_rays += tbb::parallel_reduce(
-				tbb::blocked_range<size_t>(0,dim_in_0), 0.0,
-				[&](tbb::blocked_range<size_t> r, size_t num_rays) {
 
-			for (size_t i=r.begin(); i<r.end(); ++i) {
-  				for (size_t j = block_ind[m]; j < (size_t)block_ind[m + 1];
-  					j++) {
+	auto start_ray = std::chrono::high_resolution_clock::now();
 
-  					size_t ind_arr = lin_ind_2d(dim_in_1, i, j);
-  					size_t ind_hori = lin_ind_3d(len_x, azim_num, i,
-  						j - block_ind[m], 0);
-  					if (mask[ind_arr] == 1) {
-    	
-    					// Get vector components
-    					size_t ind_vec = lin_ind_2d(dim_in_1, i, j) * 3;
-  						float norm_x = vec_norm[ind_vec];
-  						float north_x = vec_north[ind_vec];
-  						ind_vec += 1;
-  						float norm_y = vec_norm[ind_vec];
-  						float north_y = vec_north[ind_vec];
-  						ind_vec += 1;
-  						float norm_z = vec_norm[ind_vec];
-  						float north_z = vec_north[ind_vec];
-  		
-  						// Ray origin
-  						size_t ind_2d = lin_ind_2d(dem_dim_1, i + offset_0,
-  							j + offset_1);
-  						float ray_org_x = (vert_grid[ind_2d * 3 + 0]
-  							+ norm_x * ray_org_elev);
-  						float ray_org_y = (vert_grid[ind_2d * 3 + 1]
-  							+ norm_y * ray_org_elev);
-  						float ray_org_z = (vert_grid[ind_2d * 3 + 2]
-  							+ norm_z * ray_org_elev);
-  						
-  						// Compute inverse of rotation matrix
-  						float east_x, east_y, east_z;
-						cross_prod(north_x, north_y, north_z,
-								   norm_x, norm_y, norm_z,
-								   east_x, east_y, east_z);				
-						float rot_inv[3][3] = {{east_x, north_x, norm_x},
-											   {east_y, north_y, norm_y},
-											   {east_z, north_z, norm_z}};
-  			
-  						// Perform ray tracing
-  						function_pointer(ray_org_x, ray_org_y, ray_org_z,
-  				 			azim_num, hori_acc, dist_search,
-  				 			elev_ang_low_lim, elev_ang_up_lim, elev_num,
-  				 			scene, num_rays, &hori_buffer[ind_hori],
-  				 			azim_sin, azim_cos, elev_ang,
-  				 			elev_cos, elev_sin, rot_inv);
+	num_rays += tbb::parallel_reduce(
+		tbb::blocked_range<size_t>(0,dim_in_0), 0.0,
+		[&](tbb::blocked_range<size_t> r, size_t num_rays) {  // parallel
 
-	   				 	} else {
-  						for (int k = 0; k < azim_num; k++) {
-  							hori_buffer[ind_hori] = hori_fill;  // [radian]
-  							ind_hori += 1;
-  						}
-  				 	}
-    	
-  				}
-  			}
-  	
-  			return num_rays;
-  			}, std::plus<size_t>());
+	//for (size_t i = 0; i < dim_in_0; i++) {  // serial
+	for (size_t i=r.begin(); i<r.end(); ++i) {  // parallel
+		for (size_t j = 0; j < (size_t)dim_in_1; j++) {
 
-  			auto end_ray = std::chrono::high_resolution_clock::now();
-  			time_ray += (end_ray - start_ray);
+			size_t ind_arr = lin_ind_2d(dim_in_1, i, j);
+			size_t ind_hori = lin_ind_3d(dim_in_1, azim_num, i, j, 0);
+			if (mask[ind_arr] == 1) {
 
-    		// ----------------------------------------------------------------
-    		
-    		auto start_out = std::chrono::high_resolution_clock::now();
-    		
-    		// Define output name for current iteration
-  			std::string file_out_str(file_out);
-  			int str_len = file_out_str.length();
-    		std::stringstream ss;
-			ss << std::setw(2) << std::setfill('0') << (m + 1);
-  			std::string file_out_iter = (file_out_str.substr(0, str_len - 3)
-  				+ "_p"+ ss.str() + ".nc");
-  			char* file_out_iter_c = new char[file_out_iter.length()];
-  			strcpy(file_out_iter_c, file_out_iter.c_str() );
-  	  		
-  	  		// Save horizon to NetCDF file
-    		output_netcdf_gridded(hori_buffer, azim_num, dim_in_0, len_x,
-    			file_out_iter_c, &x_axis_val[block_ind[m]], y_axis_val,
-    			x_axis_name, y_axis_name, units);
-    		
-    		delete[] file_out_iter_c;
+				// Get vector components
+				size_t ind_vec = lin_ind_2d(dim_in_1, i, j) * 3;
+				float norm_x = vec_norm[ind_vec];
+				float north_x = vec_north[ind_vec];
+				ind_vec += 1;
+				float norm_y = vec_norm[ind_vec];
+				float north_y = vec_north[ind_vec];
+				ind_vec += 1;
+				float norm_z = vec_norm[ind_vec];
+				float north_z = vec_north[ind_vec];
 
-  			auto end_out = std::chrono::high_resolution_clock::now();
-  			time_out += (end_out - start_out);
+				// Ray origin
+				size_t ind_2d = lin_ind_2d(dem_dim_1, i + offset_0,
+					j + offset_1);
+				float ray_org_x = vert_grid[ind_2d * 3 + 0]
+					+ norm_x * ray_org_elev;
+				float ray_org_y = vert_grid[ind_2d * 3 + 1]
+					+ norm_y * ray_org_elev;
+				float ray_org_z = vert_grid[ind_2d * 3 + 2]
+					+ norm_z * ray_org_elev;
 
-  			cout << "Iteration " << (m + 1) << " completed" << endl;
-  	
-  		}
+				// Compute inverse of rotation matrix
+				float east_x, east_y, east_z;
+				cross_prod(north_x, north_y, north_z,
+						   norm_x, norm_y, norm_z,
+						   east_x, east_y, east_z);
+				float rot_inv[3][3] = {{east_x, north_x, norm_x},
+									   {east_y, north_y, norm_y},
+									   {east_z, north_z, norm_z}};
 
-  	}
-  	
-    // ------------------------------------------------------------------------
-    
-    cout << "Ray tracing time: " << time_ray.count() << " s" << endl;
-  	cout << "Writing to NetCDF file: " << time_out.count() << " s" << endl;
-    
+				// Perform ray tracing
+				function_pointer(ray_org_x, ray_org_y, ray_org_z,
+					azim_num, hori_acc, dist_search,
+					elev_ang_low_lim, elev_ang_up_lim, elev_num,
+					scene, num_rays, &hori_buffer[ind_hori],
+					azim_sin, azim_cos, elev_ang,
+					elev_cos, elev_sin, rot_inv);
+
+			} else {
+				for (int k = 0; k < azim_num; k++) {
+					hori_buffer[ind_hori] = hori_fill;  // [radian]
+					ind_hori += 1;
+				}
+			}
+
+		}
+	}
+
+	return num_rays;  // parallel
+	}, std::plus<size_t>());  // parallel
+
+	auto end_ray = std::chrono::high_resolution_clock::now();
+	time_ray += (end_ray - start_ray);
+
+	cout << "Ray tracing time: " << time_ray.count() << " s" << endl;
+
   	// Print number of rays needed for location and azimuth direction
   	cout << "Number of rays shot: " << num_rays << endl;	
   	float ratio = (float)num_rays / (float)(num_gc * azim_num);
@@ -1117,86 +835,15 @@ void horizon_gridded_comp(float* vert_grid,
 // Compute horizon for arbitrary locations
 //#############################################################################
 
-//-----------------------------------------------------------------------------
-// Output writing (NetCDF4 interface)
-//-----------------------------------------------------------------------------
-
-void output_netcdf_locations(float* hori_buffer, float* dist_buffer,
-	int azim_num, int num_loc, char* file_out,
-	float* x_axis_val, float* y_axis_val,
-	char* x_axis_name, char* y_axis_name, char* units,
-	int hori_dist_out) {
-
-  	// Compute azimuth angles
-  	float *azim_ang = new float[azim_num];
-    for (int i = 0; i < azim_num; i++) {
-    	azim_ang[i] = ((2 * M_PI) / azim_num * i);
-    }
-  	
-  	try {
-  	
-  		NcFile dataFile(file_out, NcFile::replace);
-  		
-		NcDim dim_loc = dataFile.addDim("locations", num_loc);
-		NcDim dim_azim = dataFile.addDim("azim", azim_num);
-		
-		vector<NcDim> dims_azim;
-		dims_azim.push_back(dim_azim);
-		NcVar data_azim = dataFile.addVar("azim", ncFloat, dims_azim);
-		data_azim.putVar(azim_ang);
-		data_azim.putAtt("units", "radian");
-
-		vector<NcDim> dims_x;
-		dims_x.push_back(dim_loc);
-		NcVar data_x = dataFile.addVar(x_axis_name, ncFloat, dims_x);
-		data_x.putVar(x_axis_val);
-		data_x.putAtt("units", units);
-		
-		vector<NcDim> dims_y;
-		dims_y.push_back(dim_loc);
-		NcVar data_y = dataFile.addVar(y_axis_name, ncFloat, dims_y);
-		data_y.putVar(y_axis_val);
-		data_y.putAtt("units", units);
-
-		vector<NcDim> dims_data;
-		dims_data.push_back(dim_loc);
-		dims_data.push_back(dim_azim);
-		NcVar data = dataFile.addVar("horizon", ncFloat, dims_data);
-		data.putVar(hori_buffer);
-		data.putAtt("units", "radian");
-		
-		if (hori_dist_out == 1) {
-			NcVar data_dist = dataFile.addVar("horizon_distance", ncFloat,
-			dims_data);
-			data_dist.putVar(dist_buffer);
-			data_dist.putAtt("units", "metre");
-		}
-
-    }
-	catch(NcException& e)
-    	{e.what();
-      	cout << "Could not write to NetCDF file" << endl;
-    }
-     		
-  	delete[] azim_ang;
-
-}
-
-//-----------------------------------------------------------------------------
-// Main function
-//-----------------------------------------------------------------------------
-
 void horizon_locations_comp(float* vert_grid,
 	int dem_dim_0, int dem_dim_1,
 	float* coords,
 	float* vec_norm, float* vec_north,
 	float* hori_buffer,
+	float* hori_dist_buffer,
 	int num_loc,
 	int azim_num, float dist_search,
 	float hori_acc, char* ray_algorithm, char* geom_type,
-    char* file_out,
-    float* x_axis_val, float* y_axis_val,
-    char* x_axis_name, char* y_axis_name, char* units,
     float elev_ang_low_lim,
     float* ray_org_elev,
     int hori_dist_out) {
@@ -1268,16 +915,6 @@ void horizon_locations_comp(float* vert_grid,
     // ------------------------------------------------------------------------
   	// Perform ray tracing
     // ------------------------------------------------------------------------
-    
-    // Dynamically allocate buffer for horizon distance values
-    int dist_buffer_len;
-    if (hori_dist_out == 0) {
-    	dist_buffer_len = 1;
-    } else {
-    	dist_buffer_len = num_loc * azim_num;
-    }
-  	float *dist_buffer = new float[dist_buffer_len];
-  	for (int i=0; i<dist_buffer_len; ++i) dist_buffer[i] = NAN;
 
     if (hori_dist_out == 0) {  // (horizon elevation angle)
 
@@ -1431,7 +1068,7 @@ void horizon_locations_comp(float* vert_grid,
   					azim_num, hori_acc, dist_search,
   					elev_ang_low_lim, elev_ang_up_lim, elev_num,
   					scene, num_rays, &hori_buffer[ind_out],
-  					&dist_buffer[ind_out],
+					&hori_dist_buffer[ind_out],
   					azim_sin, azim_cos, elev_ang,
   					elev_cos, elev_sin, rot_inv);
   					
@@ -1444,30 +1081,15 @@ void horizon_locations_comp(float* vert_grid,
     
   		auto end_ray = std::chrono::high_resolution_clock::now();
   		time_ray += (end_ray - start_ray);
-  	
-  	}
 
-    // ------------------------------------------------------------------------
+	}
 
-  	// Save horizon to NetCDF file
-     auto start_out = std::chrono::high_resolution_clock::now();
-     output_netcdf_locations(hori_buffer, dist_buffer,
-     	azim_num, num_loc, file_out,
-     	x_axis_val, y_axis_val,
-     	x_axis_name, y_axis_name, units,
-     	hori_dist_out);
-   	 auto end_out = std::chrono::high_resolution_clock::now();
-   	 time_out += (end_out - start_out);
+	cout << "Ray tracing time: " << time_ray.count() << " s" << endl;
 
-    // ------------------------------------------------------------------------
-    
-    cout << "Ray tracing time: " << time_ray.count() << " s" << endl;
-  	cout << "Writing to NetCDF file: " << time_out.count() << " s" << endl;
-    
-  	// Print number of rays needed for location and azimuth direction
-  	cout << "Number of rays shot: " << num_rays << endl;	
-  	float ratio = (float)num_rays / (float)(num_loc * azim_num);
-  	printf("Average number of rays per location and azimuth: %.2f \n", ratio);
+	// Print number of rays needed for location and azimuth direction
+	cout << "Number of rays shot: " << num_rays << endl;
+	float ratio = (float)num_rays / (float)(num_loc * azim_num);
+	printf("Average number of rays per location and azimuth: %.2f \n", ratio);
 
   	// Release resources allocated through Embree
   	rtcReleaseScene(scene);
