@@ -110,21 +110,17 @@ hori, azim = hray.horizon.horizon_gridded(
     azim_num=azim_num)
 
 # Save horizon to NetCDF file (in Ncview-compatible format)
-ds = xr.Dataset({
-    "horizon": xr.DataArray(
-        data=np.moveaxis(hori, 2, 0),
-        dims=["azim", "lat", "lon"],
-        coords={
-            "azim": azim,
-            "lat": lat[slice_in[0]],
-            "lon": lon[slice_in[1]]},
-        attrs={
-            "units": "radian"
-        })
-    })
-ds["azim"].attrs["units"] = "radian"
-ds["lat"].attrs["units"] = "degree"
-ds["lon"].attrs["units"] = "degree"
+ds = xr.Dataset(
+    coords=dict(
+        azim=(["azim"], azim, {"units": "radian"}),
+        lat=(["lat"], lat[slice_in[0]], {"units": "degree"}),
+        lon=(["lon"], lon[slice_in[1]], {"units": "degree"}),
+    ),
+    data_vars=dict(
+        horizon=(["azim", "lat", "lon"], np.moveaxis(hori, 2, 0),
+                   {"units": "radian"})
+    )
+)
 encoding = {i: {"_FillValue": None} for i in ("azim", "lat", "lon")}
 ds.to_netcdf(path_out + file_hori, encoding=encoding)
 
@@ -156,26 +152,21 @@ aspect[aspect < 0.0] += np.pi * 2.0  # [0.0, 2.0 * np.pi]
 # Save topographic parameters to NetCDF file
 ds = xr.Dataset(
     coords=dict(
-        lat=(["lat"], lat[slice_in[0]]),
-        lon=(["lon"], lon[slice_in[1]]),
+        lat=(["lat"], lat[slice_in[0]], {"units": "degree"}),
+        lon=(["lon"], lon[slice_in[1]], {"units": "degree"}),
     ),
     data_vars=dict(
         elevation=(["lat", "lon"], elevation[slice_in],
-                   {"long_name": "ellipsoidal height",
-                    "units": "m"}),
+                   {"long_name": "ellipsoidal height", "units": "m"}),
         slope=(["lat", "lon"], slope,
-               {"long_name": "slope angle",
-                "units": "radian"}),
+               {"long_name": "slope angle", "units": "radian"}),
         aspect=(["lat", "lon"], aspect,
                 {"long_name": "slope aspect (clockwise from North)",
                 "units": "radian"}),
         svf=(["lat", "lon"], svf,
-             {"long_name": "sky view factor",
-              "units": "-"}),
+             {"long_name": "sky view factor", "units": "-"}),
     )
 )
-ds["lat"].attrs["units"] = "degree"
-ds["lon"].attrs["units"] = "degree"
 encoding = {i: {"_FillValue": None} for i in
             ("lat", "lon", "elevation", "slope", "aspect")}
 ds.to_netcdf(path_out + file_topo_par, encoding=encoding)

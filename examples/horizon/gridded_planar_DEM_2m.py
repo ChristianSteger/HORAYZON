@@ -17,8 +17,6 @@ from skimage.io import imsave
 import subprocess
 import time
 import trimesh
-import glob
-from netCDF4 import Dataset
 import horayzon as hray
 
 # -----------------------------------------------------------------------------
@@ -36,11 +34,11 @@ azim_num = 360  # number of azimuth sectors [-]
 hori_acc = np.array([0.15, 0.1], dtype=np.float32)
 # horizon accuracy due to algorithm and terrain simplification [degree]
 dem_res = 2.0  # resolution of DEM [degree]
-domain_out_frac = np.array([0.25, 0.75], dtype=np.float32)
-# partitioning of outer domain: not simplified / simplified [-]
+domain_out_frac_simp = 0.75
+# fraction of outer domain that is simplified [-]
 
 # Path to heightmap meshing utility (hmm) executable
-hmm_ex = "/Applications/hmm/hmm-master/hmm"
+hmm_ex = "/Applications/hmm/bin/hmm"
 
 # Paths and file names
 dem_file_url = "https://data.geo.admin.ch/ch.swisstopo.swissalti3d/" \
@@ -54,9 +52,9 @@ file_topo_par = "topo_par_swissALTI3D_Switzerland.nc"
 # Check settings and specified folders/executables
 # -----------------------------------------------------------------------------
 
-# Check settings
-if domain_out_frac.sum() != 1.0:
-    raise ValueError("Array 'domain_out_frac' must sum up to exactly 1.0")
+# Check domain fraction
+if (domain_out_frac_simp < 0.0) or (domain_out_frac_simp > 1.0):
+    raise ValueError("Domain fraction must be in the range [0.0, 1.0]")
 
 # Check if output directory exists
 if not os.path.isdir(path_out):
@@ -88,7 +86,7 @@ files_url = [dem_file_url.replace("eeee", str(j)).replace("nnnn", str(i))
              for i in tiles_north for j in tiles_east]
 for i in (2019, 2020, 2021):
     if len(files_url) > 0:
-        print((" Try to download files for year " + str(i) + " ")
+        print(("Try to download files for year " + str(i) + " ")
               .center(60, "-"))
         files_url_y = [j.replace("yyyy", str(i)) for j in files_url]
         downloaded = hray.download.files(files_url_y, path_tiles,
@@ -110,6 +108,8 @@ north, elevation = north[::-1], np.flipud(elevation)
 # -> arrange both coordinate axis (east and north) in increasing order
 
 # Slices for subdomains (-> equal dimensions in east and north direction)
+domain_out_frac = np.array([1.0 - domain_out_frac_simp,
+                            domain_out_frac_simp], dtype=np.float32)
 bd_ind = (0,
           int((domain_out_frac[1] * dist_search * 1000.0) / dem_res),
           int((dist_search * 1000.0) / dem_res),
@@ -310,32 +310,32 @@ print("Triangle DEM: %.2f" % ((vert_simp.nbytes + tri_ind_simp.nbytes)
 # -----------------------------------------------------------------------------
 
 # Compute horizon
-hray.horizon.horizon_gridded(vert_grid, dem_dim_0, dem_dim_1,
-                             vec_norm, vec_north, offset_0, offset_1,
-                             file_out=path_out + file_hori,
-                             dist_search=dist_search,
-                             azim_num=azim_num, hori_acc=hori_acc[0],
-                             ray_algorithm="guess_constant", geom_type="grid",
-                             vert_simp=vert_simp, num_vert_simp=num_vert_simp,
-                             tri_ind_simp=tri_ind_simp,
-                             num_tri_simp=num_tri_simp,
-                             x_axis_val=east[slic_hori[1]].astype(np.float32),
-                             y_axis_val=north[slic_hori[0]].astype(np.float32),
-                             x_axis_name="east", y_axis_name="north",
-                             units="m", hori_buffer_size_max=0.85)
+hori, azim = hray.horizon.horizon_gridded(
+    vert_grid, dem_dim_0, dem_dim_1,
+    vec_norm, vec_north, offset_0, offset_1,
+    dist_search=dist_search,
+    azim_num=azim_num, hori_acc=hori_acc[0],
+    ray_algorithm="guess_constant", geom_type="grid",
+    vert_simp=vert_simp, num_vert_simp=num_vert_simp,
+    tri_ind_simp=tri_ind_simp,
+    num_tri_simp=num_tri_simp)
 time.sleep(1.0)
 del vert_grid, vert_simp, tri_ind_simp
 
-# Merge horizon slices
-ds = xr.open_mfdataset(path_out + file_hori[:-3] + "_p??.nc")
-ds.to_netcdf(path_out + file_hori, format="NETCDF4")
-files_rm = glob.glob(path_out + file_hori[:-3] + "_p??.nc")
-for i in files_rm:
-    os.remove(i)
-
-# Swap coordinate axes (-> make viewable with ncview)
-ds_ncview = ds.transpose("azim", "north", "east")
-ds_ncview.to_netcdf(path_out + file_hori[:-3] + "_ncview.nc")
+# Save horizon to NetCDF file (in Ncview-compatible format)
+ds = xr.Dataset(
+    coords=dict(
+        azim=(["azim"], azim, {"units": "radian"}),
+        north=(["north"], north[slic_hori[0]], {"units": "m"}),
+        east=(["east"], east[slic_hori[1]], {"units": "m"}),
+    ),
+    data_vars=dict(
+        horizon=(["azim", "north", "east"], np.moveaxis(hori, 2, 0),
+                   {"units": "radian"})
+    )
+)
+encoding = {i: {"_FillValue": None} for i in ("azim", "north", "east")}
+ds.to_netcdf(path_out + file_hori, encoding=encoding)
 
 # Compute slope
 sd_in = (slice(offset_0, -offset_0), slice(offset_1, -offset_1))
@@ -348,10 +348,6 @@ vec_tilt = hray.topo_param.slope_plane_meth(
 del east_2d, north_2d
 
 # Compute Sky View Factor
-ds = xr.open_dataset(path_out + file_hori)
-hori = ds["horizon"].values
-azim = ds["azim"].values
-ds.close()
 svf = hray.topo_param.sky_view_factor(azim, hori, vec_tilt)
 del hori
 
@@ -362,34 +358,23 @@ aspect = np.pi / 2.0 - np.arctan2(vec_tilt[:, :, 1],
 aspect[aspect < 0.0] += np.pi * 2.0  # [0.0, 2.0 * np.pi]
 
 # Save topographic parameters to NetCDF file
-ncfile = Dataset(filename=path_out + file_topo_par, mode="w")
-ncfile.createDimension(dimname="north", size=svf.shape[0])
-ncfile.createDimension(dimname="east", size=svf.shape[1])
-nc_north = ncfile.createVariable(varname="north", datatype="f",
-                                 dimensions="north")
-nc_north[:] = north[slic_hori[0]]
-nc_north.units = "m"
-nc_east = ncfile.createVariable(varname="east", datatype="f",
-                                dimensions="east")
-nc_east[:] = east[slic_hori[1]]
-nc_east.units = "m"
-nc_data = ncfile.createVariable(varname="elevation", datatype="f",
-                                dimensions=("north", "east"))
-nc_data[:] = elevation_hori
-nc_data.units = "m"
-nc_data = ncfile.createVariable(varname="slope", datatype="f",
-                                dimensions=("north", "east"))
-nc_data[:] = slope
-nc_data.long_name = "slope angle"
-nc_data.units = "rad"
-nc_data = ncfile.createVariable(varname="aspect", datatype="f",
-                                dimensions=("north", "east"))
-nc_data[:] = aspect
-nc_data.long_name = "slope aspect (clockwise from North)"
-nc_data.units = "rad"
-nc_data = ncfile.createVariable(varname="svf", datatype="f",
-                                dimensions=("north", "east"))
-nc_data[:] = svf
-nc_data.long_name = "sky view factor"
-nc_data.units = "-"
-ncfile.close()
+ds = xr.Dataset(
+    coords=dict(
+        north=(["north"], north[slic_hori[0]], {"units": "m"}),
+        east=(["east"], east[slic_hori[1]], {"units": "m"}),
+    ),
+    data_vars=dict(
+        elevation=(["north", "east"], elevation_hori,
+                   {"long_name": "elevation", "units": "m"}),
+        slope=(["north", "east"], slope,
+               {"long_name": "slope angle", "units": "radian"}),
+        aspect=(["north", "east"], aspect,
+                {"long_name": "slope aspect (clockwise from North)",
+                "units": "radian"}),
+        svf=(["north", "east"], svf,
+             {"long_name": "sky view factor", "units": "-"}),
+    )
+)
+encoding = {i: {"_FillValue": None} for i in
+            ("north", "east", "elevation", "slope", "aspect")}
+ds.to_netcdf(path_out + file_topo_par, encoding=encoding)

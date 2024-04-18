@@ -11,7 +11,6 @@
 # Load modules
 import os
 import numpy as np
-import xarray as xr
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 from scipy import interpolate
