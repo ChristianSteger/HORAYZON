@@ -39,7 +39,7 @@ dist_search = 65.0  # search distance for terrain shading [kilometre]
 ellps = "WGS84"  # Earth's surface approximation (sphere, GRS80 or WGS84)
 
 # Paths and file names
-dem_files_url = "https://e4ftl01.cr.usgs.gov//DP132/MEASURES/" \
+dem_files_url = "https://e4ftl01.cr.usgs.gov//DP109/MEASURES/" \
                 + "NASADEM_NC.001/2000.02.11/NASADEM_NC_nNNeEEE.nc"
 dem_files_extent = {"lat": (34, 36 + 1), "lon": (75, 78 + 1)}
 path_out = "/Users/csteger/Desktop/Output/"

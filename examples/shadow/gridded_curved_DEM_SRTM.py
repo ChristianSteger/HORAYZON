@@ -277,7 +277,7 @@ plt.plot(ta, comp_time_sw_dir_cor, lw=1.5, color="red",
          label="SW_dir_cor (mean: %.2f"
                % np.array(comp_time_sw_dir_cor).mean() + ")")
 plt.ylabel("Computing time [seconds]")
-plt.legend(loc="upper right", frameon=False, fontsize=11)
+plt.legend(loc="upper center", frameon=False, fontsize=11)
 plt.title("Terrain size (" + str(dim_in_0) + " x " + str(dim_in_1) + ")",
           fontweight="bold", fontsize=12)
 fig.savefig(path_out + "Performance.png", dpi=300, bbox_inches="tight")

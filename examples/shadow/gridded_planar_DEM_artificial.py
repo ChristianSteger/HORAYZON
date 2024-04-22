@@ -195,7 +195,7 @@ ds.close()
 # Plot
 fig = plt.figure()
 plt.plot(azim, sw_dir_cor)
-plt.axis([azim[0] - 5.0, azim[-1] + 5.0, 0.85, 1.05])
+plt.axis((azim[0] - 5.0, azim[-1] + 5.0, 0.85, 1.05))
 plt.xlabel("Azimuth angle (measured clockwise from North) [degree]")
 plt.ylabel("Spatial mean of correction factor [-]")
 plt.title("Average: %.3f" % sw_dir_cor.mean(), fontsize=12)
