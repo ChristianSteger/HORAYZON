@@ -4,7 +4,7 @@
 # Load modules
 import os
 import numpy as np
-from importlib import import_module
+from importlib import import_module, util
 import xarray as xr
 import glob
 
@@ -152,7 +152,7 @@ def preprocess(ds):
 def dhm25(file_dem, domain, engine="gdal"):
     """Load DHM25 digital elevation model data.
 
-    Load SRTM digital elevation model data from single ESRI ASCII GRID file.
+    Load DHM25 digital elevation model data from single ESRI ASCII GRID file.
 
     Parameters
     ----------
@@ -232,6 +232,69 @@ def dhm25(file_dem, domain, engine="gdal"):
 
     # Set "no data values" to NaN
     elevation[elevation == -9999.0] = np.nan
+
+    print_dem_info(elevation)
+
+    return x, y, elevation
+
+
+# -----------------------------------------------------------------------------
+
+def swissaltiregio(file_dem, domain):
+    """Load swissALTIRegio digital elevation model data.
+
+    Load swissALTIRegio digital elevation model data from single GeoTIFF file.
+
+    Parameters
+    ----------
+    file_dem : str
+        Name of SRTM tile
+    domain : dict
+        Dictionary with domain boundaries (x_min, x_max, y_min, y_max) [metre]
+        [degree]
+
+    Returns
+    -------
+    x : ndarray
+        Array (one-dimensional) with x-coordinate [metre]
+    y : ndarray
+        Array (one-dimensional) with y-coordinate [metre]
+    elevation : ndarray
+        Array (two-dimensional) with elevation [metre]
+
+    Notes
+    -----
+    Data source:
+        https://www.swisstopo.admin.ch/en/height-model-swissaltiregio"""
+
+    # Load digital elevation model data
+    if util.find_spec("rasterio") is None:
+        raise ImportError("rasterio library not installed")
+    rasterio = import_module("rasterio")
+    with rasterio.open(file_dem) as src:
+
+        # Check domain coverage and get raster information
+        x_left, x_right = src.bounds.left, src.bounds.right
+        y_bottom, y_top = src.bounds.bottom, src.bounds.top
+        if any([domain["x_min"] < x_left,
+                domain["x_max"] > x_right,
+                domain["y_min"] < y_bottom,
+                domain["y_max"] > y_top]):
+            raise ValueError("Provided tile does not cover domain")
+        d_x = src.transform[0]
+        d_y = src.transform[4]
+        x = np.linspace(x_left, x_right, src.width + 1)
+        y = np.linspace(y_top, y_bottom, src.height + 1)
+
+        # Load relevant domain
+        col_off = np.where(x <= domain["x_min"])[0][-1]
+        width = np.where(x >= domain["x_max"])[0][0] - col_off + 1
+        row_off = np.where(y >= domain["y_max"])[0][-1]
+        height = np.where(y <= domain["y_min"])[0][0] - row_off + 1
+        window = rasterio.windows.Window(col_off, row_off, width, height)
+        elevation = src.read(1, window=window)
+        x = x[slice(col_off, col_off + width)]
+        y = y[slice(row_off, row_off + height)]
 
     print_dem_info(elevation)
 
