@@ -1,5 +1,5 @@
 # Description: Compute gridded correction factor for downward direct shortwave
-#              radiation from artifical topography.
+#              radiation from an artifical topography on a planar surface.
 #
 # Copyright (c) 2022 ETH Zurich, Christian R. Steger
 # MIT License
