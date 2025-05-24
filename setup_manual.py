@@ -10,9 +10,8 @@
 # Load modules
 import os
 import sys
-from distutils.core import setup
+from setuptools import setup, Extension
 from Cython.Distutils import build_ext
-from distutils.extension import Extension
 import numpy as np
 
 # -----------------------------------------------------------------------------
@@ -48,7 +47,7 @@ elif sys.platform in ["win32"]:
     print("Warning: Package not yet tested for Windows")
 else:
     raise ValueError("Unsupported operating system")
-extra_compile_args_cython = ["-O3", "-ffast-math", "-fopenmp"]
+extra_compile_args_cython = ["-O3", "-ffast-math"]
 libraries_cython = ["m", "pthread"]
 include_dirs_cpp = [np.get_include()] + path_include
 extra_objects_cpp = [i + lib_end for i in path_lib]
@@ -65,19 +64,16 @@ ext_modules = [
               ["horayzon/transform.pyx"],
               libraries=libraries_cython,
               extra_compile_args=extra_compile_args_cython,
-              extra_link_args=["-fopenmp"],
               include_dirs=[np.get_include()]),
     Extension("horayzon.direction",
               ["horayzon/direction.pyx"],
               libraries=libraries_cython,
               extra_compile_args=extra_compile_args_cython,
-              extra_link_args=["-fopenmp"],
               include_dirs=[np.get_include()]),
     Extension("horayzon.topo_param",
               ["horayzon/topo_param.pyx"],
               libraries=libraries_cython,
               extra_compile_args=extra_compile_args_cython,
-              extra_link_args=["-fopenmp"],
               include_dirs=[np.get_include()]),
     Extension("horayzon.horizon",
               sources=["horayzon/horizon.pyx", "horayzon/horizon_comp.cpp"],

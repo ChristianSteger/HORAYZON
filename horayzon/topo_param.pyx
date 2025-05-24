@@ -9,7 +9,6 @@ from libc.math cimport sin, cos, sqrt, atan
 from libc.math cimport M_PI
 from libc.math cimport NAN
 from libc.stdio cimport printf
-from cython.parallel import prange
 from scipy.linalg.cython_lapack cimport sgesv
 
 
@@ -208,7 +207,7 @@ def _slope_plane_meth_cy(float[:, :] x, float[:, :] y, float[:, :] z,
 
         # Rotate vector back to input reference frame (-> use transposes of
         # rotation matrices)
-        for i in prange(1, (len_0 - 1), nogil=True, schedule="static"):
+        for i in range(1, (len_0 - 1)):
             for j in range(1, (len_1 - 1)):
                 vec_x = rot_mat[i, j, 0, 0] * vec_tilt[i, j, 0] \
                         + rot_mat[i, j, 1, 0] * vec_tilt[i, j, 1] \
@@ -305,7 +304,7 @@ def _slope_vector_meth_cy(float[:, :] x, float[:, :] y, float[:, :] z,
     vec_tilt[:] = NAN
 
     # Loop through grid cells
-    for i in prange(1, (len_0 - 1), nogil=True, schedule="static"):
+    for i in range(1, (len_0 - 1)):
         for j in range(1, (len_1 - 1)):
 
             # Compute normal vector of plane (average of 4 triangles)
@@ -355,7 +354,7 @@ def _slope_vector_meth_cy(float[:, :] x, float[:, :] y, float[:, :] z,
     if output_rot:
         printf("Tilted surface normals are rotated according to 'rot_mat'\n")
 
-        for i in prange(1, (len_0 - 1), nogil=True, schedule="static"):
+        for i in range(1, (len_0 - 1)):
             for j in range(1, (len_1 - 1)):
                 vec_x = rot_mat[i, j, 0, 0] * vec_tilt[i, j, 0] \
                         + rot_mat[i, j, 0, 1] * vec_tilt[i, j, 1] \
@@ -432,7 +431,7 @@ def _sky_view_factor_cy(float[:] azim, float[:, :, :] hori,
 
     # Compute sky view factor
     azim_spac = (azim[1] - azim[0])
-    for i in prange(len_0, nogil=True, schedule="static"):
+    for i in range(len_0):
         for j in range(len_1):
 
             # Iterate over azimuth directions
@@ -519,7 +518,7 @@ def _visible_sky_fraction_cy(float[:] azim, float[:, :, :] hori,
 
     # Compute visible sky fraction
     azim_spac = (azim[1] - azim[0])
-    for i in prange(len_0, nogil=True, schedule="static"):
+    for i in range(len_0):
         for j in range(len_1):
 
             # Iterate over azimuth directions
@@ -592,7 +591,7 @@ def _topographic_openness_cy(float[:] azim, float[:, :, :] hori):
     cdef float[:, :] top = np.empty((len_0, len_1), dtype=np.float32)
 
     # Compute positive topographic openness
-    for i in prange(len_0, nogil=True, schedule="static"):
+    for i in range(len_0):
         for j in range(len_1):
 
             # Iterate over azimuth directions

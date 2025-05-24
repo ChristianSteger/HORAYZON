@@ -2,7 +2,7 @@
 
 Package to efficiently compute terrain parameters (like **horizon**, **sky view factor**, **topographic openness**, slope angle/aspect) from high-resolution digital elevation model (DEM) data.
 The package also allows to compute **shadow maps** and **correction factors for downwelling direct shortwave radiation** for specific sun positions.
-Horizon computation is based on the high-performance ray-tracing library Intel&copy; Embree. Calculations are parallelised with OpenMP (Cython code) or Threading Building Blocks (C++ code).
+Horizon computation is based on the high-performance ray-tracing library Intel&copy; Embree. Calculations are parallelised with Threading Building Blocks (C++ code).
 
 When you use HORAYZON, please cite:
 
@@ -36,28 +36,28 @@ The examples **horizon/gridded_curved_DEM_masked.py**, **horizon/gridded_planar_
 
 # Installation
 
-HORAYZON has been tested with **Python 3.10** (Linux) and **Python 3.11** (Mac OS X).
+HORAYZON has been tested with **Python 3.10** (Linux) and **Python 3.13.3** (Mac OS X).
 It is recommended to install dependencies via [Conda](https://docs.conda.io/en/latest/#), which covers all dependencies except **hmm**.
 Alternatively, HORAYZON can also be [installed without Conda](#Installation-without-Conda) (by e.g. using **pip** to install Python packages).
 Installation via **Conda** can be accomplished as follows for different platforms:
 
-## Linux
+## Linux / Mac OS X
 
-Installation requires the [GNU Compiler Collection (GCC)](https://gcc.gnu.org). Create an appropriate Conda environment
+Create an appropriate Conda environment
 
 **Core dependencies**
 ```bash
-conda create -n horayzon_core -c conda-forge embree3 tbb-devel cython numpy scipy geographiclib tqdm requests xarray
+conda create -n horayzon_core -c conda-forge embree3 tbb-devel cython setuptools numpy scipy geographiclib tqdm requests xarray
 ```
 
 **Base dependencies for examples**
 ```bash
-conda create -n horayzon_base -c conda-forge embree3 tbb-devel cython numpy scipy geographiclib tqdm requests xarray netcdf4 matplotlib pillow skyfield pyproj ipython
+conda create -n horayzon_base -c conda-forge embree3 tbb-devel cython setuptools numpy scipy geographiclib tqdm requests xarray netcdf4 matplotlib pillow skyfield pyproj ipython
 ```
 
 **All dependencies for examples (masking and high-resolution DEM examples; GDAL dependency)**
 ```bash
-conda create -n horayzon_all -c conda-forge embree3 tbb-devel cython numpy scipy geographiclib tqdm requests xarray netcdf4 matplotlib pillow skyfield pyproj ipython shapely fiona pygeos scikit-image rasterio trimesh
+conda create -n horayzon_all -c conda-forge embree3 tbb-devel cython setuptools numpy scipy geographiclib tqdm requests xarray netcdf4 matplotlib pillow skyfield pyproj ipython shapely fiona pygeos scikit-image rasterio trimesh
 ```
 
 and **activate this environment**. The HORAYZON package can then be installed with:
@@ -67,32 +67,9 @@ cd HORAYZON
 python -m pip install .
 ```
 
-## Mac OS X
+## Windows
 
-HORAYZON is compiled with **Clang** under Mac OS X. As the Apple-provided **Clang** does not support OpenMP, an alternative **Clang** with OpenMP support has to be installed.
-This can be done via Conda. Create an appropriate Conda environment
-
-**Core dependencies**
-```bash
-conda create -n horayzon_core -c conda-forge embree3 tbb-devel cython numpy scipy geographiclib tqdm requests xarray c-compiler openmp
-```
-
-**Base dependencies for examples**
-```bash
-conda create -n horayzon_base -c conda-forge embree3 tbb-devel cython numpy scipy geographiclib tqdm requests xarray netcdf4 matplotlib pillow skyfield pyproj ipython c-compiler openmp
-```
-
-**All dependencies for examples (masking and high-resolution DEM examples; GDAL dependency)**
-```bash
-conda create -n horayzon_all -c conda-forge embree3 tbb-devel cython numpy scipy geographiclib tqdm requests xarray netcdf4 matplotlib pillow skyfield pyproj ipython shapely fiona pygeos scikit-image rasterio trimesh c-compiler openmp
-```
-
-and **activate this environment**. The HORAYZON package can then be installed with:
-```bash
-git clone https://github.com/ChristianSteger/HORAYZON.git
-cd HORAYZON
-python -m pip install .
-```
+The installation under Windows has not yet been tested.
 
 ## Optional installation of hmm
 **hmm** depends on **glm**, which can also be installed via Conda

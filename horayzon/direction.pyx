@@ -8,7 +8,6 @@ import numpy as np
 from math import prod
 from libc.math cimport sin, cos, sqrt
 from libc.math cimport M_PI
-from cython.parallel import prange
 
 
 # -----------------------------------------------------------------------------
@@ -59,7 +58,7 @@ def _surf_norm_1d(double[:] lon, double[:] lat):
     cdef float[:, :] vec_norm_ecef = np.empty((len_0, 3), dtype=np.float32)
 
     # Compute surface normals
-    for i in prange(len_0, nogil=True, schedule="static"):
+    for i in range(len_0):
         sin_lon = sin(deg2rad(lon[i]))
         cos_lon = cos(deg2rad(lon[i]))
         sin_lat = sin(deg2rad(lat[i]))
@@ -155,7 +154,7 @@ def _north_dir_1d(double[:] x_ecef, double[:] y_ecef, double[:] z_ecef,
         np_z = b
 
     # Coordinate transformation
-    for i in prange(len_0, nogil=True, schedule="static"):
+    for i in range(len_0):
 
         # Vector to North Pole
         vec_nor_x = (np_x - x_ecef[i])

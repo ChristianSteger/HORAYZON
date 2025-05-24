@@ -8,7 +8,6 @@ import numpy as np
 from math import prod
 from libc.math cimport sin, cos, sqrt
 from libc.math cimport M_PI
-from cython.parallel import prange
 
 
 # -----------------------------------------------------------------------------
@@ -76,7 +75,7 @@ def _lonlat2ecef_1d(double[:] lon, double[:] lat, float[:] h, ellps):
     # Spherical coordinates
     if ellps == "sphere":
         r = 6370997.0  # earth radius [m]
-        for i in prange(len_0, nogil=True, schedule="static"):
+        for i in range(len_0):
             x_ecef[i] = (r + h[i]) * cos(deg2rad(lat[i])) \
                 * cos(deg2rad(lon[i]))
             y_ecef[i] = (r + h[i]) * cos(deg2rad(lat[i])) \
@@ -92,7 +91,7 @@ def _lonlat2ecef_1d(double[:] lon, double[:] lat, float[:] h, ellps):
             f = (1.0 / 298.257223563)  # flattening [-]
         b = a * (1.0 - f)  # polar radius (semi-minor axis) [m]
         e_2 = 1.0 - (b ** 2 / a ** 2)  # squared num. eccentricity [-]
-        for i in prange(len_0, nogil=True, schedule="static"):
+        for i in range(len_0):
             n = a / sqrt(1.0 - e_2 * sin(deg2rad(lat[i])) ** 2)
             x_ecef[i] = (n + h[i]) * cos(deg2rad(lat[i])) \
                 * cos(deg2rad(lon[i]))
@@ -177,7 +176,7 @@ def _ecef2enu_1d(double[:] x_ecef, double[:] y_ecef, double[:] z_ecef,
     cos_lat = cos(deg2rad(lat_or))
 
     # Coordinate transformation
-    for i in prange(len_0, nogil=True, schedule="static"):
+    for i in range(len_0):
         x_enu[i] = (- sin_lon * (x_ecef[i] - x_ecef_or)
                     + cos_lon * (y_ecef[i] - y_ecef_or))
         y_enu[i] = (- sin_lat * cos_lon * (x_ecef[i] - x_ecef_or)
@@ -250,7 +249,7 @@ def _ecef2enu_vector_1d(float[:, :] vec_ecef, trans_ecef2enu):
     cos_lat = cos(deg2rad(lat_or))
 
     # Coordinate transformation
-    for i in prange(len_0, nogil=True, schedule="static"):
+    for i in range(len_0):
         vec_enu[i, 0] = (- sin_lon * vec_ecef[i, 0] + cos_lon * vec_ecef[i, 1])
         vec_enu[i, 1] = (- sin_lat * cos_lon * vec_ecef[i, 0]
                          - sin_lat * sin_lon * vec_ecef[i, 1]
@@ -320,7 +319,7 @@ def _wgs2swiss_1d(double[:] lon, double[:] lat, float[:] h_wgs):
     cdef float[:] h_ch = np.empty(len_0, dtype=np.float32)
 
     # Coordinate transformation
-    for i in prange(len_0, nogil=True, schedule="static"):
+    for i in range(len_0):
 
         # Convert angles to arc-seconds and compute auxiliary values
         lon_pr = ((lon[i] * 3600.0) - 26782.5) / 10000.0
@@ -404,7 +403,7 @@ def _swiss2wgs_1d(double[:] e, double[:] n, float[:] h_ch):
     cdef float[:] h_wgs = np.empty(len_0, dtype=np.float32)
 
     # Coordinate transformation
-    for i in prange(len_0, nogil=True, schedule="static"):
+    for i in range(len_0):
 
         # Convert projected coordinates in civilian system and convert
         # to 1000 km
