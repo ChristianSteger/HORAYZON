@@ -36,7 +36,7 @@ The examples **horizon/gridded_curved_DEM_masked.py**, **horizon/gridded_planar_
 
 # Installation
 
-HORAYZON has been tested with **Python 3.10** (Linux) and **Python 3.13.3** (Mac OS X).
+HORAYZON has been tested with **Python 3.13.3** (Linux) and **Python 3.13.3** (Mac OS X).
 It is recommended to install dependencies via [Conda](https://docs.conda.io/en/latest/#), which covers all dependencies except **hmm**.
 Alternatively, HORAYZON can also be [installed without Conda](#Installation-without-Conda) (by e.g. using **pip** to install Python packages).
 Installation via **Conda** can be accomplished as follows for different platforms:
