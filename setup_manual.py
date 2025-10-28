@@ -20,7 +20,7 @@ import numpy as np
 
 # Paths for Intel Embree and Threading Building Blocks (TBB)
 path_include = ["/opt/local/include/"]
-path_lib = ["/opt/local/lib/libembree3"]  # without file ending
+path_lib = ["/opt/local/lib/libembree4"]  # without file ending
 # - depending on defined library paths and loaded modules, it might be
 #   necessary to add paths to further libraries like 'libimf' and 'libtbb'
 # - in case a library is not found during execution of HORAYZON, it has to be

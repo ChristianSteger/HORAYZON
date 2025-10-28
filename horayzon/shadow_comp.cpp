@@ -3,7 +3,7 @@
 
 #include "shadow_comp.h"
 #include <cstdio>
-#include <embree3/rtcore.h>
+#include <embree4/rtcore.h>
 #include <stdio.h>
 #include <math.h>
 #include <limits>
@@ -450,10 +450,6 @@ void CppTerrain::shadow(float* sun_position, unsigned char* shadow_buffer) {
   					+ tilt_z * sun_z;
   				if (dot_prod_ts > 0.0) {
 
-					// Intersect context
-  					struct RTCIntersectContext context;
-  					rtcInitIntersectContext(&context);
-
   					// Ray structure
   					struct RTCRay ray;
   					ray.org_x = ray_org_x;
@@ -464,9 +460,10 @@ void CppTerrain::shadow(float* sun_position, unsigned char* shadow_buffer) {
   					ray.dir_z = sun_z;
   					ray.tnear = 0.0;
   					ray.tfar = std::numeric_limits<float>::infinity();
+					ray.mask = 1;
 
   					// Intersect ray with scene
-  					rtcOccluded1(scene, &context, &ray);
+					rtcOccluded1(scene, &ray);
 
 					if (ray.tfar < 0.0) {
 						shadow_buffer[ind_arr] = 2;
@@ -562,10 +559,6 @@ void CppTerrain::sw_dir_cor(float* sun_position, float* sw_dir_cor_buffer) {
   				float dot_prod_ts = tilt_x * sun_x + tilt_y * sun_y 
   					+ tilt_z * sun_z;
   				if (dot_prod_ts > dot_prod_min) {
-  			
-					// Intersect context
-  					struct RTCIntersectContext context;
-  					rtcInitIntersectContext(&context);
 
   					// Ray structure
   					struct RTCRay ray;
@@ -577,9 +570,10 @@ void CppTerrain::sw_dir_cor(float* sun_position, float* sw_dir_cor_buffer) {
   					ray.dir_z = sun_z;
   					ray.tnear = 0.0;
   					ray.tfar = std::numeric_limits<float>::infinity();
+					ray.mask = 1;
 
   					// Intersect ray with scene
-  					rtcOccluded1(scene, &context, &ray);
+					rtcOccluded1(scene, &ray);
 
 					if (ray.tfar < 0.0) {
 						sw_dir_cor_buffer[ind_arr] = 0.0;

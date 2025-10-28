@@ -47,17 +47,17 @@ Create an appropriate Conda environment
 
 **Core dependencies**
 ```bash
-conda create -n horayzon_core -c conda-forge embree3 tbb-devel cython setuptools numpy scipy geographiclib tqdm requests xarray
+conda create -n horayzon_core -c conda-forge embree tbb-devel cython setuptools numpy scipy geographiclib tqdm requests xarray
 ```
 
 **Base dependencies for examples**
 ```bash
-conda create -n horayzon_base -c conda-forge embree3 tbb-devel cython setuptools numpy scipy geographiclib tqdm requests xarray netcdf4 matplotlib pillow skyfield pyproj ipython
+conda create -n horayzon_base -c conda-forge embree tbb-devel cython setuptools numpy scipy geographiclib tqdm requests xarray netcdf4 matplotlib pillow skyfield pyproj ipython
 ```
 
 **All dependencies for examples (masking and high-resolution DEM examples; GDAL dependency)**
 ```bash
-conda create -n horayzon_all -c conda-forge embree3 tbb-devel cython setuptools numpy scipy geographiclib tqdm requests xarray netcdf4 matplotlib pillow skyfield pyproj ipython shapely fiona pygeos scikit-image rasterio trimesh
+conda create -n horayzon_all -c conda-forge embree tbb-devel cython setuptools numpy scipy geographiclib tqdm requests xarray netcdf4 matplotlib pillow skyfield pyproj ipython shapely fiona pygeos scikit-image rasterio trimesh
 ```
 
 and **activate this environment**. The HORAYZON package can then be installed with:
