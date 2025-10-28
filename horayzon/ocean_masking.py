@@ -5,9 +5,10 @@
 import os
 import numpy as np
 from shapely.geometry import shape, box
+from shapely import box as box_root
+from shapely.strtree import STRtree
 import fiona
-from scipy.spatial import cKDTree
-import pygeos
+from scipy.spatial import KDTree
 import time
 from skimage.measure import find_contours
 import horayzon.transform as transform
@@ -79,11 +80,12 @@ def get_gshhs_coastlines(domain):
 
     # Find relevant polygons for domain
     bounds = np.load(file_bbc)
-    geoms = pygeos.box(bounds[:, 0], bounds[:, 1], bounds[:, 2], bounds[:, 3])
-    tree = pygeos.STRtree(geoms)
+    geoms = [box_root(xmin, ymin, xmax, ymax)
+             for xmin, ymin, xmax, ymax in bounds]
+    tree = STRtree(geoms)
     quer_rang = [domain["lon_min"], domain["lat_min"],
                  domain["lon_max"], domain["lat_max"]]
-    ind = tree.query(pygeos.box(*quer_rang))
+    ind = tree.query(box_root(*quer_rang))
 
     # Load relevant polygons
     ds = fiona.open(path_aux_data + "GSHHG/GSHHS_shp/f/GSHHS_f_L1.shp")
@@ -193,7 +195,7 @@ def coastline_distance(x_ecef, y_ecef, z_ecef, mask_land, pts_ecef):
     t_beg_func = time.time()
 
     # Build k-d tree
-    tree = cKDTree(pts_ecef)
+    tree = KDTree(pts_ecef)
 
     # Query k-d tree
     pts_quer = np.vstack((x_ecef[~mask_land], y_ecef[~mask_land],
@@ -279,7 +281,7 @@ def coastline_buffer(x_ecef, y_ecef, z_ecef, mask_land, pts_ecef, lat,
         raise ValueError("Maximal chord distance is larger than 'dist_thr'")
 
     # Build k-d tree
-    tree = cKDTree(pts_ecef)
+    tree = KDTree(pts_ecef)
 
     # Query k-d tree
     slic = (slice(int((block_size - 1) / 2), None, block_size),

@@ -31,7 +31,7 @@ The examples **horizon/gridded_curved_DEM_masked.py**, **horizon/gridded_planar_
 - Python packages: netCDF4, Matplotlib, Pillow, Skyfield, pyproj, IPython
 
 **All dependencies for examples (masking and high-resolution DEM examples; GDAL dependency)**
-- Python packages: Shapely, fiona, PyGEOS, scikit-image, Rasterio, Trimesh
+- Python packages: Shapely, fiona, scikit-image, Rasterio, Trimesh
 - [heightmap meshing utility (hmm)](https://github.com/fogleman/hmm)
 
 # Installation
@@ -57,7 +57,7 @@ conda create -n horayzon_base -c conda-forge embree tbb-devel cython setuptools 
 
 **All dependencies for examples (masking and high-resolution DEM examples; GDAL dependency)**
 ```bash
-conda create -n horayzon_all -c conda-forge embree tbb-devel cython setuptools numpy scipy geographiclib tqdm requests xarray netcdf4 matplotlib pillow skyfield pyproj ipython shapely fiona pygeos scikit-image rasterio trimesh
+conda create -n horayzon_all -c conda-forge embree tbb-devel cython setuptools numpy scipy geographiclib tqdm requests xarray netcdf4 matplotlib pillow skyfield pyproj ipython shapely fiona scikit-image rasterio trimesh
 ```
 
 and **activate this environment**. The HORAYZON package can then be installed with:
