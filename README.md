@@ -1,3 +1,8 @@
+# TOPO-WINHORAYZON
+
+This fork is based on the HORAYZON repository. See the description below for more details.
+In this version, the repository is intended to be ported to Windows and serve as a foundation for future projects.
+
 # HORAYZON
 
 Package to efficiently compute terrain parameters (like **horizon**, **sky view factor**, **topographic openness**, slope angle/aspect) from high-resolution digital elevation model (DEM) data.
