@@ -124,6 +124,18 @@ include_dirs_cpp = [np.get_include(), embree_include, tbb_include]
 library_dirs_cpp = [embree_lib, tbb_lib]
 numpy_define_macros = [("NPY_NO_DEPRECATED_API", "NPY_1_7_API_VERSION")]
 
+masking_requires = ["fiona", "scikit-image", "shapely"]
+examples_requires = [
+    "ipython",
+    "matplotlib",
+    "netCDF4",
+    "pillow",
+    "pyproj",
+    "rasterio",
+    "skyfield",
+    "trimesh",
+]
+
 # -----------------------------------------------------------------------------
 # Compile Cython/C++ code
 # -----------------------------------------------------------------------------
@@ -226,28 +238,21 @@ setup(
     package_data={"horayzon": ["licenses/*.txt"]},
     python_requires=">=3.10",
     install_requires=[
+        "fiona",
         "geographiclib",
         "numpy",
+        "pytest",
         "requests",
+        "scikit-image",
         "scipy",
+        "shapely",
         "tqdm",
         "xarray",
     ],
     extras_require={
-        "masking": ["fiona", "scikit-image", "shapely"],
-        "examples": [
-            "fiona",
-            "ipython",
-            "matplotlib",
-            "netCDF4",
-            "pillow",
-            "pyproj",
-            "rasterio",
-            "scikit-image",
-            "shapely",
-            "skyfield",
-            "trimesh",
-        ],
+        "all": examples_requires,
+        "examples": examples_requires,
+        "masking": masking_requires,
         "test": ["pytest"],
     },
     cmdclass={"build_ext": build_ext},

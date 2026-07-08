@@ -19,24 +19,18 @@ The animation below illustrates the method applied in HORAYZON to find the terra
 
 # Package dependencies
 
-HORAYZON depends on multiple external libraries and packages. Binary wheels
-bundle the required Intel Embree and oneTBB runtime libraries for supported
-platforms. Source builds still require Embree and TBB headers/libraries to be
-installed locally. The essential dependencies are listed below under **Core
-dependencies**.
-Further dependencies are needed to run the examples (**Base dependencies for examples**).
-The examples **horizon/gridded_curved_DEM_masked.py**, **horizon/gridded_planar_DEM_2m.py** and **shadow/gridded_curved_DEM_NASADEM.py** require more complex dependencies, which are listed under **All dependencies for examples**.
+HORAYZON depends on Python packages for numerical work, geospatial helper
+functionality, and tests. These are installed by the default `pip install
+horayzon` command.
 
-**Core dependencies**
-- [Intel Embree](https://www.embree.org) and [Threading Building Blocks (TBB)](https://github.com/oneapi-src/oneTBB)
-- Python packages: Cython, NumPy, SciPy, GeographicLib, tqdm, requests, xarray
+Binary wheels bundle the required Intel Embree and oneTBB runtime libraries for
+supported platforms. Source builds still require Embree and TBB
+headers/libraries to be installed locally.
 
-**Base dependencies for examples**
-- Python packages: netCDF4, Matplotlib, Pillow, Skyfield, pyproj, IPython
-
-**All dependencies for examples (masking and high-resolution DEM examples; GDAL dependency)**
-- Python packages: Shapely, fiona, scikit-image, Rasterio, Trimesh
-- [heightmap meshing utility (hmm)](https://github.com/fogleman/hmm)
+Additional Python packages used by the examples can be installed with the
+`all` extra. The external [heightmap meshing utility
+(hmm)](https://github.com/fogleman/hmm) is not bundled and is not installed by
+`horayzon[all]`.
 
 # Installation
 
@@ -52,7 +46,15 @@ python -m pip install horayzon
 Binary wheels are available for CPython 3.10-3.14 on Linux x86_64, Linux
 aarch64, Mac OS X x86_64, and Mac OS X arm64. These wheels bundle the Embree
 and oneTBB runtime libraries, so users do not need to install Embree or TBB
-separately.
+separately. The default install also includes the Python dependencies required
+to run the test suite.
+
+To install the additional Python packages used by the examples and optional
+workflows, run:
+
+```bash
+python -m pip install "horayzon[all]"
+```
 
 If no compatible wheel is available for the current platform or Python version,
 `pip` falls back to building HORAYZON from the source distribution. In that
@@ -63,35 +65,23 @@ To require a binary wheel and fail instead of building from source, run:
 python -m pip install --only-binary=:all: horayzon
 ```
 
-The following sections describe Conda and manual source-build workflows, which
-remain useful for development, unsupported platforms, or custom native
-dependency installations.
+## Source builds
 
-## Linux / Mac OS X source installation with Conda
+Source builds are mainly needed for development, unsupported platforms, or
+custom native dependency installations. They require a compiler and local
+installations of [Intel Embree](https://www.embree.org) and [Threading Building
+Blocks (TBB)](https://github.com/oneapi-src/oneTBB).
 
-[Conda](https://docs.conda.io/en/latest/#) can be used to create an environment
-with the native and Python dependencies required for a source build. It covers
-all dependencies except **hmm**.
+On Linux or Mac OS X, Embree and TBB can be installed with a system package
+manager such as Conda, Homebrew, APT, or MacPorts. With Conda, the native
+dependencies can be installed with:
 
-Create an appropriate Conda environment
-
-**Core dependencies**
 ```bash
-conda create -n horayzon_core -c conda-forge embree tbb-devel cython setuptools numpy scipy geographiclib tqdm requests xarray
+conda install -c conda-forge embree tbb-devel
 ```
 
-**Base dependencies for examples**
-```bash
-conda create -n horayzon_base -c conda-forge embree tbb-devel cython setuptools numpy scipy geographiclib tqdm requests xarray netcdf4 matplotlib pillow skyfield pyproj ipython
-```
+The HORAYZON source tree can then be installed with:
 
-**All dependencies for examples (masking and high-resolution DEM examples; GDAL dependency)**
-```bash
-conda create -n horayzon_all -c conda-forge embree tbb-devel cython setuptools numpy scipy geographiclib tqdm requests xarray netcdf4 matplotlib pillow skyfield pyproj ipython shapely fiona scikit-image rasterio trimesh
-```
-
-and **activate this environment**. The HORAYZON source tree can then be
-installed with:
 ```bash
 git clone https://github.com/ChristianSteger/HORAYZON.git
 cd HORAYZON
@@ -103,50 +93,18 @@ python -m pip install .
 Windows wheels are not currently provided. Source installation under Windows has
 not yet been tested.
 
-## Optional installation of hmm
-**hmm** depends on **glm**, which can also be installed via Conda
-```bash
-conda install -c conda-forge glm
-```
-Alternatively, **glm** can also be built manually from [source](https://glm.g-truc.net/0.9.9/index.html). **hmm** can then be downloaded with
-```bash
-git clone https://github.com/fogleman/hmm.git
-cd hmm
-```
-The following two lines in **hmm**'s Makefile might have to be adapted to (the include directory in the first line is valid in case **glm**  was installed with Conda):
-```bash
-COMPILE_FLAGS = -std=c++11 -flto -O3 -Wall -Wextra -Wno-sign-compare -march=native -lGL -lglut -lGLEW -I<path to directory 'include' of conda environment>
-INSTALL_PREFIX = <binary install path>
-```
-Finally, **hmm** can be installed with
-```bash
-make
-make install
-```
+## External hmm executable
 
-## Installation without Conda
-HORAYZON can also be built without Conda but this requires some additional manual steps.
-If not already available, the following two external libraries **Intel Embree** and **Threading Building Blocks (TBB)** have to be installed.
-This can be done either via a package manager (APT, MacPorts, etc.) or by manually building them from source.
-Afterwards, the required Python packages have to be installed (for instance with **pip**) and the HORAYZON package can be downloaded:
-
-```bash
-git clone https://github.com/ChristianSteger/HORAYZON.git
-cd HORAYZON
-```
-
-The setup file **setup_manual.py** must then be adapted to specify the **include** and **library** paths for the external libraries and to select a compiler to build HORAYZON.
-Finally, the HORAYZON package can be installed with:
-
-```bash
-mv setup_manual.py setup.py
-python -m pip install .
-```
+The **hmm** executable is not bundled in HORAYZON wheels. It is only needed for
+the high-resolution example **horizon/gridded_planar_DEM_2m.py** and is not
+installed by `horayzon[all]`. If this example is needed, install **hmm**
+separately from its upstream project and adapt the example's **hmm_ex** path.
 
 # Testing
-After installing HORAYZON and its dependencies, the test suite can be run with:
+After installing HORAYZON from a source checkout, the test suite can be run
+with:
+
 ```bash
-python -m pip install pytest
 python -m pytest
 ```
 
@@ -159,11 +117,6 @@ python -m ruff format --check .
 pre-commit run --all-files
 ```
 To enable the checks before every commit, run `pre-commit install`.
-
-# Wheel packaging
-Dependency-bundled binary wheels are built and tested with GitHub Actions. The
-release process is documented in
-[docs/release_checklist.md](docs/release_checklist.md).
 
 # Usage
 
