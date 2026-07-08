@@ -1,4 +1,5 @@
 import numpy as np
+import pytest
 
 import horayzon as hray
 
@@ -61,6 +62,89 @@ def test_horizon_gridded_respects_mask_fill(flat_planar_dem, flat_vectors):
     assert not np.any(hori[mask == 1] == hori_fill)
 
 
+def test_horizon_gridded_rejects_invalid_native_inputs(
+    flat_planar_dem, flat_vectors
+):
+    _, _, z, vert_grid = flat_planar_dem
+    vec_norm, vec_north = flat_vectors((3, 3))
+
+    with pytest.raises(ValueError):
+        hray.horizon.horizon_gridded(
+            vert_grid,
+            z.shape[0],
+            z.shape[1],
+            vec_norm[:, :, :2],
+            vec_north[:, :, :2],
+            offset_0=3,
+            offset_1=3,
+            dist_search=1.0,
+        )
+
+    with pytest.raises(ValueError):
+        hray.horizon.horizon_gridded(
+            vert_grid,
+            z.shape[0],
+            z.shape[1],
+            vec_norm,
+            vec_north,
+            offset_0=-1,
+            offset_1=3,
+            dist_search=1.0,
+        )
+
+    with pytest.raises(ValueError):
+        hray.horizon.horizon_gridded(
+            vert_grid,
+            z.shape[0],
+            z.shape[1],
+            vec_norm,
+            vec_north,
+            offset_0=3,
+            offset_1=3,
+            dist_search=0.0,
+        )
+
+
+def test_horizon_locations_rejects_invalid_native_inputs(flat_planar_dem):
+    _, _, z, vert_grid = flat_planar_dem
+    coords = np.array([[0.0, 0.0, 0.0]], dtype=np.float32)
+    vec_norm = np.array([[0.0, 0.0, 1.0]], dtype=np.float32)
+    vec_north = np.array([[0.0, 1.0, 0.0]], dtype=np.float32)
+
+    with pytest.raises(ValueError):
+        hray.horizon.horizon_locations(
+            vert_grid,
+            z.shape[0],
+            z.shape[1],
+            coords,
+            vec_norm[:, :2],
+            vec_north[:, :2],
+            dist_search=1.0,
+        )
+
+    with pytest.raises(ValueError):
+        hray.horizon.horizon_locations(
+            vert_grid,
+            z.shape[0],
+            z.shape[1],
+            coords[:0],
+            vec_norm[:0],
+            vec_north[:0],
+            dist_search=1.0,
+        )
+
+    with pytest.raises(ValueError):
+        hray.horizon.horizon_locations(
+            vert_grid,
+            z.shape[0],
+            z.shape[1],
+            coords,
+            vec_norm,
+            vec_north,
+            dist_search=0.0,
+        )
+
+
 def test_flat_terrain_shadow_and_shortwave_correction(flat_vectors):
     coord = np.linspace(-100.0, 100.0, 5, dtype=np.float32)
     x, y = np.meshgrid(coord, coord)
@@ -97,3 +181,36 @@ def test_flat_terrain_shadow_and_shortwave_correction(flat_vectors):
 
     np.testing.assert_array_equal(shadow, np.zeros((3, 3), dtype=np.uint8))
     np.testing.assert_allclose(sw_dir_cor, 1.0, atol=1.0e-6)
+
+
+def test_terrain_rejects_uninitialized_and_wrong_output_shape(flat_vectors):
+    terrain = hray.shadow.Terrain()
+    sun_position = np.array([0.0, 0.0, 1000.0], dtype=np.float32)
+
+    with pytest.raises(RuntimeError):
+        terrain.shadow(sun_position, np.empty((1, 1), dtype=np.uint8))
+
+    coord = np.linspace(-100.0, 100.0, 5, dtype=np.float32)
+    x, y = np.meshgrid(coord, coord)
+    z = np.zeros_like(x, dtype=np.float32)
+    vert_grid = hray.auxiliary.rearrange_pad_buffer(x, y, z)
+    vec_norm, _ = flat_vectors((3, 3))
+
+    terrain.initialise(
+        vert_grid,
+        z.shape[0],
+        z.shape[1],
+        offset_0=1,
+        offset_1=1,
+        vec_tilt=vec_norm.copy(),
+        vec_norm=vec_norm,
+        surf_enl_fac=np.ones((3, 3), dtype=np.float32),
+        elevation=np.zeros((3, 3), dtype=np.float32),
+        mask=np.ones((3, 3), dtype=np.uint8),
+        geom_type="grid",
+    )
+
+    with pytest.raises(ValueError):
+        terrain.shadow(sun_position, np.empty((2, 3), dtype=np.uint8))
+    with pytest.raises(ValueError):
+        terrain.sw_dir_cor(sun_position, np.empty((3, 2), dtype=np.float32))

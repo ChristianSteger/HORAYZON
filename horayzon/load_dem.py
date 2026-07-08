@@ -45,6 +45,7 @@ def srtm(file_dem, domain, engine="gdal"):
         raise ValueError(
             "Input for 'engine' must be either 'gdal' or 'pillow'"
         )
+    _validate_domain(domain, ("lon_min", "lon_max", "lat_min", "lat_max"))
 
     # Load digital elevation model data
     if engine == "gdal":
@@ -131,28 +132,34 @@ def nasadem(files_dem, domain):
     -----
     Data source: https://lpdaac.usgs.gov/tools/earthdata-search/
 
-    To do
-    -----
-    Domain selection is not performed according to edge coordinates
-    (-> inconsistent with other 'load_dem' functions)"""
+    Domain selection is performed according to inferred edge coordinates."""
+
+    # Check arguments
+    _validate_domain(domain, ("lon_min", "lon_max", "lat_min", "lat_max"))
 
     # Load digital elevation model data for relevant domain
     ds = xr.open_mfdataset(files_dem, preprocess=preprocess)
-    if (
-        sum(
-            [
-                domain["lon_min"] > ds["lon"].values.min(),
-                domain["lon_max"] < ds["lon"].values.max(),
-                domain["lat_min"] > ds["lat"].values.min(),
-                domain["lat_max"] < ds["lat"].values.max(),
-            ]
-        )
-        != 4
+    lon = ds["lon"].values
+    lat = ds["lat"].values
+    lon_edge = _coord_edges(lon)
+    lat_edge = _coord_edges(lat)
+    if any(
+        [
+            domain["lon_min"] < lon_edge.min(),
+            domain["lon_max"] > lon_edge.max(),
+            domain["lat_min"] < lat_edge.min(),
+            domain["lat_max"] > lat_edge.max(),
+        ]
     ):
         raise ValueError("Provided tile(s) does/do not cover domain")
+    lat_slice = (
+        slice(domain["lat_min"], domain["lat_max"])
+        if lat[0] < lat[-1]
+        else slice(domain["lat_max"], domain["lat_min"])
+    )
     ds = ds.sel(
         lon=slice(domain["lon_min"], domain["lon_max"]),
-        lat=slice(domain["lat_max"], domain["lat_min"]),
+        lat=lat_slice,
     )
     elevation = ds["NASADEM_HGT"].values
     lon = ds["lon"].values
@@ -202,6 +209,7 @@ def dhm25(file_dem, domain, engine="gdal"):
     # Check arguments
     if engine not in ("gdal", "numpy"):
         raise ValueError("Input for 'engine' must be either 'gdal' or 'numpy'")
+    _validate_domain(domain, ("x_min", "x_max", "y_min", "y_max"))
 
     # Load digital elevation model data
     if engine == "gdal":
@@ -308,6 +316,7 @@ def swissalti3d(path_dem, domain, engine="gdal"):
         raise ValueError(
             "Input for 'engine' must be either 'gdal' or 'pillow'"
         )
+    _validate_domain(domain, ("x_min", "x_max", "y_min", "y_max"))
 
     # Constant settings
     tiles_gc = 500  # number of grid cells per tile
@@ -346,7 +355,7 @@ def swissalti3d(path_dem, domain, engine="gdal"):
     for i in tiles_north:
         for j in tiles_east:
             file = (
-                (path_dem + file_format)
+                os.path.join(path_dem, file_format)
                 .replace("eeee", str(j))
                 .replace("nnnn", str(i))
             )
@@ -446,6 +455,7 @@ def rema(file_dem, domain, engine="gdal"):
         raise ValueError(
             "Input for 'engine' must be either 'gdal' or 'pillow'"
         )
+    _validate_domain(domain, ("x_min", "x_max", "y_min", "y_max"))
 
     # Load digital elevation model data
     if engine == "gdal":
@@ -519,3 +529,27 @@ def print_dem_info(elevation):
     if np.any(np.isnan(elevation)):
         txt = txt + " (Warning: NaN values are present)"
     print(txt)
+
+
+def _validate_domain(domain, keys_req):
+    if not set(keys_req).issubset(domain.keys()):
+        raise ValueError("one or multiple key(s) are missing in 'domain'")
+    for low, high in zip(keys_req[::2], keys_req[1::2], strict=True):
+        if domain[low] >= domain[high]:
+            raise ValueError("invalid domain extent")
+
+
+def _coord_edges(coord):
+    coord = np.asarray(coord, dtype=np.float64)
+    if coord.ndim != 1 or coord.size < 2:
+        raise ValueError(
+            "coordinate arrays must be 1-dimensional with length >= 2"
+        )
+    diff = np.diff(coord)
+    if not (np.all(diff > 0.0) or np.all(diff < 0.0)):
+        raise ValueError("coordinate arrays must be monotonic")
+    edge = np.empty(coord.size + 1, dtype=coord.dtype)
+    edge[1:-1] = coord[:-1] + diff / 2.0
+    edge[0] = coord[0] - diff[0] / 2.0
+    edge[-1] = coord[-1] + diff[-1] / 2.0
+    return edge

@@ -54,7 +54,7 @@ def file(file_url, path_local):
         progress_bar = tqdm(
             total=total_size_in_bytes, unit="iB", unit_scale=True
         )
-        with open(path_local + os.path.split(file_url)[-1], "wb") as infile:
+        with open(_local_file_path(path_local, file_url), "wb") as infile:
             for data in response.iter_content(block_size):
                 progress_bar.update(len(data))
                 infile.write(data)
@@ -138,9 +138,13 @@ def get_file(file_url, path_local):
     if response.ok:
         block_size = 1024 * 10
         # download seems to be faster with larger block size...
-        with open(path_local + os.path.split(file_url)[-1], "wb") as infile:
+        with open(_local_file_path(path_local, file_url), "wb") as infile:
             for data in response.iter_content(block_size):
                 infile.write(data)
         return True
     else:
         return False
+
+
+def _local_file_path(path_local, file_url):
+    return os.path.join(path_local, os.path.split(file_url)[-1])

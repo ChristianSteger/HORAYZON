@@ -106,9 +106,14 @@ def horizon_gridded(
         Array (one-dimensional) with azimuth (azim_num) [radian]"""
 
 	# Check consistency and validity of input arguments
+    if (dem_dim_0 <= 0) or (dem_dim_1 <= 0):
+        raise ValueError("input dimensions dem_dim_0 and dem_dim_1 must be "
+                         "positive")
     if len(vert_grid) < (dem_dim_0 * dem_dim_1 * 3):
         raise ValueError("inconsistency between input arguments vert_grid, "
                          "dem_dim_0 and dem_dim_1")
+    if (offset_0 < 0) or (offset_1 < 0):
+        raise ValueError("offset_0 and offset_1 must be non-negative")
     if ((offset_0 + vec_norm.shape[0] > dem_dim_0)
             or (offset_1 + vec_norm.shape[1] > dem_dim_1)):
         raise ValueError("inconsistency between input arguments dem_dim_0, "
@@ -116,9 +121,18 @@ def horizon_gridded(
     if ((vec_norm.ndim != 3) or (vec_north.ndim != 3)
             or (vec_norm.shape[0] != vec_north.shape[0])
             or (vec_norm.shape[1] != vec_north.shape[1])
-            or (vec_norm.shape[2] != vec_north.shape[2])):
+            or (vec_norm.shape[2] != vec_north.shape[2])
+            or (vec_norm.shape[2] != 3)):
         raise ValueError("dimension (lengths) of vec_norm and/or vec_north "
                          "is/are erroneous")
+    if azim_num <= 0:
+        raise ValueError("azim_num must be positive")
+    if dist_search <= 0.0:
+        raise ValueError("dist_search must be positive")
+    if hori_acc <= 0.0:
+        raise ValueError("hori_acc must be positive")
+    if elev_ang_low_lim >= 89.98:
+        raise ValueError("elev_ang_low_lim must be smaller than 89.98 degree")
     if ray_algorithm not in ("discrete_sampling", "binary_search",
                              "guess_constant"):
         raise ValueError("invalid input argument for ray_algorithm")
@@ -279,18 +293,31 @@ def horizon_locations(
         Array (one-dimensional) with azimuth (azim_num) [radian]"""
 
 	# Check consistency and validity of input arguments
+    if (dem_dim_0 <= 0) or (dem_dim_1 <= 0):
+        raise ValueError("input dimensions dem_dim_0 and dem_dim_1 must be "
+                         "positive")
     if len(vert_grid) < (dem_dim_0 * dem_dim_1 * 3):
         raise ValueError("inconsistency between input arguments vert_grid, "
                          "dem_dim_0 and dem_dim_1")
     if ((coords.ndim != 2) or (coords.shape[0] != vec_norm.shape[0])
-            or (coords.shape[1] !=3)):
+            or (coords.shape[1] != 3)
+            or (coords.shape[0] == 0)):
         raise ValueError("'number of dimensions and/or dimension "
                          + "length(s) of 'coords' incorrect")
     if ((vec_norm.ndim != 2) or (vec_north.ndim != 2)
             or (vec_norm.shape[0] != vec_north.shape[0])
-            or (vec_norm.shape[1] != vec_north.shape[1])):
+            or (vec_norm.shape[1] != vec_north.shape[1])
+            or (vec_norm.shape[1] != 3)):
         raise ValueError("dimension (lengths) of vec_norm and/or vec_north "
                          "is/are erroneous")
+    if azim_num <= 0:
+        raise ValueError("azim_num must be positive")
+    if dist_search <= 0.0:
+        raise ValueError("dist_search must be positive")
+    if hori_acc <= 0.0:
+        raise ValueError("hori_acc must be positive")
+    if elev_ang_low_lim >= 89.98:
+        raise ValueError("elev_ang_low_lim must be smaller than 89.98 degree")
     if ray_algorithm not in ("discrete_sampling", "binary_search",
                              "guess_constant"):
         raise ValueError("invalid input argument for ray_algorithm")

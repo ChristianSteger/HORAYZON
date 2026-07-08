@@ -178,6 +178,8 @@ def _slope_plane_meth_cy(float[:, :] x, float[:, :] y, float[:, :] z,
             vec[2] = z_l_sum
             sgesv(&num, &nrhs, &mat[0], &lda, &ipiv[0], &vec[0], &ldb,
                   &info)
+            if info != 0:
+                continue
             vec[2] = -1.0
 
             vec_x = vec[0]
@@ -397,12 +399,17 @@ def sky_view_factor(azim, hori, vec_tilt):
         Array (two-dimensional) with sky view factor [-]"""
 
     # Check arguments
+    if ((azim.ndim != 1) or (hori.ndim != 3) or (vec_tilt.ndim != 3)
+            or (len(azim) < 2)):
+        raise ValueError("Inconsistent/incorrect shapes of input arrays")
     if (len(azim) != hori.shape[2]) or (hori.shape[:2] != vec_tilt.shape[:2])\
             or (vec_tilt.shape[2] != 3):
         raise ValueError("Inconsistent/incorrect shapes of input arrays")
     if ((azim.dtype != "float32") or (hori.dtype != "float32")
             or (vec_tilt.dtype != "float32")):
         raise ValueError("Input array(s) has/have incorrect data type(s)")
+    if np.any(np.abs(vec_tilt[:, :, 2]) < 1.0e-6):
+        raise ValueError("upward component of 'vec_tilt' is too small")
 
     # Wrapper for Cython function
     svf = _sky_view_factor_cy(azim, hori, vec_tilt)
@@ -484,12 +491,17 @@ def visible_sky_fraction(azim, hori, vec_tilt):
         Array (two-dimensional) with Visible Sky Fraction [-]"""
 
     # Check arguments
+    if ((azim.ndim != 1) or (hori.ndim != 3) or (vec_tilt.ndim != 3)
+            or (len(azim) < 2)):
+        raise ValueError("Inconsistent/incorrect shapes of input arrays")
     if (len(azim) != hori.shape[2]) or (hori.shape[:2] != vec_tilt.shape[:2])\
             or (vec_tilt.shape[2] != 3):
         raise ValueError("Inconsistent/incorrect shapes of input arrays")
     if ((azim.dtype != "float32") or (hori.dtype != "float32")
             or (vec_tilt.dtype != "float32")):
         raise ValueError("Input array(s) has/have incorrect data type(s)")
+    if np.any(np.abs(vec_tilt[:, :, 2]) < 1.0e-6):
+        raise ValueError("upward component of 'vec_tilt' is too small")
 
     # Wrapper for Cython function
     vsf = _visible_sky_fraction_cy(azim, hori, vec_tilt)
@@ -564,6 +576,8 @@ def topographic_openness(azim, hori):
         Array (two-dimensional) with positive topographic openness [radian]"""
 
     # Check arguments
+    if (azim.ndim != 1) or (hori.ndim != 3) or (len(azim) == 0):
+        raise ValueError("Inconsistent/incorrect shapes of input arrays")
     if len(azim) != hori.shape[2]:
         raise ValueError("Inconsistent/incorrect shapes of input arrays")
     if (azim.dtype != "float32") or (hori.dtype != "float32"):

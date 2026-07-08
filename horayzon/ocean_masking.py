@@ -207,10 +207,7 @@ def coastline_distance(x_ecef, y_ecef, z_ecef, mask_land, pts_ecef):
         coastline [metre]"""
 
     # Check arguments
-    if x_ecef.shape != mask_land.shape:
-        raise ValueError("Input data has inconsistent dimension length(s)")
-    if mask_land.dtype != "bool":
-        raise ValueError("'mask_land' must be a boolean mask")
+    _validate_ecef_mask_inputs(x_ecef, y_ecef, z_ecef, mask_land, pts_ecef)
 
     t_beg_func = time.time()
 
@@ -284,10 +281,9 @@ def coastline_buffer(
         of the coastline buffer [metre]"""
 
     # Check arguments
-    if (x_ecef.shape != mask_land.shape) or (x_ecef.shape[0] != len(lat)):
+    _validate_ecef_mask_inputs(x_ecef, y_ecef, z_ecef, mask_land, pts_ecef)
+    if (lat.ndim != 1) or (x_ecef.shape[0] != len(lat)):
         raise ValueError("Input data has inconsistent dimension length(s)")
-    if mask_land.dtype != "bool":
-        raise ValueError("'mask_land' must be a boolean mask")
     if ellps not in ("sphere", "WGS84", "GRS80"):
         raise ValueError("invalid value for 'ellps'")
     if block_size % 2 != 1:
@@ -386,3 +382,20 @@ def coastline_buffer(
     print("Run time: %.2f" % (time.time() - t_beg_func) + " s")
 
     return mask_buffer.astype(bool)
+
+
+def _validate_ecef_mask_inputs(x_ecef, y_ecef, z_ecef, mask_land, pts_ecef):
+    if (
+        x_ecef.ndim != 2
+        or y_ecef.ndim != 2
+        or z_ecef.ndim != 2
+        or mask_land.ndim != 2
+        or x_ecef.shape != y_ecef.shape
+        or x_ecef.shape != z_ecef.shape
+        or x_ecef.shape != mask_land.shape
+    ):
+        raise ValueError("Input data has inconsistent dimension length(s)")
+    if mask_land.dtype != "bool":
+        raise ValueError("'mask_land' must be a boolean mask")
+    if pts_ecef.ndim != 2 or pts_ecef.shape[1] != 3 or pts_ecef.shape[0] < 1:
+        raise ValueError("'pts_ecef' must have shape (n, 3) with n >= 1")

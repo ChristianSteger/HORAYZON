@@ -1,3 +1,5 @@
+from unittest.mock import patch
+
 import numpy as np
 import pytest
 import xarray as xr
@@ -18,6 +20,25 @@ def test_download_helpers_validate_local_path_and_mode(tmp_path):
             str(tmp_path) + "/",
             mode="invalid",
         )
+
+
+def test_download_file_joins_local_directory_without_trailing_separator(
+    tmp_path,
+):
+    class Response:
+        ok = True
+
+        def __init__(self):
+            self.headers = {"content-length": "4"}
+
+        def iter_content(self, block_size):
+            yield b"data"
+
+    with patch("horayzon.download.requests.get", return_value=Response()):
+        hray.download.file("https://example.invalid/file.dat", str(tmp_path))
+
+    assert (tmp_path / "file.dat").read_bytes() == b"data"
+    assert not (tmp_path.parent / (tmp_path.name + "file.dat")).exists()
 
 
 def test_geoid_undulation_validates_model_and_spatial_coverage():
@@ -50,6 +71,8 @@ def test_load_dem_validation_helpers_and_preprocess(capsys):
         hray.load_dem.swissalti3d("/missing/", domain_planar, engine="invalid")
     with pytest.raises(ValueError):
         hray.load_dem.rema("missing.tif", domain_planar, engine="invalid")
+    with pytest.raises(ValueError):
+        hray.load_dem.srtm("missing.tif", {"lon_min": 1.0}, engine="pillow")
 
     ds = xr.Dataset(coords={"lon": np.arange(4), "lat": np.arange(4)})
     trimmed = hray.load_dem.preprocess(ds)
@@ -59,6 +82,38 @@ def test_load_dem_validation_helpers_and_preprocess(capsys):
     output = capsys.readouterr().out
     assert "Size of loaded DEM domain: (1, 2)" in output
     assert "Warning: NaN values are present" in output
+
+
+def test_nasadem_selects_boundary_aligned_domain(monkeypatch, capsys):
+    ds = xr.Dataset(
+        data_vars={
+            "NASADEM_HGT": (
+                ("lat", "lon"),
+                np.array([[1.0, 2.0], [3.0, 4.0]], dtype=np.float32),
+            )
+        },
+        coords={
+            "lon": np.array([0.5, 1.5], dtype=np.float64),
+            "lat": np.array([1.5, 0.5], dtype=np.float64),
+        },
+    )
+
+    monkeypatch.setattr(hray.load_dem.xr, "open_mfdataset", lambda *a, **k: ds)
+
+    lon, lat, elevation = hray.load_dem.nasadem(
+        "unused.nc",
+        {
+            "lon_min": 0.0,
+            "lon_max": 2.0,
+            "lat_min": 0.0,
+            "lat_max": 2.0,
+        },
+    )
+
+    np.testing.assert_allclose(lon, [0.5, 1.5])
+    np.testing.assert_allclose(lat, [1.5, 0.5])
+    np.testing.assert_allclose(elevation, [[1.0, 2.0], [3.0, 4.0]])
+    capsys.readouterr()
 
 
 def test_ocean_masking_contours_and_distance_are_deterministic():
@@ -101,4 +156,16 @@ def test_ocean_masking_validates_inputs():
     with pytest.raises(ValueError):
         ocean_masking.coastline_distance(
             x_ecef, x_ecef, x_ecef, mask_land, pts_ecef
+        )
+    with pytest.raises(ValueError):
+        ocean_masking.coastline_distance(
+            x_ecef, x_ecef[:, :1], x_ecef, mask_land.astype(bool), pts_ecef
+        )
+    with pytest.raises(ValueError):
+        ocean_masking.coastline_distance(
+            x_ecef,
+            x_ecef,
+            x_ecef,
+            mask_land.astype(bool),
+            np.zeros((0, 3), dtype=np.float64),
         )
