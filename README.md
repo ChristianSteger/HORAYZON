@@ -111,6 +111,13 @@ mv setup_manual.py setup.py
 python -m pip install .
 ```
 
+# Testing
+After installing HORAYZON and its dependencies, the test suite can be run with:
+```bash
+python -m pip install pytest
+python -m pytest
+```
+
 # Usage
 
 The usage of the packages is best illustrated by means of examples, which can either be run in a Python IDE (like PyCharm or Spyder) or in the terminal.
