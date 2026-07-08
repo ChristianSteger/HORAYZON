@@ -1,0 +1,23 @@
+# Local Python environment
+.venv/
+
+# Python caches
+__pycache__/
+*.pyc
+.pytest_cache/
+.ruff_cache/
+.coverage
+
+# Local package build outputs
+build/
+dist/
+*.egg-info/
+
+# Cython-generated files from editable/local builds
+horayzon/*.c
+horayzon/horizon.cpp
+horayzon/shadow.cpp
+horayzon/*.so
+
+# HORAYZON stores the local auxiliary-data path here
+horayzon/path_aux_data.txt
