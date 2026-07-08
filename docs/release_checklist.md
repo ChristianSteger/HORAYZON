@@ -15,9 +15,10 @@ Fork workflows may build and test release artifacts, but must not publish them.
    tagging. Do not publish the current placeholder version without checking it
    against the latest upstream release.
 3. Confirm the release workflow builds all intended artifacts:
-   - Linux x86_64 wheels for CPython 3.10-3.13,
-   - macOS x86_64 wheels for CPython 3.10-3.13,
-   - macOS arm64 wheels for CPython 3.10-3.13,
+   - Linux x86_64 wheels for CPython 3.10-3.14,
+   - Linux aarch64 wheels for CPython 3.10-3.14,
+   - macOS x86_64 wheels for CPython 3.10-3.14,
+   - macOS arm64 wheels for CPython 3.10-3.14,
    - one source distribution.
 4. Confirm the wheel artifacts install and run the native smoke tests without a
    user-installed Embree or TBB runtime.

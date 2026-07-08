@@ -9,9 +9,10 @@ do not require users to install Embree or TBB locally.
 
 Build and test wheels on the fork before enabling publishing:
 
-- Linux x86_64, CPython 3.10-3.13
-- macOS x86_64, CPython 3.10-3.13
-- macOS arm64, CPython 3.10-3.13
+- Linux x86_64, CPython 3.10-3.14
+- Linux aarch64, CPython 3.10-3.14
+- macOS x86_64, CPython 3.10-3.14
+- macOS arm64, CPython 3.10-3.14
 
 Windows x86_64 is feasible, but should follow after the Unix-like wheel path is
 stable because the current build has not been exercised on Windows.

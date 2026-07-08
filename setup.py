@@ -100,7 +100,11 @@ if sys.platform in ["linux", "linux2"]:
 elif sys.platform in ["darwin"]:
     print("Operating system: Mac OS X")
     compiler = "clang"
-    extra_compile_args_cython = ["-O3", "-ffast-math"]
+    extra_compile_args_cython = [
+        "-O3",
+        "-ffast-math",
+        "-Wno-nan-infinity-disabled",
+    ]
     extra_compile_args_cpp = ["-O3", "-std=c++11"]
     libraries_cython = ["m", "pthread"]
     libraries_cpp = ["embree4", "tbb"]
@@ -118,6 +122,7 @@ else:
 
 include_dirs_cpp = [np.get_include(), embree_include, tbb_include]
 library_dirs_cpp = [embree_lib, tbb_lib]
+numpy_define_macros = [("NPY_NO_DEPRECATED_API", "NPY_1_7_API_VERSION")]
 
 # -----------------------------------------------------------------------------
 # Compile Cython/C++ code
@@ -132,6 +137,7 @@ ext_modules = [
         ["horayzon/transform.pyx"],
         libraries=libraries_cython,
         extra_compile_args=extra_compile_args_cython,
+        define_macros=numpy_define_macros,
         include_dirs=[np.get_include()],
     ),
     Extension(
@@ -139,6 +145,7 @@ ext_modules = [
         ["horayzon/direction.pyx"],
         libraries=libraries_cython,
         extra_compile_args=extra_compile_args_cython,
+        define_macros=numpy_define_macros,
         include_dirs=[np.get_include()],
     ),
     Extension(
@@ -146,6 +153,7 @@ ext_modules = [
         ["horayzon/topo_param.pyx"],
         libraries=libraries_cython,
         extra_compile_args=extra_compile_args_cython,
+        define_macros=numpy_define_macros,
         include_dirs=[np.get_include()],
     ),
     Extension(
@@ -156,6 +164,7 @@ ext_modules = [
         libraries=libraries_cpp,
         runtime_library_dirs=runtime_library_dirs,
         extra_compile_args=extra_compile_args_cpp,
+        define_macros=numpy_define_macros,
         language="c++",
     ),
     Extension(
@@ -166,6 +175,7 @@ ext_modules = [
         libraries=libraries_cpp,
         runtime_library_dirs=runtime_library_dirs,
         extra_compile_args=extra_compile_args_cpp,
+        define_macros=numpy_define_macros,
         language="c++",
     ),
 ]
@@ -200,6 +210,7 @@ setup(
         "Programming Language :: Python :: 3.11",
         "Programming Language :: Python :: 3.12",
         "Programming Language :: Python :: 3.13",
+        "Programming Language :: Python :: 3.14",
         "Programming Language :: Python :: Implementation :: CPython",
         "Topic :: Scientific/Engineering",
     ],

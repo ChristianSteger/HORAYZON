@@ -19,7 +19,11 @@ The animation below illustrates the method applied in HORAYZON to find the terra
 
 # Package dependencies
 
-HORAYZON depends on multiple external libraries and packages. The essential ones are listed below under **Core dependencies**.
+HORAYZON depends on multiple external libraries and packages. Binary wheels
+bundle the required Intel Embree and oneTBB runtime libraries for supported
+platforms. Source builds still require Embree and TBB headers/libraries to be
+installed locally. The essential dependencies are listed below under **Core
+dependencies**.
 Further dependencies are needed to run the examples (**Base dependencies for examples**).
 The examples **horizon/gridded_curved_DEM_masked.py**, **horizon/gridded_planar_DEM_2m.py** and **shadow/gridded_curved_DEM_NASADEM.py** require more complex dependencies, which are listed under **All dependencies for examples**.
 
@@ -36,12 +40,38 @@ The examples **horizon/gridded_curved_DEM_masked.py**, **horizon/gridded_planar_
 
 # Installation
 
-HORAYZON has been tested with **Python 3.13.3** (Linux) and **Python 3.13.3** (Mac OS X).
-It is recommended to install dependencies via [Conda](https://docs.conda.io/en/latest/#), which covers all dependencies except **hmm**.
-Alternatively, HORAYZON can also be [installed without Conda](#Installation-without-Conda) (by e.g. using **pip** to install Python packages).
-Installation via **Conda** can be accomplished as follows for different platforms:
+HORAYZON binary wheels are tested on Linux and Mac OS X with CPython
+3.10-3.14.
 
-## Linux / Mac OS X
+For supported platforms, HORAYZON can be installed from PyPI with:
+
+```bash
+python -m pip install horayzon
+```
+
+Binary wheels are available for CPython 3.10-3.14 on Linux x86_64, Linux
+aarch64, Mac OS X x86_64, and Mac OS X arm64. These wheels bundle the Embree
+and oneTBB runtime libraries, so users do not need to install Embree or TBB
+separately.
+
+If no compatible wheel is available for the current platform or Python version,
+`pip` falls back to building HORAYZON from the source distribution. In that
+case, a working compiler plus local Embree and TBB installations are required.
+To require a binary wheel and fail instead of building from source, run:
+
+```bash
+python -m pip install --only-binary=:all: horayzon
+```
+
+The following sections describe Conda and manual source-build workflows, which
+remain useful for development, unsupported platforms, or custom native
+dependency installations.
+
+## Linux / Mac OS X source installation with Conda
+
+[Conda](https://docs.conda.io/en/latest/#) can be used to create an environment
+with the native and Python dependencies required for a source build. It covers
+all dependencies except **hmm**.
 
 Create an appropriate Conda environment
 
@@ -60,7 +90,8 @@ conda create -n horayzon_base -c conda-forge embree tbb-devel cython setuptools 
 conda create -n horayzon_all -c conda-forge embree tbb-devel cython setuptools numpy scipy geographiclib tqdm requests xarray netcdf4 matplotlib pillow skyfield pyproj ipython shapely fiona scikit-image rasterio trimesh
 ```
 
-and **activate this environment**. The HORAYZON package can then be installed with:
+and **activate this environment**. The HORAYZON source tree can then be
+installed with:
 ```bash
 git clone https://github.com/ChristianSteger/HORAYZON.git
 cd HORAYZON
@@ -69,7 +100,8 @@ python -m pip install .
 
 ## Windows
 
-The installation under Windows has not yet been tested.
+Windows wheels are not currently provided. Source installation under Windows has
+not yet been tested.
 
 ## Optional installation of hmm
 **hmm** depends on **glm**, which can also be installed via Conda
@@ -129,8 +161,9 @@ pre-commit run --all-files
 To enable the checks before every commit, run `pre-commit install`.
 
 # Wheel packaging
-The planned path toward dependency-bundled binary wheels is described in
-[docs/wheel_distribution_plan.md](docs/wheel_distribution_plan.md).
+Dependency-bundled binary wheels are built and tested with GitHub Actions. The
+release process is documented in
+[docs/release_checklist.md](docs/release_checklist.md).
 
 # Usage
 

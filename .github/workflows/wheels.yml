@@ -34,11 +34,14 @@ jobs:
           - macos-14
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v6
         with:
           python-version: "3.13"
+
+      - uses: docker/setup-qemu-action@v4.2.0
+        if: runner.os == 'Linux'
 
       - name: Install macOS native dependencies
         if: runner.os == 'macOS'
@@ -87,7 +90,7 @@ jobs:
           cd "$smoke_dir"
           "$smoke_dir/venv/bin/python" -m pytest test_native_raytracing.py
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: wheels-${{ matrix.os }}
           path: wheelhouse/*.whl
