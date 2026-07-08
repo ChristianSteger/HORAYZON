@@ -63,7 +63,7 @@ conda create -n horayzon_all -c conda-forge embree tbb-devel cython setuptools n
 and **activate this environment**. The HORAYZON package can then be installed with:
 ```bash
 git clone https://github.com/ChristianSteger/HORAYZON.git
-cd HORAYZON  
+cd HORAYZON
 python -m pip install .
 ```
 
@@ -118,6 +118,16 @@ python -m pip install pytest
 python -m pytest
 ```
 
+# Linting and formatting
+Ruff is used for Python linting and formatting. The checks can be run with:
+```bash
+python -m pip install ruff pre-commit
+python -m ruff check .
+python -m ruff format --check .
+pre-commit run --all-files
+```
+To enable the checks before every commit, run `pre-commit install`.
+
 # Usage
 
 The usage of the packages is best illustrated by means of examples, which can either be run in a Python IDE (like PyCharm or Spyder) or in the terminal.
@@ -148,11 +158,11 @@ Two terrain horizon functions are available, **horizon_gridded()** and **horizon
 
 
 **A remark on sky view factor and related parameters**<br/>
-The term sky view factor (SVF) is defined ambiguously in literature. In Zakšek et al. (2011), it refers to the solid angle of the (celestial) hemisphere. We call this parameter *visible sky fraction* and its computation is performed with the function **topo_param.visible_sky_fraction()**. In applications related to radiation, the SVF is typically defined as the fraction of sky radiation received at a certain location in case of isotropic sky radiation (see e.g. Helbig et al., 2009). This parameter is called *sky view factor* in our application and its computation is performed with the function **topo_param.sky_view_factor()**. Additionally, the positive topographic openness (Yokoyama et al., 2002) can be computed with the function **topo_param.topographic_openness()**. 
+The term sky view factor (SVF) is defined ambiguously in literature. In Zakšek et al. (2011), it refers to the solid angle of the (celestial) hemisphere. We call this parameter *visible sky fraction* and its computation is performed with the function **topo_param.visible_sky_fraction()**. In applications related to radiation, the SVF is typically defined as the fraction of sky radiation received at a certain location in case of isotropic sky radiation (see e.g. Helbig et al., 2009). This parameter is called *sky view factor* in our application and its computation is performed with the function **topo_param.sky_view_factor()**. Additionally, the positive topographic openness (Yokoyama et al., 2002) can be computed with the function **topo_param.topographic_openness()**.
 
 ## Examples: Shadow map and shortwave correction factor
 
-The module **shadow** allows to compute shadow maps and correction factors for downwelling direct shortwave radiation for arbitrary terrains and sun positions. 
+The module **shadow** allows to compute shadow maps and correction factors for downwelling direct shortwave radiation for arbitrary terrains and sun positions.
 This module was not part of the initial HORAYZON release and is thus **not described** in the [reference publication](https://doi.org/10.5194/gmd-15-6817-2022). A more detailed description is therefore provided here.
 To compute gridded shadow maps or shortwave correction factors, a class **shadow.Terrain** must first be created and initialised.
 In this step, the gridded terrain input is first converted to a triangle mesh and these triangles are then stored in a bounding volume hierarchy (BVH) to perform ray casting efficiently.
@@ -160,7 +170,7 @@ During initialisation, and optional mask can be provided to ignore certain grid 
 The two methods **Terrain.shadow()** and **Terrain.sw_dir_cor()** can then be called for arbitrary sun positions.
 The output of the method **Terrain.shadow()** is encoded as follows: 0: illuminated, 1: self-shaded, 2: terrain-shaded, 3: not considered (respectively masked).
 The correction factors for downwelling direct shortwave radiation is computed with the method **Terrain.sw_dir_cor()** according to Müller and Scherer (2005).
-This factor can be applied to radiation output from a regional climate or general circulation model, in which radiation is only simulated along the vertical dimension and all grid cells are assumed to have a horizontal surface. 
+This factor can be applied to radiation output from a regional climate or general circulation model, in which radiation is only simulated along the vertical dimension and all grid cells are assumed to have a horizontal surface.
 The correction factor accounts for all terrain-induced modifications in radiation, like self/terrain-shading, changes in angles between the sun and the surface's normal vector and the geometric surface enlargement of grid cells due to sloping surfaces.
 According to Equation (2) in Müller and Scherer (2005), the correction factor is computed as
 

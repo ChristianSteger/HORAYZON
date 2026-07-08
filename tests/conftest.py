@@ -3,7 +3,6 @@ import pytest
 
 import horayzon as hray
 
-
 HORIZON_ATOL = 2.0e-2
 
 

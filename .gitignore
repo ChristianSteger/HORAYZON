@@ -5,6 +5,7 @@
 __pycache__/
 *.pyc
 .pytest_cache/
+.ruff_cache/
 .coverage
 
 # Local package build outputs

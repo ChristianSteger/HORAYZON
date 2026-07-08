@@ -26,7 +26,8 @@ def test_ecef2enu_origin_and_vector_orientation():
 
     x_enu, y_enu, z_enu = hray.transform.ecef2enu(x, y, z, transformer)
     vec_enu = hray.transform.ecef2enu_vector(
-        np.array([[1.0, 0.0, 0.0]], dtype=np.float32), transformer)
+        np.array([[1.0, 0.0, 0.0]], dtype=np.float32), transformer
+    )
 
     np.testing.assert_allclose(x_enu, [0.0], atol=1.0e-6)
     np.testing.assert_allclose(y_enu, [0.0], atol=1.0e-6)

@@ -11,3 +11,35 @@ build-backend = "setuptools.build_meta"
 [tool.pytest.ini_options]
 addopts = "-ra"
 testpaths = ["tests"]
+
+[tool.ruff]
+force-exclude = true
+line-length = 79
+target-version = "py313"
+exclude = [
+    ".git",
+    ".pytest_cache",
+    ".venv",
+    "build",
+    "dist",
+    "*.egg-info",
+    "examples",
+    "horayzon/*.c",
+    "horayzon/horizon.cpp",
+    "horayzon/shadow.cpp",
+]
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "UP", "B", "SIM", "RUF"]
+ignore = [
+    "RUF005",  # Existing array/tuple concatenation is readable here.
+    "SIM115",  # Avoid broad file I/O refactors in this formatting pass.
+    "SIM201",  # Preserve current comparison style in legacy helpers.
+    "UP031",  # Preserve existing printf-style scientific output strings.
+]
+
+[tool.ruff.lint.per-file-ignores]
+"horayzon/__init__.py" = ["F401", "I001"]
+
+[tool.ruff.format]
+line-ending = "lf"

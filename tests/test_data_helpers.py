@@ -8,12 +8,16 @@ import horayzon.ocean_masking as ocean_masking
 
 def test_download_helpers_validate_local_path_and_mode(tmp_path):
     with pytest.raises(ValueError):
-        hray.download.file("https://example.invalid/file.dat",
-                           str(tmp_path / "missing") + "/")
+        hray.download.file(
+            "https://example.invalid/file.dat", str(tmp_path / "missing") + "/"
+        )
 
     with pytest.raises(ValueError):
-        hray.download.files(["https://example.invalid/file.dat"],
-                            str(tmp_path) + "/", mode="invalid")
+        hray.download.files(
+            ["https://example.invalid/file.dat"],
+            str(tmp_path) + "/",
+            mode="invalid",
+        )
 
 
 def test_geoid_undulation_validates_model_and_spatial_coverage():
@@ -24,23 +28,26 @@ def test_geoid_undulation_validates_model_and_spatial_coverage():
         hray.geoid.undulation(lon, lat, geoid="unknown")
 
     with pytest.raises(ValueError):
-        hray.geoid.undulation(np.array([181.0], dtype=np.float64),
-                              lat, geoid="EGM96")
+        hray.geoid.undulation(
+            np.array([181.0], dtype=np.float64), lat, geoid="EGM96"
+        )
 
 
 def test_load_dem_validation_helpers_and_preprocess(capsys):
-    domain_geo = {"lon_min": 0.0, "lon_max": 1.0,
-                  "lat_min": 0.0, "lat_max": 1.0}
-    domain_planar = {"x_min": 0.0, "x_max": 1.0,
-                     "y_min": 0.0, "y_max": 1.0}
+    domain_geo = {
+        "lon_min": 0.0,
+        "lon_max": 1.0,
+        "lat_min": 0.0,
+        "lat_max": 1.0,
+    }
+    domain_planar = {"x_min": 0.0, "x_max": 1.0, "y_min": 0.0, "y_max": 1.0}
 
     with pytest.raises(ValueError):
         hray.load_dem.srtm("missing.tif", domain_geo, engine="invalid")
     with pytest.raises(ValueError):
         hray.load_dem.dhm25("missing.asc", domain_planar, engine="invalid")
     with pytest.raises(ValueError):
-        hray.load_dem.swissalti3d("/missing/", domain_planar,
-                                  engine="invalid")
+        hray.load_dem.swissalti3d("/missing/", domain_planar, engine="invalid")
     with pytest.raises(ValueError):
         hray.load_dem.rema("missing.tif", domain_planar, engine="invalid")
 
@@ -57,9 +64,7 @@ def test_load_dem_validation_helpers_and_preprocess(capsys):
 def test_ocean_masking_contours_and_distance_are_deterministic():
     lon = np.array([0.0, 1.0, 2.0], dtype=np.float64)
     lat = np.array([2.0, 1.0, 0.0], dtype=np.float64)
-    mask_bin = np.array([[0, 0, 0],
-                         [0, 1, 0],
-                         [0, 0, 0]], dtype=np.uint8)
+    mask_bin = np.array([[0, 0, 0], [0, 1, 0], [0, 0, 0]], dtype=np.uint8)
 
     contours = ocean_masking.coastline_contours(lon, lat, mask_bin)
 
@@ -71,11 +76,11 @@ def test_ocean_masking_contours_and_distance_are_deterministic():
     y_ecef = np.zeros_like(x_ecef)
     z_ecef = np.zeros_like(x_ecef)
     mask_land = np.array([[True, False], [False, True]], dtype=bool)
-    pts_ecef = np.array([[0.0, 0.0, 0.0],
-                         [2.0, 0.0, 0.0]], dtype=np.float64)
+    pts_ecef = np.array([[0.0, 0.0, 0.0], [2.0, 0.0, 0.0]], dtype=np.float64)
 
-    dist = ocean_masking.coastline_distance(x_ecef, y_ecef, z_ecef,
-                                            mask_land, pts_ecef)
+    dist = ocean_masking.coastline_distance(
+        x_ecef, y_ecef, z_ecef, mask_land, pts_ecef
+    )
 
     np.testing.assert_allclose(dist[~mask_land], [1.0, 0.0])
     assert np.isnan(dist[mask_land]).all()
@@ -94,5 +99,6 @@ def test_ocean_masking_validates_inputs():
     pts_ecef = np.zeros((1, 3), dtype=np.float64)
 
     with pytest.raises(ValueError):
-        ocean_masking.coastline_distance(x_ecef, x_ecef, x_ecef,
-                                         mask_land, pts_ecef)
+        ocean_masking.coastline_distance(
+            x_ecef, x_ecef, x_ecef, mask_land, pts_ecef
+        )
