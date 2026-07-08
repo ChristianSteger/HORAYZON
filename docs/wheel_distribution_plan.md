@@ -38,6 +38,9 @@ stable because the current build has not been exercised on Windows.
 - `cibuildwheel` runs the native ray-tracing smoke tests against every repaired
   wheel. The full pytest suite remains a local/pre-PR check because it touches
   optional helpers such as ocean masking.
+- The release workflow builds artifacts for fork validation but only publishes
+  from `ChristianSteger/HORAYZON` on GitHub release events after PyPI Trusted
+  Publishing has been configured by the upstream maintainer.
 
 ## Before Publishing
 
@@ -46,5 +49,5 @@ stable because the current build has not been exercised on Windows.
 - Inspect wheel contents and linked libraries with `auditwheel show`,
   `delocate-listdeps`, and `otool -L`.
 - Add Windows x86_64 once the build script and DLL repair path are verified.
-- Configure PyPI Trusted Publishing only after upstream accepts the wheel build
-  workflow.
+- Follow `docs/release_checklist.md` to configure PyPI Trusted Publishing and
+  publish from upstream.

@@ -11,13 +11,21 @@ if [[ -f "${PREFIX}/include/embree4/rtcore.h" \
     exit 0
 fi
 
+run_as_root() {
+    if [[ "${EUID}" -eq 0 ]]; then
+        "$@"
+    else
+        sudo "$@"
+    fi
+}
+
 if command -v yum >/dev/null 2>&1; then
-    yum install -y cmake git ninja-build
+    run_as_root yum install -y cmake git ninja-build
 elif command -v dnf >/dev/null 2>&1; then
-    dnf install -y cmake git ninja-build
+    run_as_root dnf install -y cmake git ninja-build
 elif command -v apt-get >/dev/null 2>&1; then
-    apt-get update
-    apt-get install -y cmake git ninja-build
+    run_as_root apt-get update
+    run_as_root apt-get install -y cmake git ninja-build
 fi
 
 rm -rf "${WORKDIR}"
