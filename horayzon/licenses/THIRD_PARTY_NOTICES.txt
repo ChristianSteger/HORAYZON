@@ -1,0 +1,16 @@
+HORAYZON binary wheels may redistribute the following native runtime
+dependencies so users do not need to install them separately:
+
+- Intel Embree, version v4.4.1 in the initial wheel build configuration.
+  Source: https://github.com/RenderKit/embree
+  License: Apache License 2.0
+
+- oneAPI Threading Building Blocks (oneTBB), version v2022.2.0 in the initial
+  wheel build configuration.
+  Source: https://github.com/uxlfoundation/oneTBB
+  License: Apache License 2.0
+
+The Apache License 2.0 text is included alongside this notice in
+APACHE-2.0.txt. These notices apply to redistributed binary wheel dependencies
+only. HORAYZON itself remains distributed under the MIT license in the project
+LICENSE file.

@@ -1,0 +1,93 @@
+name: Build wheels
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - feature/integrate_tbb_and_embree
+    paths:
+      - ".github/workflows/wheels.yml"
+      - "horayzon/**"
+      - "pyproject.toml"
+      - "setup.py"
+      - "tests/**"
+      - "tools/wheels/**"
+  pull_request:
+    paths:
+      - ".github/workflows/wheels.yml"
+      - "horayzon/**"
+      - "pyproject.toml"
+      - "setup.py"
+      - "tests/**"
+      - "tools/wheels/**"
+
+jobs:
+  build:
+    name: ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os:
+          - ubuntu-latest
+          - macos-13
+          - macos-14
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+
+      - name: Install macOS native dependencies
+        if: runner.os == 'macOS'
+        run: |
+          brew update
+          brew install embree tbb
+          echo "HORAYZON_EMBREE_DIR=$(brew --prefix embree)" >> "$GITHUB_ENV"
+          echo "HORAYZON_TBB_DIR=$(brew --prefix tbb)" >> "$GITHUB_ENV"
+          if [[ "$(uname -m)" == "arm64" ]]; then
+            echo "MACOSX_DEPLOYMENT_TARGET=14.0" >> "$GITHUB_ENV"
+          else
+            echo "MACOSX_DEPLOYMENT_TARGET=13.0" >> "$GITHUB_ENV"
+          fi
+
+      - name: Install cibuildwheel
+        run: python -m pip install cibuildwheel==3.2.1
+
+      - name: Build wheels
+        run: python -m cibuildwheel --output-dir wheelhouse
+
+      - name: Inspect bundled dependencies
+        shell: bash
+        run: |
+          if [[ "$RUNNER_OS" == "Linux" ]]; then
+            python -m pip install auditwheel
+            for wheel in wheelhouse/*.whl; do
+              auditwheel show "$wheel"
+            done
+          else
+            python -m pip install delocate
+            for wheel in wheelhouse/*.whl; do
+              delocate-listdeps "$wheel"
+            done
+          fi
+
+      - name: Smoke test installed wheel
+        shell: bash
+        run: |
+          python -m pip install packaging
+          wheel="$(python tools/wheels/select_compatible_wheel.py wheelhouse)"
+          smoke_dir="$(mktemp -d)"
+          python -m venv "$smoke_dir/venv"
+          "$smoke_dir/venv/bin/python" -m pip install --upgrade pip
+          "$smoke_dir/venv/bin/python" -m pip install pytest "$wheel"
+          cp tests/conftest.py tests/test_native_raytracing.py "$smoke_dir"
+          cd "$smoke_dir"
+          "$smoke_dir/venv/bin/python" -m pytest test_native_raytracing.py
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: wheels-${{ matrix.os }}
+          path: wheelhouse/*.whl

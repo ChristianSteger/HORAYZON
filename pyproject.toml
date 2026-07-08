@@ -43,3 +43,15 @@ ignore = [
 
 [tool.ruff.format]
 line-ending = "lf"
+
+[tool.cibuildwheel]
+build = "cp310-* cp311-* cp312-* cp313-*"
+before-build = "python {project}/tools/wheels/check_native_licenses.py"
+skip = "*-musllinux* pp*"
+test-command = "python -m pytest {project}/tests/test_native_raytracing.py"
+test-requires = ["pytest"]
+
+[tool.cibuildwheel.linux]
+archs = ["x86_64"]
+before-all = "bash {project}/tools/wheels/build_native_linux.sh"
+environment = { HORAYZON_EMBREE_DIR = "/opt/horayzon-native", HORAYZON_TBB_DIR = "/opt/horayzon-native" }

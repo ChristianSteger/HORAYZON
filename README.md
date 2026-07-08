@@ -128,6 +128,10 @@ pre-commit run --all-files
 ```
 To enable the checks before every commit, run `pre-commit install`.
 
+# Wheel packaging
+The planned path toward dependency-bundled binary wheels is described in
+[docs/wheel_distribution_plan.md](docs/wheel_distribution_plan.md).
+
 # Usage
 
 The usage of the packages is best illustrated by means of examples, which can either be run in a Python IDE (like PyCharm or Spyder) or in the terminal.
