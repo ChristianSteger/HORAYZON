@@ -11,6 +11,7 @@ When you use HORAYZON, please cite:
 and
 
 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.7013764.svg)](https://doi.org/10.5281/zenodo.7013764)
+[![Python](https://img.shields.io/badge/python-3.10--3.13-blue.svg)](https://www.python.org/)
 
 Please refer to the sections [Known issues](#Known-issues) and [Support and collaboration](#Support-and-collaboration) in case you encounter any **issues** with HORAYZON.
 
@@ -35,7 +36,7 @@ Additional Python packages used by the examples can be installed with the
 # Installation
 
 HORAYZON binary wheels are tested on Linux and Mac OS X with CPython
-3.10-3.14.
+3.10-3.13.
 
 For supported platforms, HORAYZON can be installed from PyPI with:
 
@@ -43,7 +44,7 @@ For supported platforms, HORAYZON can be installed from PyPI with:
 python -m pip install horayzon
 ```
 
-Binary wheels are available for CPython 3.10-3.14 on Linux x86_64, Linux
+Binary wheels are available for CPython 3.10-3.13 on Linux x86_64, Linux
 aarch64, Mac OS X x86_64, and Mac OS X arm64. These wheels bundle the Embree
 and oneTBB runtime libraries, so users do not need to install Embree or TBB
 separately. The default install also includes the Python dependencies required
@@ -56,9 +57,12 @@ workflows, run:
 python -m pip install "horayzon[all]"
 ```
 
-If no compatible wheel is available for the current platform or Python version,
-`pip` falls back to building HORAYZON from the source distribution. In that
-case, a working compiler plus local Embree and TBB installations are required.
+If no compatible wheel is available for a supported Python version, `pip` falls
+back to building HORAYZON from the source distribution. In that case, a working
+compiler plus local Embree and TBB installations are required. Unsupported
+Python versions, such as Python 3.14 until the geospatial dependency stack has
+compatible wheels, are rejected by the package metadata instead of attempting a
+source build.
 To require a binary wheel and fail instead of building from source, run:
 
 ```bash

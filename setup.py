@@ -222,7 +222,6 @@ setup(
         "Programming Language :: Python :: 3.11",
         "Programming Language :: Python :: 3.12",
         "Programming Language :: Python :: 3.13",
-        "Programming Language :: Python :: 3.14",
         "Programming Language :: Python :: Implementation :: CPython",
         "Topic :: Scientific/Engineering",
     ],
@@ -236,7 +235,7 @@ setup(
     ],
     packages=["horayzon"],
     package_data={"horayzon": ["licenses/*.txt"]},
-    python_requires=">=3.10",
+    python_requires=">=3.10,<3.14",
     install_requires=[
         "fiona",
         "geographiclib",
