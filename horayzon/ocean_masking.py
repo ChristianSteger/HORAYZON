@@ -7,7 +7,6 @@ import shutil
 import time
 import zipfile
 
-import fiona
 import numpy as np
 from scipy.spatial import KDTree
 from shapely import box as box_root
@@ -18,6 +17,21 @@ from skimage.measure import find_contours
 import horayzon.transform as transform
 from horayzon.auxiliary import get_path_aux_data
 from horayzon.download import file as download_file
+
+# -----------------------------------------------------------------------------
+
+
+def _import_fiona():
+    try:
+        import fiona
+    except ImportError as exc:
+        raise ImportError(
+            "GSHHG coastline masking requires the optional dependency "
+            "'fiona'. Install it with 'python -m pip install "
+            '"horayzon[masking]"\'.'
+        ) from exc
+    return fiona
+
 
 # -----------------------------------------------------------------------------
 
@@ -38,6 +52,8 @@ def get_gshhs_coastlines(domain):
     -------
     poly_coastlines : list
         Relevant coastline polygons as Shapely polygons"""
+
+    fiona = _import_fiona()
 
     # Check arguments
     keys_req = ("lon_min", "lon_max", "lat_min", "lat_max")

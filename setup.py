@@ -222,6 +222,7 @@ setup(
         "Programming Language :: Python :: 3.11",
         "Programming Language :: Python :: 3.12",
         "Programming Language :: Python :: 3.13",
+        "Programming Language :: Python :: 3.14",
         "Programming Language :: Python :: Implementation :: CPython",
         "Topic :: Scientific/Engineering",
     ],
@@ -235,9 +236,8 @@ setup(
     ],
     packages=["horayzon"],
     package_data={"horayzon": ["licenses/*.txt"]},
-    python_requires=">=3.10,<3.14",
+    python_requires=">=3.10",
     install_requires=[
-        "fiona",
         "geographiclib",
         "numpy",
         "pytest",
@@ -249,7 +249,7 @@ setup(
         "xarray",
     ],
     extras_require={
-        "all": examples_requires,
+        "all": examples_requires + masking_requires,
         "examples": examples_requires,
         "masking": masking_requires,
         "test": ["pytest"],
