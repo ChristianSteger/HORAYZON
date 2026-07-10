@@ -50,11 +50,7 @@ jobs:
           brew install embree tbb
           echo "HORAYZON_EMBREE_DIR=$(brew --prefix embree)" >> "$GITHUB_ENV"
           echo "HORAYZON_TBB_DIR=$(brew --prefix tbb)" >> "$GITHUB_ENV"
-          if [[ "$(uname -m)" == "arm64" ]]; then
-            echo "MACOSX_DEPLOYMENT_TARGET=14.0" >> "$GITHUB_ENV"
-          else
-            echo "MACOSX_DEPLOYMENT_TARGET=13.0" >> "$GITHUB_ENV"
-          fi
+          echo "MACOSX_DEPLOYMENT_TARGET=14.0" >> "$GITHUB_ENV"
 
       - name: Install cibuildwheel
         run: python -m pip install cibuildwheel==3.2.1

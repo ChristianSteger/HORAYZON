@@ -46,10 +46,10 @@ python -m pip install horayzon
 ```
 
 Binary wheels are available for CPython 3.10-3.14 on Linux x86_64, Linux
-aarch64, Mac OS X x86_64, and Mac OS X arm64. These wheels bundle the Embree
-and oneTBB runtime libraries, so users do not need to install Embree or TBB
-separately. The default install also includes the Python dependencies required
-to run the test suite.
+aarch64, Mac OS X 14+ x86_64, and Mac OS X 14+ arm64. These wheels bundle the
+Embree and oneTBB runtime libraries, so users do not need to install Embree or
+TBB separately. The default install also includes the Python dependencies
+required to run the test suite.
 
 To install the additional Python packages used by the examples, optional GSHHG
 coastline masking, and extended workflows, run:
