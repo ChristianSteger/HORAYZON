@@ -10,9 +10,10 @@
 # Load modules
 import os
 import sys
-from setuptools import setup, Extension
-from Cython.Distutils import build_ext
+
 import numpy as np
+from Cython.Distutils import build_ext
+from setuptools import Extension, setup
 
 # -----------------------------------------------------------------------------
 # Manual settings
@@ -60,37 +61,49 @@ if compiler != "default":
     os.environ["CC"] = compiler
 
 ext_modules = [
-    Extension("horayzon.transform",
-              ["horayzon/transform.pyx"],
-              libraries=libraries_cython,
-              extra_compile_args=extra_compile_args_cython,
-              include_dirs=[np.get_include()]),
-    Extension("horayzon.direction",
-              ["horayzon/direction.pyx"],
-              libraries=libraries_cython,
-              extra_compile_args=extra_compile_args_cython,
-              include_dirs=[np.get_include()]),
-    Extension("horayzon.topo_param",
-              ["horayzon/topo_param.pyx"],
-              libraries=libraries_cython,
-              extra_compile_args=extra_compile_args_cython,
-              include_dirs=[np.get_include()]),
-    Extension("horayzon.horizon",
-              sources=["horayzon/horizon.pyx", "horayzon/horizon_comp.cpp"],
-              include_dirs=include_dirs_cpp,
-              extra_objects=extra_objects_cpp,
-              extra_compile_args=extra_compile_args_cpp,
-              language="c++"),
-    Extension("horayzon.shadow",
-              sources=["horayzon/shadow.pyx", "horayzon/shadow_comp.cpp"],
-              include_dirs=include_dirs_cpp,
-              extra_objects=extra_objects_cpp,
-              extra_compile_args=extra_compile_args_cpp,
-              language="c++")
-    ]
+    Extension(
+        "horayzon.transform",
+        ["horayzon/transform.pyx"],
+        libraries=libraries_cython,
+        extra_compile_args=extra_compile_args_cython,
+        include_dirs=[np.get_include()],
+    ),
+    Extension(
+        "horayzon.direction",
+        ["horayzon/direction.pyx"],
+        libraries=libraries_cython,
+        extra_compile_args=extra_compile_args_cython,
+        include_dirs=[np.get_include()],
+    ),
+    Extension(
+        "horayzon.topo_param",
+        ["horayzon/topo_param.pyx"],
+        libraries=libraries_cython,
+        extra_compile_args=extra_compile_args_cython,
+        include_dirs=[np.get_include()],
+    ),
+    Extension(
+        "horayzon.horizon",
+        sources=["horayzon/horizon.pyx", "horayzon/horizon_comp.cpp"],
+        include_dirs=include_dirs_cpp,
+        extra_objects=extra_objects_cpp,
+        extra_compile_args=extra_compile_args_cpp,
+        language="c++",
+    ),
+    Extension(
+        "horayzon.shadow",
+        sources=["horayzon/shadow.pyx", "horayzon/shadow_comp.cpp"],
+        include_dirs=include_dirs_cpp,
+        extra_objects=extra_objects_cpp,
+        extra_compile_args=extra_compile_args_cpp,
+        language="c++",
+    ),
+]
 
-setup(name="horayzon",
-      version="1.2",
-      packages=["horayzon"],
-      cmdclass={"build_ext": build_ext},
-      ext_modules=ext_modules)
+setup(
+    name="horayzon",
+    version="1.2",
+    packages=["horayzon"],
+    cmdclass={"build_ext": build_ext},
+    ext_modules=ext_modules,
+)

@@ -3,22 +3,38 @@
 
 # Load modules
 import os
-import numpy as np
-from shapely.geometry import shape, box
-from shapely import box as box_root
-from shapely.strtree import STRtree
-import fiona
-from scipy.spatial import KDTree
+import shutil
 import time
+import zipfile
+
+import numpy as np
+from scipy.spatial import KDTree
+from shapely import box as box_root
+from shapely.geometry import box, shape
+from shapely.strtree import STRtree
 from skimage.measure import find_contours
+
 import horayzon.transform as transform
 from horayzon.auxiliary import get_path_aux_data
 from horayzon.download import file as download_file
-import zipfile
-import shutil
+
+# -----------------------------------------------------------------------------
+
+
+def _import_fiona():
+    try:
+        import fiona
+    except ImportError as exc:
+        raise ImportError(
+            "GSHHG coastline masking requires the optional dependency "
+            "'fiona'. Install it with 'python -m pip install "
+            '"horayzon[masking]"\'.'
+        ) from exc
+    return fiona
 
 
 # -----------------------------------------------------------------------------
+
 
 def get_gshhs_coastlines(domain):
     """Get relevant GSHHS coastline data.
@@ -37,19 +53,24 @@ def get_gshhs_coastlines(domain):
     poly_coastlines : list
         Relevant coastline polygons as Shapely polygons"""
 
+    fiona = _import_fiona()
+
     # Check arguments
     keys_req = ("lon_min", "lon_max", "lat_min", "lat_max")
     if not set(keys_req).issubset(set(domain.keys())):
         raise ValueError("one or multiple key(s) are missing in 'domain'")
-    if (domain["lon_min"] >= domain["lon_max"]) \
-            or (domain["lat_min"] >= domain["lat_max"]):
+    if (domain["lon_min"] >= domain["lon_max"]) or (
+        domain["lat_min"] >= domain["lat_max"]
+    ):
         raise ValueError("invalid domain extent")
 
     # Download data
     path_aux_data = get_path_aux_data()
     if not os.path.isdir(path_aux_data + "GSHHG"):
-        file_url = "http://www.soest.hawaii.edu/pwessel/gshhg/" \
-                   + "gshhg-shp-2.3.7.zip"
+        file_url = (
+            "http://www.soest.hawaii.edu/pwessel/gshhg/"
+            + "gshhg-shp-2.3.7.zip"
+        )
         print("Download GSHHG data:")
         download_file(file_url, path_aux_data)
         file_zipped = path_aux_data + os.path.split(file_url)[-1]
@@ -75,16 +96,24 @@ def get_gshhs_coastlines(domain):
             # (lon_min, lat_min, lon_max, lat_max)
         ds.close()
         np.save(file_bbc, bounds)
-        print("Bounding boxes for coastline polygons computed "
-              + "(%.2f" % (time.time() - t_beg) + " s)")
+        print(
+            "Bounding boxes for coastline polygons computed "
+            + "(%.2f" % (time.time() - t_beg)
+            + " s)"
+        )
 
     # Find relevant polygons for domain
     bounds = np.load(file_bbc)
-    geoms = [box_root(xmin, ymin, xmax, ymax)
-             for xmin, ymin, xmax, ymax in bounds]
+    geoms = [
+        box_root(xmin, ymin, xmax, ymax) for xmin, ymin, xmax, ymax in bounds
+    ]
     tree = STRtree(geoms)
-    quer_rang = [domain["lon_min"], domain["lat_min"],
-                 domain["lon_max"], domain["lat_max"]]
+    quer_rang = [
+        domain["lon_min"],
+        domain["lat_min"],
+        domain["lon_max"],
+        domain["lat_max"],
+    ]
     ind = tree.query(box_root(*quer_rang))
 
     # Load relevant polygons
@@ -108,6 +137,7 @@ def get_gshhs_coastlines(domain):
 
 
 # -----------------------------------------------------------------------------
+
 
 def coastline_contours(lon, lat, mask_bin):
     """Compute coastline contours.
@@ -133,10 +163,15 @@ def coastline_contours(lon, lat, mask_bin):
         raise ValueError("Input coordinates arrays must be 1-dimensional")
     if (mask_bin.shape[0] != len(lat)) or (mask_bin.shape[1] != len(lon)):
         raise ValueError("Input data has inconsistent dimension length(s)")
-    if (mask_bin.dtype != "uint8") or (len(np.unique(mask_bin)) != 2) \
-            or (not np.all(np.unique(mask_bin) == [0, 1])):
-        raise ValueError("'mask_bin' must be of type 'uint8' and may "
-                         + "only contain 0 and 1")
+    if (
+        (mask_bin.dtype != "uint8")
+        or (len(np.unique(mask_bin)) != 2)
+        or (not np.all(np.unique(mask_bin) == [0, 1]))
+    ):
+        raise ValueError(
+            "'mask_bin' must be of type 'uint8' and may "
+            + "only contain 0 and 1"
+        )
 
     t_beg_func = time.time()
 
@@ -159,6 +194,7 @@ def coastline_contours(lon, lat, mask_bin):
 
 
 # -----------------------------------------------------------------------------
+
 
 def coastline_distance(x_ecef, y_ecef, z_ecef, mask_land, pts_ecef):
     """Compute minimal chord distance.
@@ -187,10 +223,7 @@ def coastline_distance(x_ecef, y_ecef, z_ecef, mask_land, pts_ecef):
         coastline [metre]"""
 
     # Check arguments
-    if x_ecef.shape != mask_land.shape:
-        raise ValueError("Input data has inconsistent dimension length(s)")
-    if mask_land.dtype != "bool":
-        raise ValueError("'mask_land' must be a boolean mask")
+    _validate_ecef_mask_inputs(x_ecef, y_ecef, z_ecef, mask_land, pts_ecef)
 
     t_beg_func = time.time()
 
@@ -198,9 +231,10 @@ def coastline_distance(x_ecef, y_ecef, z_ecef, mask_land, pts_ecef):
     tree = KDTree(pts_ecef)
 
     # Query k-d tree
-    pts_quer = np.vstack((x_ecef[~mask_land], y_ecef[~mask_land],
-                          z_ecef[~mask_land])).transpose()
-    dist_quer, idx = tree.query(pts_quer, k=1, workers=-1)
+    pts_quer = np.vstack(
+        (x_ecef[~mask_land], y_ecef[~mask_land], z_ecef[~mask_land])
+    ).transpose()
+    dist_quer, _ = tree.query(pts_quer, k=1, workers=-1)
 
     # Save distances in two-dimensional array
     dist_chord = np.empty(x_ecef.shape, dtype=np.float64)
@@ -214,8 +248,19 @@ def coastline_distance(x_ecef, y_ecef, z_ecef, mask_land, pts_ecef):
 
 # -----------------------------------------------------------------------------
 
-def coastline_buffer(x_ecef, y_ecef, z_ecef, mask_land, pts_ecef, lat,
-                     dist_thr, dem_res, ellps, block_size=(5 * 2 + 1)):
+
+def coastline_buffer(
+    x_ecef,
+    y_ecef,
+    z_ecef,
+    mask_land,
+    pts_ecef,
+    lat,
+    dist_thr,
+    dem_res,
+    ellps,
+    block_size=(5 * 2 + 1),
+):
     """Compute mask according to coastline buffer.
 
     Compute mask according to coastline buffer. Grid cells, whose minimal
@@ -252,10 +297,9 @@ def coastline_buffer(x_ecef, y_ecef, z_ecef, mask_land, pts_ecef, lat,
         of the coastline buffer [metre]"""
 
     # Check arguments
-    if (x_ecef.shape != mask_land.shape) or (x_ecef.shape[0] != len(lat)):
+    _validate_ecef_mask_inputs(x_ecef, y_ecef, z_ecef, mask_land, pts_ecef)
+    if (lat.ndim != 1) or (x_ecef.shape[0] != len(lat)):
         raise ValueError("Input data has inconsistent dimension length(s)")
-    if mask_land.dtype != "bool":
-        raise ValueError("'mask_land' must be a boolean mask")
     if ellps not in ("sphere", "WGS84", "GRS80"):
         raise ValueError("invalid value for 'ellps'")
     if block_size % 2 != 1:
@@ -266,17 +310,20 @@ def coastline_buffer(x_ecef, y_ecef, z_ecef, mask_land, pts_ecef, lat,
     # Compute maximal chord length for block (-> diagonal at equator)
     # lat_ini = 0.0  # equator
     lat_ini = np.maximum(np.abs(lat).min() - 1.0, 0.0)
-    lon_max = np.array([[0.0,
-                         0.0 + dem_res * int((block_size - 1) / 2)]],
-                       dtype=np.float64).reshape(1, 2)
-    lat_max = np.array([[lat_ini,
-                         lat_ini + dem_res * int((block_size - 1) / 2)]],
-                       dtype=np.float64).reshape(1, 2)
+    lon_max = np.array(
+        [[0.0, 0.0 + dem_res * int((block_size - 1) / 2)]], dtype=np.float64
+    ).reshape(1, 2)
+    lat_max = np.array(
+        [[lat_ini, lat_ini + dem_res * int((block_size - 1) / 2)]],
+        dtype=np.float64,
+    ).reshape(1, 2)
     h_max = np.zeros(lon_max.shape, dtype=np.float32)
     coord_ecef = transform.lonlat2ecef(lon_max, lat_max, h_max, ellps=ellps)
-    chord_max = np.sqrt(np.diff(coord_ecef[0])[0][0] ** 2
-                        + np.diff(coord_ecef[1])[0][0] ** 2
-                        + np.diff(coord_ecef[2])[0][0] ** 2)
+    chord_max = np.sqrt(
+        np.diff(coord_ecef[0])[0][0] ** 2
+        + np.diff(coord_ecef[1])[0][0] ** 2
+        + np.diff(coord_ecef[2])[0][0] ** 2
+    )
     if chord_max > dist_thr:
         raise ValueError("Maximal chord distance is larger than 'dist_thr'")
 
@@ -284,12 +331,15 @@ def coastline_buffer(x_ecef, y_ecef, z_ecef, mask_land, pts_ecef, lat,
     tree = KDTree(pts_ecef)
 
     # Query k-d tree
-    slic = (slice(int((block_size - 1) / 2), None, block_size),
-            slice(int((block_size - 1) / 2), None, block_size))
+    slic = (
+        slice(int((block_size - 1) / 2), None, block_size),
+        slice(int((block_size - 1) / 2), None, block_size),
+    )
     t_beg = time.time()
-    pts_quer = np.vstack((x_ecef[slic].ravel(), y_ecef[slic].ravel(),
-                          z_ecef[slic].ravel())).transpose()
-    dist_quer, idx = tree.query(pts_quer, k=1, workers=-1)
+    pts_quer = np.vstack(
+        (x_ecef[slic].ravel(), y_ecef[slic].ravel(), z_ecef[slic].ravel())
+    ).transpose()
+    dist_quer, _ = tree.query(pts_quer, k=1, workers=-1)
     print("Query k-d tree (%.2f" % (time.time() - t_beg) + " s)")
 
     # # Categorise blocks (old)
@@ -321,21 +371,26 @@ def coastline_buffer(x_ecef, y_ecef, z_ecef, mask_land, pts_ecef, lat,
     mask[dist_2d <= (dist_thr - chord_max)] = 0  # inside buffer
     mask[dist_2d > (dist_thr + chord_max)] = 1  # outside buffer
     slic_sd = (slice(0, shp[0] * block_size), slice(0, shp[1] * block_size))
-    mask_buffer[slic_sd] = np.repeat(np.repeat(mask, block_size, axis=0),
-                                     block_size, axis=1)[:x_ecef.shape[0],
-                                                         :x_ecef.shape[1]]
+    mask_buffer[slic_sd] = np.repeat(
+        np.repeat(mask, block_size, axis=0), block_size, axis=1
+    )[: x_ecef.shape[0], : x_ecef.shape[1]]
     # print("Categorise blocks (new) (%.2f" % (time.time() - t_beg) + " s)")
     # print(np.all(mask_buffer == mask_buffer_old))
 
     # Categorise remaining grid cells
-    mask_rem = (mask_buffer == -1)
+    mask_rem = mask_buffer == -1
     gc_frac = mask_rem.sum() / mask_buffer.size * 100.0
-    print("Number of remaining grid cells: " + str(mask_rem.sum())
-          + " (fraction: %.2f" % gc_frac + " %)")
+    print(
+        "Number of remaining grid cells: "
+        + str(mask_rem.sum())
+        + " (fraction: %.2f" % gc_frac
+        + " %)"
+    )
     t_beg = time.time()
-    pts_quer = np.vstack((x_ecef[mask_rem], y_ecef[mask_rem],
-                          z_ecef[mask_rem])).transpose()
-    dist_quer, idx = tree.query(pts_quer, k=1, workers=-1)
+    pts_quer = np.vstack(
+        (x_ecef[mask_rem], y_ecef[mask_rem], z_ecef[mask_rem])
+    ).transpose()
+    dist_quer, _ = tree.query(pts_quer, k=1, workers=-1)
     print("Query k-d tree (%.2f" % (time.time() - t_beg) + " s)")
     mask_buffer[mask_rem] = (dist_quer > dist_thr).astype(np.int32)
     mask_buffer[mask_land] = 0
@@ -343,3 +398,20 @@ def coastline_buffer(x_ecef, y_ecef, z_ecef, mask_land, pts_ecef, lat,
     print("Run time: %.2f" % (time.time() - t_beg_func) + " s")
 
     return mask_buffer.astype(bool)
+
+
+def _validate_ecef_mask_inputs(x_ecef, y_ecef, z_ecef, mask_land, pts_ecef):
+    if (
+        x_ecef.ndim != 2
+        or y_ecef.ndim != 2
+        or z_ecef.ndim != 2
+        or mask_land.ndim != 2
+        or x_ecef.shape != y_ecef.shape
+        or x_ecef.shape != z_ecef.shape
+        or x_ecef.shape != mask_land.shape
+    ):
+        raise ValueError("Input data has inconsistent dimension length(s)")
+    if mask_land.dtype != "bool":
+        raise ValueError("'mask_land' must be a boolean mask")
+    if pts_ecef.ndim != 2 or pts_ecef.shape[1] != 3 or pts_ecef.shape[0] < 1:
+        raise ValueError("'pts_ecef' must have shape (n, 3) with n >= 1")

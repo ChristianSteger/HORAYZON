@@ -17,9 +17,15 @@ cdef extern from "shadow_comp.h" namespace "shapes":
 cdef class Terrain:
 
     cdef CppTerrain *thisptr
+    cdef bint initialized
+    cdef int dim_in_0
+    cdef int dim_in_1
 
     def __cinit__(self):
         self.thisptr = new CppTerrain()
+        self.initialized = False
+        self.dim_in_0 = 0
+        self.dim_in_1 = 0
 
     def __dealloc__(self):
         del self.thisptr
@@ -84,9 +90,14 @@ cdef class Terrain:
             Account for atmospheric refraction"""
 
         # Check consistency and validity of input arguments
+        if (dem_dim_0 <= 0) or (dem_dim_1 <= 0):
+            raise ValueError("input dimensions dem_dim_0 and dem_dim_1 must "
+                             + "be positive")
         if len(vert_grid) < (dem_dim_0 * dem_dim_1 * 3):
             raise ValueError("inconsistency between input arguments "
                              + "'vert_grid', 'dem_dim_0' and 'dem_dim_1'")
+        if (offset_0 < 0) or (offset_1 < 0):
+            raise ValueError("'offset_0' and 'offset_1' must be non-negative")
         if ((offset_0 + vec_tilt.shape[0] > dem_dim_0)
                 or (offset_1 + vec_tilt.shape[1] > dem_dim_1)):
             raise ValueError("inconsistency between input arguments "
@@ -145,6 +156,9 @@ cdef class Terrain:
                                 sw_dir_cor_fill,
                                 ang_max,
                                 int(refrac_cor))
+        self.initialized = True
+        self.dim_in_0 = vec_tilt.shape[0]
+        self.dim_in_1 = vec_tilt.shape[1]
 
     def shadow(self, np.ndarray[np.float32_t, ndim = 1] sun_position,
                np.ndarray[np.uint8_t, ndim = 2] shadow_buffer):
@@ -162,8 +176,14 @@ cdef class Terrain:
             Array (two-dimensional) with shadow mask (y, x) [-]"""
 
         # Check consistency and validity of input arguments
+        if not self.initialized:
+            raise RuntimeError("Terrain must be initialised before calling "
+                               + "'shadow'")
         if (sun_position.ndim != 1) or (sun_position.size != 3):
             raise ValueError("array 'sun_position' has incorrect shape")
+        if ((shadow_buffer.shape[0] != self.dim_in_0)
+                or (shadow_buffer.shape[1] != self.dim_in_1)):
+            raise ValueError("array 'shadow_buffer' has incorrect shape")
         if not shadow_buffer.flags["C_CONTIGUOUS"]:
             raise ValueError("array 'shadow_buffer' is not C-contiguous")
 
@@ -192,8 +212,14 @@ cdef class Terrain:
         Weather Forecast Models, Monthly Weather Review, 133(6), 1431-1442."""
 
         # Check consistency and validity of input arguments
+        if not self.initialized:
+            raise RuntimeError("Terrain must be initialised before calling "
+                               + "'sw_dir_cor'")
         if (sun_position.ndim != 1) or (sun_position.size != 3):
             raise ValueError("array 'sun_position' has incorrect shape")
+        if ((sw_dir_cor_buffer.shape[0] != self.dim_in_0)
+                or (sw_dir_cor_buffer.shape[1] != self.dim_in_1)):
+            raise ValueError("array 'sw_dir_cor_buffer' has incorrect shape")
         if not sw_dir_cor_buffer.flags["C_CONTIGUOUS"]:
             raise ValueError("array 'sw_dir_cor_buffer' is not C-contiguous")
 

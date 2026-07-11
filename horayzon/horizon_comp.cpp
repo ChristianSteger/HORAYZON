@@ -11,6 +11,7 @@
 #include <chrono>
 #include <iostream>
 #include <string.h>
+#include <vector>
 #include <tbb/parallel_for.h>
 #include <tbb/parallel_reduce.h>
 #include <sstream>
@@ -701,15 +702,14 @@ void horizon_gridded_comp(float* vert_grid,
 
 	size_t num_rays = 0;
   	std::chrono::duration<double> time_ray = std::chrono::seconds(0);
-  	std::chrono::duration<double> time_out = std::chrono::seconds(0);
 
 	// ------------------------------------------------------------------------
   	// Allocate and initialise arrays with evaluated trigonometric functions
 	// ------------------------------------------------------------------------
 
-	// Azimuth angles (allocate on stack)
-	float azim_sin[azim_num];
-	float azim_cos[azim_num];
+	// Azimuth angles
+	std::vector<float> azim_sin(azim_num);
+	std::vector<float> azim_cos(azim_num);
 	float ang;
 	for (int i = 0; i < azim_num; i++) {
 		ang = ((2 * M_PI) / azim_num * i);
@@ -717,12 +717,12 @@ void horizon_gridded_comp(float* vert_grid,
 		azim_cos[i] = cos(ang);
 	}
 
-	// Elevation angles (allocate on stack)
+	// Elevation angles
 	int elev_num = ((int)ceil((elev_ang_up_lim - elev_ang_low_lim)
 		/ (hori_acc / 5.0)) + 1);
-	float elev_ang[elev_num];
-	float elev_sin[elev_num];
-	float elev_cos[elev_num];
+	std::vector<float> elev_ang(elev_num);
+	std::vector<float> elev_sin(elev_num);
+	std::vector<float> elev_cos(elev_num);
 	for (int i = 0; i < elev_num; i++) {
 		ang = elev_ang_up_lim - (hori_acc / 5.0) * i;
 		elev_ang[elev_num - i - 1] = ang;
@@ -783,8 +783,8 @@ void horizon_gridded_comp(float* vert_grid,
 					azim_num, hori_acc, dist_search,
 					elev_ang_low_lim, elev_ang_up_lim, elev_num,
 					scene, num_rays, &hori_buffer[ind_hori],
-					azim_sin, azim_cos, elev_ang,
-					elev_cos, elev_sin, rot_inv);
+					azim_sin.data(), azim_cos.data(), elev_ang.data(),
+					elev_cos.data(), elev_sin.data(), rot_inv);
 
 			} else {
 				for (int k = 0; k < azim_num; k++) {
@@ -873,15 +873,14 @@ void horizon_locations_comp(float* vert_grid,
 
 	size_t num_rays = 0;
   	std::chrono::duration<double> time_ray = std::chrono::seconds(0);
-  	std::chrono::duration<double> time_out = std::chrono::seconds(0);
   	
 	// ------------------------------------------------------------------------
   	// Allocate and initialise arrays with evaluated trigonometric functions
 	// ------------------------------------------------------------------------
 
-	// Azimuth angles (allocate on stack)
-	float azim_sin[azim_num];
-	float azim_cos[azim_num];
+	// Azimuth angles
+	std::vector<float> azim_sin(azim_num);
+	std::vector<float> azim_cos(azim_num);
 	float ang;
 	for (int i = 0; i < azim_num; i++) {
 		ang = ((2 * M_PI) / azim_num * i);
@@ -889,12 +888,12 @@ void horizon_locations_comp(float* vert_grid,
 		azim_cos[i] = cos(ang);
 	}
 
-	// Elevation angles (allocate on stack)
+	// Elevation angles
 	int elev_num = ((int)ceil((elev_ang_up_lim - elev_ang_low_lim)
 		/ (hori_acc / 5.0)) + 1);
-	float elev_ang[elev_num];
-	float elev_sin[elev_num];
-	float elev_cos[elev_num];
+	std::vector<float> elev_ang(elev_num);
+	std::vector<float> elev_sin(elev_num);
+	std::vector<float> elev_cos(elev_num);
 	for (int i = 0; i < elev_num; i++) {
 		ang = elev_ang_up_lim - (hori_acc / 5.0) * i;
 		elev_ang[elev_num - i - 1] = ang;
@@ -973,12 +972,12 @@ void horizon_locations_comp(float* vert_grid,
    				
   				// Perform ray tracing
   				size_t ind_out = i * azim_num;
-  				function_pointer(ray_org_x, ray_org_y, ray_org_z,
-  					azim_num, hori_acc, dist_search,
-  					elev_ang_low_lim, elev_ang_up_lim, elev_num,
-  					scene, num_rays, &hori_buffer[ind_out],
-  					azim_sin, azim_cos, elev_ang,
-  					elev_cos, elev_sin, rot_inv);
+				function_pointer(ray_org_x, ray_org_y, ray_org_z,
+					azim_num, hori_acc, dist_search,
+					elev_ang_low_lim, elev_ang_up_lim, elev_num,
+					scene, num_rays, &hori_buffer[ind_out],
+					azim_sin.data(), azim_cos.data(), elev_ang.data(),
+					elev_cos.data(), elev_sin.data(), rot_inv);
   				
   			}
 
@@ -1054,13 +1053,13 @@ void horizon_locations_comp(float* vert_grid,
    				
   				// Perform ray tracing
   				size_t ind_out = i * azim_num;
-  				function_pointer_hori_dist(ray_org_x, ray_org_y, ray_org_z,
-  					azim_num, hori_acc, dist_search,
-  					elev_ang_low_lim, elev_ang_up_lim, elev_num,
-  					scene, num_rays, &hori_buffer[ind_out],
+				function_pointer_hori_dist(ray_org_x, ray_org_y, ray_org_z,
+					azim_num, hori_acc, dist_search,
+					elev_ang_low_lim, elev_ang_up_lim, elev_num,
+					scene, num_rays, &hori_buffer[ind_out],
 					&hori_dist_buffer[ind_out],
-  					azim_sin, azim_cos, elev_ang,
-  					elev_cos, elev_sin, rot_inv);
+					azim_sin.data(), azim_cos.data(), elev_ang.data(),
+					elev_cos.data(), elev_sin.data(), rot_inv);
   					
   			}
 

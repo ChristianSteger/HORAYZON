@@ -1,0 +1,100 @@
+name: Build wheels
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - feature/integrate_tbb_and_embree
+    paths:
+      - ".github/workflows/wheels.yml"
+      - "horayzon/**"
+      - "pyproject.toml"
+      - "setup.py"
+      - "tests/**"
+      - "tools/wheels/**"
+  pull_request:
+    paths:
+      - ".github/workflows/wheels.yml"
+      - "horayzon/**"
+      - "pyproject.toml"
+      - "setup.py"
+      - "tests/**"
+      - "tools/wheels/**"
+
+jobs:
+  build:
+    name: ${{ matrix.name }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: linux-x86_64
+            os: ubuntu-latest
+            cibw_archs_linux: x86_64
+          - name: linux-aarch64
+            os: ubuntu-24.04-arm
+            cibw_archs_linux: aarch64
+          - name: macos-x86_64
+            os: macos-15-intel
+            cibw_archs_linux: auto
+          - name: macos-arm64
+            os: macos-14
+            cibw_archs_linux: auto
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.13"
+
+      - name: Install macOS native dependencies
+        if: runner.os == 'macOS'
+        run: |
+          brew update
+          brew install embree tbb
+          echo "HORAYZON_EMBREE_DIR=$(brew --prefix embree)" >> "$GITHUB_ENV"
+          echo "HORAYZON_TBB_DIR=$(brew --prefix tbb)" >> "$GITHUB_ENV"
+          echo "MACOSX_DEPLOYMENT_TARGET=14.0" >> "$GITHUB_ENV"
+
+      - name: Install cibuildwheel
+        run: python -m pip install cibuildwheel==3.2.1
+
+      - name: Build wheels
+        env:
+          CIBW_ARCHS_LINUX: ${{ matrix.cibw_archs_linux }}
+        run: python -m cibuildwheel --output-dir wheelhouse
+
+      - name: Inspect bundled dependencies
+        shell: bash
+        run: |
+          if [[ "$RUNNER_OS" == "Linux" ]]; then
+            python -m pip install auditwheel
+            for wheel in wheelhouse/*.whl; do
+              auditwheel show "$wheel"
+            done
+          else
+            python -m pip install delocate
+            for wheel in wheelhouse/*.whl; do
+              delocate-listdeps "$wheel"
+            done
+          fi
+
+      - name: Smoke test installed wheel
+        shell: bash
+        run: |
+          python -m pip install packaging
+          wheel="$(python tools/wheels/select_compatible_wheel.py wheelhouse)"
+          smoke_dir="$(mktemp -d)"
+          python -m venv "$smoke_dir/venv"
+          "$smoke_dir/venv/bin/python" -m pip install --upgrade pip
+          "$smoke_dir/venv/bin/python" -m pip install pytest "$wheel"
+          cp tests/conftest.py tests/test_native_raytracing.py "$smoke_dir"
+          cd "$smoke_dir"
+          "$smoke_dir/venv/bin/python" -m pytest test_native_raytracing.py
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: wheels-${{ matrix.name }}
+          path: wheelhouse/*.whl

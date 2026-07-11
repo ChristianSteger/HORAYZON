@@ -11,6 +11,7 @@ When you use HORAYZON, please cite:
 and
 
 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.7013764.svg)](https://doi.org/10.5281/zenodo.7013764)
+[![Python](https://img.shields.io/badge/python-3.10--3.14-blue.svg)](https://www.python.org/)
 
 Please refer to the sections [Known issues](#Known-issues) and [Support and collaboration](#Support-and-collaboration) in case you encounter any **issues** with HORAYZON.
 
@@ -19,97 +20,105 @@ The animation below illustrates the method applied in HORAYZON to find the terra
 
 # Package dependencies
 
-HORAYZON depends on multiple external libraries and packages. The essential ones are listed below under **Core dependencies**.
-Further dependencies are needed to run the examples (**Base dependencies for examples**).
-The examples **horizon/gridded_curved_DEM_masked.py**, **horizon/gridded_planar_DEM_2m.py** and **shadow/gridded_curved_DEM_NASADEM.py** require more complex dependencies, which are listed under **All dependencies for examples**.
+HORAYZON depends on Python packages for numerical work, geospatial helper
+functionality, and tests. These are installed by the default `pip install
+horayzon` command.
 
-**Core dependencies**
-- [Intel Embree](https://www.embree.org) and [Threading Building Blocks (TBB)](https://github.com/oneapi-src/oneTBB)
-- Python packages: Cython, NumPy, SciPy, GeographicLib, tqdm, requests, xarray
+Binary wheels bundle the required Intel Embree and oneTBB runtime libraries for
+supported platforms. Source builds still require Embree and TBB
+headers/libraries to be installed locally.
 
-**Base dependencies for examples**
-- Python packages: netCDF4, Matplotlib, Pillow, Skyfield, pyproj, IPython
-
-**All dependencies for examples (masking and high-resolution DEM examples; GDAL dependency)**
-- Python packages: Shapely, fiona, scikit-image, Rasterio, Trimesh
-- [heightmap meshing utility (hmm)](https://github.com/fogleman/hmm)
+Additional Python packages used by the examples, optional GSHHG coastline
+masking, and extended workflows can be installed with the `all` extra. The
+external [heightmap meshing utility
+(hmm)](https://github.com/fogleman/hmm) is not bundled and is not installed by
+`horayzon[all]`.
 
 # Installation
 
-HORAYZON has been tested with **Python 3.13.3** (Linux) and **Python 3.13.3** (Mac OS X).
-It is recommended to install dependencies via [Conda](https://docs.conda.io/en/latest/#), which covers all dependencies except **hmm**.
-Alternatively, HORAYZON can also be [installed without Conda](#Installation-without-Conda) (by e.g. using **pip** to install Python packages).
-Installation via **Conda** can be accomplished as follows for different platforms:
+HORAYZON binary wheels are tested on Linux and Mac OS X with CPython
+3.10-3.14.
 
-## Linux / Mac OS X
+For supported platforms, HORAYZON can be installed from PyPI with:
 
-Create an appropriate Conda environment
-
-**Core dependencies**
 ```bash
-conda create -n horayzon_core -c conda-forge embree tbb-devel cython setuptools numpy scipy geographiclib tqdm requests xarray
+python -m pip install horayzon
 ```
 
-**Base dependencies for examples**
+Binary wheels are available for CPython 3.10-3.14 on Linux x86_64, Linux
+aarch64, Mac OS X 14+ x86_64, and Mac OS X 14+ arm64. These wheels bundle the
+Embree and oneTBB runtime libraries, so users do not need to install Embree or
+TBB separately. The default install also includes the Python dependencies
+required to run the test suite.
+
+To install the additional Python packages used by the examples, optional GSHHG
+coastline masking, and extended workflows, run:
+
 ```bash
-conda create -n horayzon_base -c conda-forge embree tbb-devel cython setuptools numpy scipy geographiclib tqdm requests xarray netcdf4 matplotlib pillow skyfield pyproj ipython
+python -m pip install "horayzon[all]"
 ```
 
-**All dependencies for examples (masking and high-resolution DEM examples; GDAL dependency)**
+If no compatible wheel is available for a supported Python version, `pip` falls
+back to building HORAYZON from the source distribution. In that case, a working
+compiler plus local Embree and TBB installations are required.
+To require a binary wheel and fail instead of building from source, run:
+
 ```bash
-conda create -n horayzon_all -c conda-forge embree tbb-devel cython setuptools numpy scipy geographiclib tqdm requests xarray netcdf4 matplotlib pillow skyfield pyproj ipython shapely fiona scikit-image rasterio trimesh
+python -m pip install --only-binary=:all: horayzon
 ```
 
-and **activate this environment**. The HORAYZON package can then be installed with:
+## Source builds
+
+Source builds are mainly needed for development, unsupported platforms, or
+custom native dependency installations. They require a compiler and local
+installations of [Intel Embree](https://www.embree.org) and [Threading Building
+Blocks (TBB)](https://github.com/oneapi-src/oneTBB).
+
+On Linux or Mac OS X, Embree and TBB can be installed with a system package
+manager such as Conda, Homebrew, APT, or MacPorts. With Conda, the native
+dependencies can be installed with:
+
+```bash
+conda install -c conda-forge embree tbb-devel
+```
+
+The HORAYZON source tree can then be installed with:
+
 ```bash
 git clone https://github.com/ChristianSteger/HORAYZON.git
-cd HORAYZON  
+cd HORAYZON
 python -m pip install .
 ```
 
 ## Windows
 
-The installation under Windows has not yet been tested.
+Windows wheels are not currently provided. Source installation under Windows has
+not yet been tested.
 
-## Optional installation of hmm
-**hmm** depends on **glm**, which can also be installed via Conda
-```bash
-conda install -c conda-forge glm
-```
-Alternatively, **glm** can also be built manually from [source](https://glm.g-truc.net/0.9.9/index.html). **hmm** can then be downloaded with
-```bash
-git clone https://github.com/fogleman/hmm.git
-cd hmm
-```
-The following two lines in **hmm**'s Makefile might have to be adapted to (the include directory in the first line is valid in case **glm**  was installed with Conda):
-```bash
-COMPILE_FLAGS = -std=c++11 -flto -O3 -Wall -Wextra -Wno-sign-compare -march=native -lGL -lglut -lGLEW -I<path to directory 'include' of conda environment>
-INSTALL_PREFIX = <binary install path>
-```
-Finally, **hmm** can be installed with
-```bash
-make
-make install
-```
+## External hmm executable
 
-## Installation without Conda
-HORAYZON can also be built without Conda but this requires some additional manual steps.
-If not already available, the following two external libraries **Intel Embree** and **Threading Building Blocks (TBB)** have to be installed.
-This can be done either via a package manager (APT, MacPorts, etc.) or by manually building them from source.
-Afterwards, the required Python packages have to be installed (for instance with **pip**) and the HORAYZON package can be downloaded:
+The **hmm** executable is not bundled in HORAYZON wheels. It is only needed for
+the high-resolution example **horizon/gridded_planar_DEM_2m.py** and is not
+installed by `horayzon[all]`. If this example is needed, install **hmm**
+separately from its upstream project and adapt the example's **hmm_ex** path.
+
+# Testing
+After installing HORAYZON from a source checkout, the test suite can be run
+with:
 
 ```bash
-git clone https://github.com/ChristianSteger/HORAYZON.git
-cd HORAYZON
+python -m pytest
 ```
 
-The setup file **setup_manual.py** must then be adapted to specify the **include** and **library** paths for the external libraries and to select a compiler to build HORAYZON.
-Finally, the HORAYZON package can be installed with:
-
+# Linting and formatting
+Ruff is used for Python linting and formatting. The checks can be run with:
 ```bash
-mv setup_manual.py setup.py
-python -m pip install .
+python -m pip install ruff pre-commit
+python -m ruff check .
+python -m ruff format --check .
+pre-commit run --all-files
 ```
+To enable the checks before every commit, run `pre-commit install`.
 
 # Usage
 
@@ -141,11 +150,11 @@ Two terrain horizon functions are available, **horizon_gridded()** and **horizon
 
 
 **A remark on sky view factor and related parameters**<br/>
-The term sky view factor (SVF) is defined ambiguously in literature. In Zakšek et al. (2011), it refers to the solid angle of the (celestial) hemisphere. We call this parameter *visible sky fraction* and its computation is performed with the function **topo_param.visible_sky_fraction()**. In applications related to radiation, the SVF is typically defined as the fraction of sky radiation received at a certain location in case of isotropic sky radiation (see e.g. Helbig et al., 2009). This parameter is called *sky view factor* in our application and its computation is performed with the function **topo_param.sky_view_factor()**. Additionally, the positive topographic openness (Yokoyama et al., 2002) can be computed with the function **topo_param.topographic_openness()**. 
+The term sky view factor (SVF) is defined ambiguously in literature. In Zakšek et al. (2011), it refers to the solid angle of the (celestial) hemisphere. We call this parameter *visible sky fraction* and its computation is performed with the function **topo_param.visible_sky_fraction()**. In applications related to radiation, the SVF is typically defined as the fraction of sky radiation received at a certain location in case of isotropic sky radiation (see e.g. Helbig et al., 2009). This parameter is called *sky view factor* in our application and its computation is performed with the function **topo_param.sky_view_factor()**. Additionally, the positive topographic openness (Yokoyama et al., 2002) can be computed with the function **topo_param.topographic_openness()**.
 
 ## Examples: Shadow map and shortwave correction factor
 
-The module **shadow** allows to compute shadow maps and correction factors for downwelling direct shortwave radiation for arbitrary terrains and sun positions. 
+The module **shadow** allows to compute shadow maps and correction factors for downwelling direct shortwave radiation for arbitrary terrains and sun positions.
 This module was not part of the initial HORAYZON release and is thus **not described** in the [reference publication](https://doi.org/10.5194/gmd-15-6817-2022). A more detailed description is therefore provided here.
 To compute gridded shadow maps or shortwave correction factors, a class **shadow.Terrain** must first be created and initialised.
 In this step, the gridded terrain input is first converted to a triangle mesh and these triangles are then stored in a bounding volume hierarchy (BVH) to perform ray casting efficiently.
@@ -153,7 +162,7 @@ During initialisation, and optional mask can be provided to ignore certain grid 
 The two methods **Terrain.shadow()** and **Terrain.sw_dir_cor()** can then be called for arbitrary sun positions.
 The output of the method **Terrain.shadow()** is encoded as follows: 0: illuminated, 1: self-shaded, 2: terrain-shaded, 3: not considered (respectively masked).
 The correction factors for downwelling direct shortwave radiation is computed with the method **Terrain.sw_dir_cor()** according to Müller and Scherer (2005).
-This factor can be applied to radiation output from a regional climate or general circulation model, in which radiation is only simulated along the vertical dimension and all grid cells are assumed to have a horizontal surface. 
+This factor can be applied to radiation output from a regional climate or general circulation model, in which radiation is only simulated along the vertical dimension and all grid cells are assumed to have a horizontal surface.
 The correction factor accounts for all terrain-induced modifications in radiation, like self/terrain-shading, changes in angles between the sun and the surface's normal vector and the geometric surface enlargement of grid cells due to sloping surfaces.
 According to Equation (2) in Müller and Scherer (2005), the correction factor is computed as
 
